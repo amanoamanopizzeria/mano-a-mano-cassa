@@ -129,3 +129,75 @@
 .t-carta .prezzo { padding: 8px 12px 12px 14px; }
 .t-etichetta { top: 12px; left: 12px; }
 .t-carta:active { transform: scale(.98); }
+
+/* ===== secondo giro grafico (23/10/2026, Edoardo: «deve essere molto più bello di così») ===== */
+.totem { background: radial-gradient(120% 60% at 50% -10%, #fff 0%, var(--crema) 60%); }
+
+/* ogni passo entra dal basso, piano */
+.t-entra { animation: t-entra .38s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes t-entra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* avvio: la foto respira, il logo bianco in alto, la freccia che invita */
+.t-avvio .foto { animation: t-respira 18s ease-in-out infinite alternate; transform-origin: 50% 40%; }
+@keyframes t-respira { from { transform: scale(1); } to { transform: scale(1.08); } }
+.t-avvio .velo { background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.05) 30%, rgba(0,0,0,.12) 48%, rgba(251,247,240,1) 70%); }
+.t-avvio .logo-alto { position: absolute; top: 5vh; left: 50%; transform: translateX(-50%); height: clamp(40px, 7vw, 76px); filter: drop-shadow(0 4px 14px rgba(0,0,0,.45)); }
+.t-avvio .sotto { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.t-avvio .freccia { width: 22px; height: 22px; border-right: 3px solid var(--oro); border-bottom: 3px solid var(--oro); transform: rotate(45deg); animation: t-freccia 1.4s ease-in-out infinite; }
+@keyframes t-freccia { 0%,100% { transform: translateY(0) rotate(45deg); opacity: .5; } 50% { transform: translateY(8px) rotate(45deg); opacity: 1; } }
+.t-avvio .lapide { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .22em; font-size: clamp(12px, 1.6vw, 16px); color: var(--oro); font-weight: 500; margin-top: 2vh; }
+
+/* categorie: anello oro e sottolineatura */
+.t-cat-striscia { box-shadow: 0 6px 18px rgba(26,23,21,.05); position: relative; z-index: 1; padding: 12px 12px 8px; }
+.t-cat .tondo { box-shadow: 0 4px 12px rgba(26,23,21,.12); }
+.t-cat.attiva .tondo { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--oro), 0 8px 20px rgba(201,151,63,.35); border-color: transparent; }
+.t-cat.attiva { background: transparent; }
+.t-cat.attiva .nome::after { content: ""; display: block; width: 26px; height: 3px; background: var(--vino); border-radius: 3px; margin: 5px auto 0; }
+
+/* schede: il prezzo in un bollo oro sulla foto, il nome sotto, «+» vino */
+.t-carta { box-shadow: 0 1px 2px rgba(26,23,21,.05), 0 14px 32px rgba(26,23,21,.09); transition: transform .12s, box-shadow .12s; }
+.t-carta .fotobox { position: relative; }
+.t-carta .fotobox::after { content: ""; position: absolute; inset: 55% 0 0 0; background: linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,.28)); pointer-events: none; }
+.t-carta .bollo { position: absolute; right: 10px; bottom: 10px; z-index: 1; background: var(--oro); color: var(--nero); font-weight: 800; font-size: 17px; padding: 6px 12px; border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,.25); font-variant-numeric: tabular-nums; }
+.t-carta .bollo.vuoto { background: #fff; color: var(--grigio); font-weight: 600; font-size: 13px; }
+.t-carta .nel-carrello { position: absolute; top: 12px; right: 12px; z-index: 1; background: var(--vino); color: #fff; font-weight: 800; font-size: 15px; min-width: 32px; height: 32px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(138,21,56,.4); animation: t-pop .25s cubic-bezier(.3,1.6,.5,1); }
+@keyframes t-pop { from { transform: scale(.4); } to { transform: scale(1); } }
+.t-carta .prezzo { padding: 6px 12px 12px 14px; font-size: 14px; font-weight: 600; color: var(--grigio); }
+.t-carta .piu { background: var(--vino); width: 40px; height: 40px; box-shadow: 0 6px 14px rgba(138,21,56,.3); }
+.t-carta .nome { padding-top: 12px; }
+.t-carta .descr { min-height: 2.6em; }
+
+/* barra: il conto degli articoli sul pulsante */
+.t-barra { background: linear-gradient(180deg, var(--vino), var(--vino-scuro)); border-top: 3px solid var(--oro); }
+.t-b-oro .conto { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 9px; border-radius: 999px; background: var(--vino); color: #fff; font-family: "Figtree", sans-serif; font-size: 16px; font-weight: 800; margin-left: 10px; letter-spacing: 0; vertical-align: middle; }
+.t-b-oro { box-shadow: 0 8px 22px rgba(0,0,0,.25); }
+
+/* carrello vuoto */
+.t-vuoto { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 8vh 0; color: var(--grigio); font-size: 20px; }
+.t-vuoto img { width: 120px; opacity: .25; filter: grayscale(1); }
+
+/* scheda prodotto: la maniglia e la foto che sfuma nel bianco */
+.t-scheda { position: relative; box-shadow: 0 -20px 60px rgba(0,0,0,.35); }
+.t-scheda::before { content: ""; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 56px; height: 6px; border-radius: 6px; background: rgba(255,255,255,.85); z-index: 2; }
+.t-scheda .fotobox-grande { position: relative; margin: 0 -28px; }
+.t-scheda .fotobox-grande::after { content: ""; position: absolute; inset: 70% 0 0 0; background: linear-gradient(180deg, rgba(255,255,255,0), #fff); }
+.t-scheda .foto-grande { display: block; }
+.t-scheda .prezzo { display: inline-block; background: #fff8ea; border: 2px solid var(--oro-chiaro); border-radius: 999px; padding: 6px 18px; }
+
+/* pagamento: icone disegnate, non emoji */
+.t-paga button .icona { width: 84px; height: 84px; color: var(--vino); }
+.t-paga button .icona svg { width: 100%; height: 100%; }
+.t-paga button small { font-family: "Figtree", sans-serif; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 15px; color: var(--grigio); }
+
+/* fatto: la spunta si disegna, il numero grande, la barra del ritorno */
+.t-fatto .cerchio { position: relative; animation: t-pop .4s cubic-bezier(.3,1.6,.5,1); box-shadow: 0 16px 40px rgba(201,151,63,.35); }
+.t-fatto .cerchio.no { box-shadow: 0 16px 40px rgba(138,21,56,.3); }
+.t-fatto .cerchio svg { width: 64px; height: 64px; }
+.t-fatto .cerchio svg path { stroke: #fff; stroke-width: 7; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 80; stroke-dashoffset: 80; animation: t-spunta .5s .25s ease-out forwards; }
+@keyframes t-spunta { to { stroke-dashoffset: 0; } }
+.t-fatto .numero { margin-top: 10px; display: inline-flex; flex-direction: column; align-items: center; background: #fff; border: 3px solid var(--oro); border-radius: 24px; padding: 14px 36px; box-shadow: 0 10px 28px rgba(26,23,21,.08); }
+.t-fatto .numero small { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .18em; font-size: 13px; color: var(--grigio); font-weight: 500; }
+.t-fatto .numero b { font-size: 64px; line-height: 1; font-weight: 800; color: var(--vino); font-variant-numeric: tabular-nums; }
+.t-fatto .ritorno { position: absolute; left: 0; bottom: 0; height: 6px; background: var(--oro); animation: t-ritorno 12s linear forwards; }
+@keyframes t-ritorno { from { width: 100%; } to { width: 0; } }
+.t-fatto { position: relative; }

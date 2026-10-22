@@ -172,10 +172,12 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
       <div className="schermo totem t-avvio" onPointerDown={inizia}>
         <img className="foto" src="/brand/impasto-mani.jpg" alt="" />
         <div className="velo" />
-        <div className="corpo">
+        <img className="logo-alto" src="/brand/logo-amanoamano-chiaro.png" alt="" />
+        <div className="corpo t-entra">
           <img className="bollino" src="/brand/bollino.png" alt="A Mano A Mano Pugliese" />
           <div className="t-ordina pulsa">Ordina qui</div>
-          <div className="sotto">Tocca lo schermo per iniziare</div>
+          <div className="sotto"><span>Tocca lo schermo per iniziare</span><span className="freccia" /></div>
+          <div className="lapide">Ordina e ritira al banco</div>
         </div>
       </div>
     );
@@ -183,13 +185,18 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
 
   if (passo === "fatto") {
     return (
-      <div className="schermo totem t-fatto">
-        <img src="/brand/bollino.png" alt="" style={{ width: 160 }} />
-        <div className={"cerchio" + (esito?.ok ? "" : " no")}>{esito?.ok ? "✓" : "!"}</div>
+      <div className="schermo totem t-fatto t-entra">
+        <img src="/brand/bollino.png" alt="" style={{ width: 150 }} />
+        <div className={"cerchio" + (esito?.ok ? "" : " no")}>
+          {esito?.ok
+            ? <svg viewBox="0 0 64 64" aria-hidden><path d="M14 34 L27 47 L50 18" /></svg>
+            : <span>!</span>}
+        </div>
         <h1>{esito?.ok ? (nome ? `Grazie ${nome}!` : "Grazie!") : "Ops"}</h1>
-        {esito?.numero != null && <div className="numero">Ordine n. {esito.numero}</div>}
+        {esito?.numero != null && <div className="numero"><small>Il tuo ordine</small><b>{esito.numero}</b></div>}
         <p style={{ fontSize: 22, maxWidth: 560, color: "var(--grigio)" }}>{esito?.testo}</p>
         <button onClick={ricomincia} className="t-b-vino" style={{ marginTop: 28 }}>Nuovo ordine</button>
+        <div className="ritorno" />
       </div>
     );
   }
@@ -198,9 +205,9 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
     return (
       <div className="schermo totem">
         <Testata indietro={() => setPasso("menu")} />
-        <div className="scorri" style={{ flex: 1, padding: "18px 22px" }}>
+        <div className="scorri t-entra" style={{ flex: 1, padding: "18px 22px" }}>
           <h1 className="t-titolo">Il tuo ordine <small>{articoli} {articoli === 1 ? "articolo" : "articoli"}</small></h1>
-          {carrello.length === 0 && <p style={{ fontSize: 20, color: "var(--grigio)" }}>Il carrello è vuoto.</p>}
+          {carrello.length === 0 && <div className="t-vuoto"><img src="/brand/bollino.png" alt="" /><span>Il carrello è vuoto.</span></div>}
           {carrello.map((r) => (
             <div key={r.chiave} className="t-riga">
               <Foto p={prodotti.find((p) => p.id === r.id_prodotto)} classe="foto" />
@@ -228,7 +235,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
     return (
       <div className="schermo totem">
         <Testata indietro={() => setPasso("carrello")} />
-        <div className="t-nome">
+        <div className="t-nome t-entra">
           <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Come ti chiami?</h1>
           <p style={{ color: "var(--grigio)", fontSize: 19, margin: "0 0 18px" }}>Ti chiamiamo con questo nome quando l&apos;ordine è pronto.</p>
           <div className="campo">{nome || <span style={{ color: "#bbb" }}>Il tuo nome</span>}</div>
@@ -246,15 +253,15 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
     return (
       <div className="schermo totem">
         <Testata indietro={() => setPasso("nome")} />
-        <div className="t-nome">
+        <div className="t-nome t-entra">
           <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Come vuoi pagare?</h1>
           <p style={{ color: "var(--grigio)", fontSize: 19, margin: "0 0 26px" }}>Si paga alla cassa, quando ritiri. Totale <b style={{ color: "var(--vino)" }}>{euro(totale)}</b>.</p>
           <div className="t-paga">
             <button onClick={() => conferma("contanti")} disabled={invio} className={pagamento === "contanti" ? "on" : ""}>
-              <span className="icona">💶</span><span>Contanti</span>
+              <span className="icona"><IconaContanti /></span><span>Contanti</span><small>paghi alla cassa</small>
             </button>
             <button onClick={() => conferma("pos")} disabled={invio} className={pagamento === "pos" ? "on" : ""}>
-              <span className="icona">💳</span><span>Carta · POS</span>
+              <span className="icona"><IconaCarta /></span><span>Carta · POS</span><small>paghi alla cassa</small>
             </button>
           </div>
           {invio && <p style={{ color: "var(--grigio)", fontSize: 18, marginTop: 20 }}>Invio l&apos;ordine…</p>}
@@ -279,28 +286,35 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
       <Testata annulla={ricomincia} />
       <div style={{ flex: 1, display: "flex", flexDirection: verticale ? "column" : "row", minHeight: 0 }}>
         {strisciaCategorie}
-        <section className="scorri" style={{ flex: 1, padding: verticale ? "18px 22px 24px" : "18px 24px" }}>
+        <section key={categoria} className="scorri t-entra" style={{ flex: 1, padding: verticale ? "18px 22px 24px" : "18px 24px" }}>
           <h1 className="t-titolo">{catCorrente?.nome} <small>{inCategoria.length} {inCategoria.length === 1 ? "proposta" : "proposte"}</small></h1>
           <div className="t-griglia" style={{ gridTemplateColumns: verticale ? "repeat(3, 1fr)" : "repeat(auto-fill, minmax(210px, 1fr))" }}>
-            {inCategoria.map((p) => (
-              <button key={p.id} onClick={() => setAperto(p)} className="t-carta">
-                <Foto p={p} classe="foto" />
-                {catCorrente && /novit/i.test(catCorrente.nome) && <span className="t-etichetta">Novità</span>}
-                <div className="nome">{p.nome}</div>
-                <div className="descr">{p.descrizione ?? ""}</div>
-                <div className="prezzo">
-                  <span>{p.prezzo > 0 ? euro(p.prezzo) : "alla cassa"}</span>
-                  <span className="piu">+</span>
-                </div>
-              </button>
-            ))}
+            {inCategoria.map((p) => {
+              const nel = carrello.filter((r) => r.id_prodotto === p.id).reduce((s, r) => s + r.quantita, 0);
+              return (
+                <button key={p.id} onClick={() => setAperto(p)} className="t-carta">
+                  <div className="fotobox">
+                    <Foto p={p} classe="foto" />
+                    {catCorrente && /novit/i.test(catCorrente.nome) && <span className="t-etichetta">Novità</span>}
+                    {nel > 0 && <span className="nel-carrello">×{nel}</span>}
+                    <span className={"bollo" + (p.prezzo > 0 ? "" : " vuoto")}>{p.prezzo > 0 ? euro(p.prezzo) : "alla cassa"}</span>
+                  </div>
+                  <div className="nome">{p.nome}</div>
+                  <div className="descr">{p.descrizione ?? ""}</div>
+                  <div className="prezzo">
+                    <span>Tocca per aggiungere</span>
+                    <span className="piu">+</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </section>
       </div>
 
       <div className="t-barra">
         <div className="tot"><small>Il tuo ordine · {articoli} {articoli === 1 ? "articolo" : "articoli"}</small><b>{euro(totale)}</b></div>
-        <button onClick={() => setPasso("carrello")} disabled={carrello.length === 0} className="t-b-oro">Vedi ordine</button>
+        <button onClick={() => setPasso("carrello")} disabled={carrello.length === 0} className="t-b-oro">Vedi ordine{articoli > 0 && <span className="conto">{articoli}</span>}</button>
       </div>
 
       {aperto && (
@@ -331,7 +345,7 @@ function SchedaProdotto({ p, varianti, chiudi, aggiungi }: {
     <div className="t-velo" onClick={chiudi}>
       <div className="t-scheda" onClick={(e) => e.stopPropagation()}>
         <div className="corpo">
-          <Foto p={p} classe="foto-grande" />
+          <div className="fotobox-grande"><Foto p={p} classe="foto-grande" /></div>
           <h2>{p.nome}</h2>
           {p.descrizione && <p className="descr">{p.descrizione}</p>}
           <div className="prezzo">{p.prezzo > 0 ? euro(p.prezzo) : "prezzo alla cassa"}</div>
@@ -419,5 +433,26 @@ function Tastiera({ testo, cambia }: { testo: string; cambia: (t: string) => voi
         <button className="spazio" onClick={() => { if (testo && !testo.endsWith(" ")) cambia(testo + " "); }}>spazio</button>
       </div>
     </div>
+  );
+}
+
+/** Banconota e carta disegnate a linea, nel vino: le emoji cambiano faccia da un telefono all'altro. */
+function IconaContanti() {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="6" y="18" width="52" height="30" rx="5" />
+      <circle cx="32" cy="33" r="8" />
+      <path d="M14 26h.01M50 40h.01" strokeWidth="5" />
+      <path d="M10 14h44" opacity=".5" />
+    </svg>
+  );
+}
+function IconaCarta() {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="6" y="16" width="52" height="34" rx="6" />
+      <path d="M6 26h52" strokeWidth="6" />
+      <path d="M14 40h12M44 40h6" />
+    </svg>
   );
 }
