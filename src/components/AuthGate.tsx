@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-export default function AuthGate({ children }: { children: React.ReactNode }) {
+// barra=false nasconde email ed «Esci»: serve al totem e alla cassa a tutto schermo.
+export default function AuthGate({ children, barra = true }: { children: React.ReactNode; barra?: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const [pronto, setPronto] = useState(false);
@@ -34,13 +35,13 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   if (!pronto) return <main className="muto">Verifica accesso…</main>;
   return (
     <>
-      <div
+      {barra && <div
         className="muto"
         style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "8px 16px" }}
       >
         <span>{email}</span>
         <button onClick={esci}>Esci</button>
-      </div>
+      </div>}
       {children}
     </>
   );

@@ -41,3 +41,14 @@ button {
   border: 1px solid var(--bordo); background: #fff; cursor: pointer;
 }
 button.primario { background: var(--accento); color: #fff; border-color: var(--accento); }
+
+/* ===== Schermate a tutto schermo (totem e cassa touch) ===== */
+.schermo { height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; background: var(--sfondo); }
+.schermo button { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.tessera {
+  border-radius: 8px; border: 1px solid rgba(0,0,0,.12); padding: 10px 8px;
+  font-weight: 600; font-size: 14px; line-height: 1.15; text-align: center; min-height: 68px;
+  display: flex; align-items: center; justify-content: center; text-transform: uppercase; color: #1d1b17;
+}
+.tessera:active { filter: brightness(.9); }
+.scorri { overflow-y: auto; -webkit-overflow-scrolling: touch; }
