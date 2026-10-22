@@ -62,3 +62,30 @@ begin
 end $$;
 revoke all on function salva_cliente2(text, text, text, text, text, text, text, double precision, double precision, text) from public;
 grant execute on function salva_cliente2(text, text, text, text, text, text, text, double precision, double precision, text) to authenticated;
+
+-- 3) La route può scrivere senza SUPABASE_SERVICE_ROLE_KEY: passa la chiave del centralino e
+--    segna_chiamata_api la confronta con l'impronta SHA-256 in `impostazione_riservata`
+--    (RLS senza policy: la leggono solo le funzioni security definer). Nel registro di Supabase
+--    è la migrazione `chiamata_api_con_impronta`; l'impronta vera si mette con un insert a parte.
+create table if not exists impostazione_riservata (
+  chiave text primary key,
+  valore text not null,
+  aggiornata_il timestamptz not null default now()
+);
+alter table impostazione_riservata enable row level security;
+revoke all on impostazione_riservata from anon, authenticated;
+
+create or replace function segna_chiamata_api(p_numero text, p_origine text, p_chiave text)
+returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_id uuid; v_attesa text;
+begin
+  select valore into v_attesa from impostazione_riservata where chiave = 'telefono_key_sha256';
+  if v_attesa is null or p_chiave is null
+     or encode(sha256(convert_to(p_chiave, 'UTF8')), 'hex') <> v_attesa then
+    raise exception 'chiave non valida' using errcode = '42501';
+  end if;
+  insert into chiamata (numero, origine) values (p_numero, coalesce(p_origine, 'api')) returning id into v_id;
+  return v_id;
+end $$;
+revoke all on function segna_chiamata_api(text, text, text) from public;
+grant execute on function segna_chiamata_api(text, text, text) to anon, authenticated, service_role;

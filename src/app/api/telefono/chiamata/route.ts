@@ -6,7 +6,7 @@
 //   il webhook voce di Telnyx (call.initiated)  — data.payload.from
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +38,10 @@ export async function POST(req: Request) {
   const pulito = (numero ?? "").replace(/[^\d+]/g, "");
   if (pulito.replace(/\D/g, "").length < 6) return NextResponse.json({ errore: "numero mancante" }, { status: 400 });
 
-  const { data, error } = await supabaseAdmin().from("chiamata").insert({ numero: pulito, origine }).select("id").single();
+  // Scrive tramite segna_chiamata_api: la funzione confronta l'impronta della chiave, così non
+  // serve la service_role sul server. La chiave è già stata controllata qui sopra.
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
+  const { data, error } = await supabase.rpc("segna_chiamata_api", { p_numero: pulito, p_origine: origine, p_chiave: process.env.TELEFONO_KEY });
   if (error) return NextResponse.json({ errore: error.message }, { status: 500 });
-  return NextResponse.json({ esito: "segnata", id: data.id });
+  return NextResponse.json({ esito: "segnata", id: data });
 }
