@@ -14,6 +14,10 @@ export default function Home() {
           <strong>Rider</strong>
           <p className="muto">Consegne libere, prendi, naviga, consegnato.</p>
         </Link>
+        <Link href="/cassa/cliente" className="carta">
+          <strong>Cliente</strong>
+          <p className="muto">Cerca dal telefono, scheda, note fisse, indirizzi.</p>
+        </Link>
         <Link href="/cassa/capacita" className="carta">
           <strong>Capacità</strong>
           <p className="muto">Turni del giorno, pizze e consegne per quarto d&apos;ora, blocchi.</p>
@@ -26,10 +30,6 @@ export default function Home() {
           <strong>Mappa rider</strong>
           <p className="muto">Dove sono i rider, in tempo reale.</p>
         </Link>
-        <div className="carta" aria-disabled>
-          <strong>Cliente</strong>
-          <p className="muto">Menù e ordini — in arrivo.</p>
-        </div>
       </div>
     </main>
   );
