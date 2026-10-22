@@ -21,9 +21,9 @@ language plpgsql stable security definer set search_path = public, extensions, p
 begin
   if not totem_chiave_valida(p_chiave) then raise exception 'totem non attivato' using errcode = '42501'; end if;
   return jsonb_build_object(
-    'categorie', coalesce((select jsonb_agg(to_jsonb(c) order by c.ordine) from (select id, nome, ordine, colore, destinazione, visibile_totem from categoria where visibile_totem) c), '[]'::jsonb),
-    'prodotti',  coalesce((select jsonb_agg(to_jsonb(p) order by p.ordine) from (select id, id_categoria, nome, descrizione, prezzo, prezzo_tavolo, foto_url, visibile_totem from prodotto where attivo and visibile_totem) p), '[]'::jsonb),
-    'varianti',  coalesce((select jsonb_agg(to_jsonb(v) order by v.gruppo, v.nome) from (select id, nome, prezzo, gruppo, id_categoria from variazione) v), '[]'::jsonb)
+    'categorie', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'nome', nome, 'ordine', ordine, 'colore', colore, 'destinazione', destinazione, 'visibile_totem', visibile_totem) order by ordine) from categoria where visibile_totem), '[]'::jsonb),
+    'prodotti',  coalesce((select jsonb_agg(jsonb_build_object('id', id, 'id_categoria', id_categoria, 'nome', nome, 'descrizione', descrizione, 'prezzo', prezzo, 'prezzo_tavolo', prezzo_tavolo, 'foto_url', foto_url, 'visibile_totem', visibile_totem) order by ordine) from prodotto where attivo and visibile_totem), '[]'::jsonb),
+    'varianti',  coalesce((select jsonb_agg(jsonb_build_object('id', id, 'nome', nome, 'prezzo', prezzo, 'gruppo', gruppo, 'id_categoria', id_categoria) order by gruppo, nome) from variazione), '[]'::jsonb)
   );
 end $$;
 revoke all on function totem_menu(text) from public;
