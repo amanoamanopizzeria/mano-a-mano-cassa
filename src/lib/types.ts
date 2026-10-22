@@ -147,3 +147,17 @@ export const TRANSIZIONI_ORDINE: Record<StatoOrdine, StatoOrdine[]> = {
 export function transizioneValida(da: StatoOrdine, a: StatoOrdine): boolean {
   return TRANSIZIONI_ORDINE[da].includes(a);
 }
+
+/** Una fascia da 15 minuti della capacità di un giorno (funzione capacita_giorno). */
+export type TipoBlocco = "produzione" | "consegne";
+
+export interface CapacitaFascia {
+  ora: string;
+  inizio: string;
+  pizze_max: number;
+  pizze_occupate: number;
+  consegne_max: number;
+  consegne_occupate: number;
+  bloccata_produzione: boolean;
+  bloccata_consegne: boolean;
+}
