@@ -7,6 +7,12 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine } from "@/lib/types";
 
+// La comanda si stampa da sola a ogni ordine nuovo, se la cassa lo vuole (resta nel browser della
+// cassa): si apre la pagina /cassa/comanda/<id>?stampa=1 in un riquadro nascosto e quella chiama
+// window.print(). Col Chrome della cassa avviato con --kiosk-printing esce senza chiedere.
+const STAMPA_LS = "cassa:stampa-automatica";
+type OrdineCassa = Ordine & { nome_cliente?: string | null; pagamento?: "contanti" | "pos" | null };
+
 const ETICHETTE: Record<StatoOrdine, string> = {
   ricevuto: "Ricevuto",
   in_preparazione: "In preparazione",
@@ -26,8 +32,14 @@ export default function CassaPagina() {
 }
 
 function Cassa() {
-  const [ordini, setOrdini] = useState<Ordine[]>([]);
+  const [ordini, setOrdini] = useState<OrdineCassa[]>([]);
   const [errore, setErrore] = useState<string | null>(null);
+  const [stampaAuto, setStampaAuto] = useState(false);
+  const [inStampa, setInStampa] = useState<string[]>([]);
+
+  useEffect(() => { try { setStampaAuto(localStorage.getItem(STAMPA_LS) === "1"); } catch {} }, []);
+  function cambiaStampaAuto(v: boolean) { setStampaAuto(v); try { localStorage.setItem(STAMPA_LS, v ? "1" : "0"); } catch {} }
+  function stampa(id: string) { setInStampa((p) => (p.includes(id) ? p : [...p, id])); setTimeout(() => setInStampa((p) => p.filter((x) => x !== id)), 15_000); }
 
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -55,7 +67,9 @@ function Cassa() {
         (payload) => {
           setOrdini((prev) => {
             if (payload.eventType === "INSERT") {
-              return [payload.new as Ordine, ...prev];
+              const n = payload.new as OrdineCassa;
+              try { if (localStorage.getItem(STAMPA_LS) === "1") stampa(n.id); } catch {}
+              return [n, ...prev];
             }
             if (payload.eventType === "UPDATE") {
               const n = payload.new as Ordine;
@@ -91,6 +105,11 @@ function Cassa() {
   return (
     <main>
       <h1>Cassa — ordini</h1>
+      <label className="muto" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <input type="checkbox" checked={stampaAuto} onChange={(e) => cambiaStampaAuto(e.target.checked)} />
+        Stampa da sola la comanda di ogni ordine nuovo
+      </label>
+      {inStampa.map((id) => <iframe key={id} src={`/cassa/comanda/${id}?stampa=1`} title="comanda" style={{ position: "absolute", width: 0, height: 0, border: 0 }} />)}
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
       {ordini.length === 0 && !errore && (
         <p className="muto">Nessun ordine. Quando arriva, compare qui da solo.</p>
@@ -118,11 +137,17 @@ function Cassa() {
                 </>
               )}
             </div>
+            {(o.nome_cliente || o.pagamento) && (
+              <div style={{ marginTop: 6, fontWeight: 600 }}>
+                {o.nome_cliente}{o.nome_cliente && o.pagamento && " · "}{o.pagamento === "pos" ? "POS" : o.pagamento === "contanti" ? "contanti" : ""}
+              </div>
+            )}
             <div style={{ margin: "8px 0", fontSize: 18 }}>
               {o.totale.toFixed(2)} €
             </div>
             {o.note && <div className="muto">Note: {o.note}</div>}
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+              <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
               {TRANSIZIONI_ORDINE[o.stato].map((s) => (
                 <button
                   key={s}
