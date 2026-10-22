@@ -18,6 +18,10 @@ export default function Home() {
           <strong>Capacità</strong>
           <p className="muto">Turni del giorno, pizze e consegne per quarto d&apos;ora, blocchi.</p>
         </Link>
+        <Link href="/cassa/riepilogo" className="carta">
+          <strong>Riepilogo</strong>
+          <p className="muto">Ordini di oggi per canale, pizze, consegne e incasso.</p>
+        </Link>
         <Link href="/cassa/mappa" className="carta">
           <strong>Mappa rider</strong>
           <p className="muto">Dove sono i rider, in tempo reale.</p>
