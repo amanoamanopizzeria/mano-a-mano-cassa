@@ -81,7 +81,7 @@ interface PhotonFeature {
 async function cercaPhoton(q: string): Promise<IndirizzoTrovato[]> {
   const u = new URL("https://photon.komoot.io/api/");
   u.searchParams.set("q", q);
-  u.searchParams.set("lang", "it");
+  u.searchParams.set("lang", "default"); // Photon non ha "it": default usa i nomi locali
   u.searchParams.set("limit", "8");
   u.searchParams.set("lat", String(PIZZERIA.lat));
   u.searchParams.set("lon", String(PIZZERIA.lng));
