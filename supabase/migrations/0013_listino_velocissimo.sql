@@ -1,6 +1,6 @@
 -- Mano a Mano Cassa — Fase 13: il listino vero letto dall'admin Velocissimo (23/10/2026).
 -- Ogni prodotto porta l'id gestionale Velocissimo e i tre listini: L1 asporto/app/banco (= prezzo),
--- L2 piattaforme (da confermare con Deliverect), L3 tavoli. Descrizioni e foto come sul totem di oggi
+-- L2 sala/tavoli (Edoardo lo ha controllato sul menù del QR: Margherita 8,50), L3 piattaforme/Deliverect. Descrizioni e foto come sul totem di oggi
 -- (le foto puntano ancora al CDN di WebApp: da copiare nel nostro storage).
 -- I prodotti inventati nelle fasi 1 e 12 restano, ma spenti (attivo = false), così gli ordini di prova non perdono il nome.
 -- (Applicata sul progetto con apply_migration, nome listino_velocissimo.)
@@ -8,8 +8,8 @@
 alter table prodotto add column if not exists id_velocissimo int unique;
 -- Listini di Velocissimo (Edoardo, 22/10/2026, controllato sul menù del QR in sala:
 -- la Margherita in sala è 8,50): L1 = asporto, L2 = sala/tavoli, L3 = piattaforme (Deliverect).
-alter table prodotto add column if not exists prezzo_tavolo numeric(10,2);        -- L2        -- listino L3
-alter table prodotto add column if not exists prezzo_piattaforme numeric(10,2);   -- L3   -- listino L2
+alter table prodotto add column if not exists prezzo_tavolo numeric(10,2);        -- L2
+alter table prodotto add column if not exists prezzo_piattaforme numeric(10,2);   -- L3
 
 -- categorie che mancavano
 with g as (select id, nome from gruppo_categoria)
