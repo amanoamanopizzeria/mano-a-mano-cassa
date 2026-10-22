@@ -22,6 +22,10 @@ export default function Home() {
           <strong>Menù</strong>
           <p className="muto">Prodotti, varianti e pacchetti.</p>
         </Link>
+        <Link href="/cassa/tavoli" className="carta">
+          <strong>Sala</strong>
+          <p className="muto">20 tavoli dentro, 15 fuori: apri, conto, libera.</p>
+        </Link>
         <Link href="/cassa/capacita" className="carta">
           <strong>Capacità</strong>
           <p className="muto">Turni del giorno, pizze e consegne per quarto d&apos;ora, blocchi.</p>
