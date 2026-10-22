@@ -4,6 +4,7 @@
 // ricaricare la pagina. Primo mattone della PWA cassa.
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import AuthGate from "@/components/AuthGate";
 import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine } from "@/lib/types";
 
 const ETICHETTE: Record<StatoOrdine, string> = {
@@ -16,7 +17,15 @@ const ETICHETTE: Record<StatoOrdine, string> = {
   annullato: "Annullato",
 };
 
-export default function Cassa() {
+export default function CassaPagina() {
+  return (
+    <AuthGate>
+      <Cassa />
+    </AuthGate>
+  );
+}
+
+function Cassa() {
   const [ordini, setOrdini] = useState<Ordine[]>([]);
   const [errore, setErrore] = useState<string | null>(null);
 
