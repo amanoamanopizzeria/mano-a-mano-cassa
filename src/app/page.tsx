@@ -34,6 +34,10 @@ export default function Home() {
           <strong>Nuovo ordine</strong>
           <p className="muto">Banco, tavolo, asporto o domicilio: dal menù, alla cucina.</p>
         </Link>
+        <Link href="/cassa/fasce" className="carta">
+          <strong>Scadenzario</strong>
+          <p className="muto">Gli ordini del giorno quarto d&apos;ora per quarto d&apos;ora, coi posti di ogni fascia.</p>
+        </Link>
         <Link href="/cassa/capacita" className="carta">
           <strong>Capacità</strong>
           <p className="muto">Turni del giorno, pizze e consegne per quarto d&apos;ora, blocchi.</p>
