@@ -4,6 +4,8 @@
 // categorie in colonna a sinistra, schede grandi con foto e prezzo, scheda prodotto con quantità
 // e ingredienti a gruppi, carrello in basso, conferma. Torna all'avvio da solo dopo 90 s fermo.
 // Passa dalla stessa capacità di app, sito e cassa (funzione ordine_da_totem).
+// Il totem vero è in piedi, 9:16 (1080×1920): in verticale le categorie stanno in una striscia
+// in alto e i prodotti su tre colonne; in orizzontale (un tablet appoggiato) la colonna a sinistra.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
@@ -15,6 +17,19 @@ import type { Variazione } from "@/lib/types";
 
 const FERMO_MS = 90_000;
 const ROSSO = "#c8102e";
+
+/** Vero quando lo schermo è più alto che largo (il totem in piedi). */
+function usaVerticale() {
+  const [verticale, setVerticale] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(orientation: portrait)");
+    const agg = () => setVerticale(mq.matches);
+    agg();
+    mq.addEventListener("change", agg);
+    return () => mq.removeEventListener("change", agg);
+  }, []);
+  return verticale;
+}
 
 export default function TotemPagina() {
   return (
@@ -37,6 +52,7 @@ function Totem() {
   const [esito, setEsito] = useState<{ ok: boolean; testo: string } | null>(null);
   const [invio, setInvio] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const verticale = usaVerticale();
 
   useEffect(() => {
     leggiMenu(true).then((m) => {
@@ -102,10 +118,10 @@ function Totem() {
     return (
       <div className="schermo" onPointerDown={inizia} style={{ alignItems: "center", justifyContent: "center", background: "#fbf7ef", cursor: "pointer" }}>
         <Logo grande />
-        <div style={{ marginTop: 48, background: ROSSO, color: "#fff", borderRadius: 999, padding: "26px 56px", fontSize: 34, fontWeight: 800, letterSpacing: 1 }}>
+        <div style={{ marginTop: verticale ? 80 : 48, background: ROSSO, color: "#fff", borderRadius: 999, padding: verticale ? "34px 80px" : "26px 56px", fontSize: verticale ? 48 : 34, fontWeight: 800, letterSpacing: 1 }}>
           ORDINA QUI
         </div>
-        <p className="muto" style={{ marginTop: 24, fontSize: 18 }}>Tocca lo schermo per iniziare</p>
+        <p className="muto" style={{ marginTop: 24, fontSize: verticale ? 26 : 18 }}>Tocca lo schermo per iniziare</p>
       </div>
     );
   }
@@ -157,45 +173,52 @@ function Totem() {
 
   return (
     <div className="schermo">
-      <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
-        <nav className="scorri" style={{ width: 150, background: "#fff", borderRight: "1px solid var(--bordo)", padding: "12px 8px" }}>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Logo piccolo /></div>
+      <div style={{ flex: 1, display: "flex", flexDirection: verticale ? "column" : "row", minHeight: 0 }}>
+        {/* Categorie: striscia in alto se il totem è in piedi, colonna a sinistra se è sdraiato. */}
+        <nav className="scorri" style={verticale
+          ? { display: "flex", gap: 6, padding: "12px 16px", background: "#fff", borderBottom: "1px solid var(--bordo)", overflowX: "auto", overflowY: "hidden", flexShrink: 0, alignItems: "flex-start" }
+          : { width: 150, background: "#fff", borderRight: "1px solid var(--bordo)", padding: "12px 8px" }}>
+          {verticale
+            ? <div style={{ display: "flex", alignItems: "center", paddingRight: 10, alignSelf: "center" }}><Logo piccolo /></div>
+            : <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Logo piccolo /></div>}
           {categorie.map((c) => {
             const attiva = c.id === categoria;
             return (
               <button key={c.id} onClick={() => setCategoria(c.id)} style={{
-                width: "100%", border: "none", background: attiva ? "#fff3f4" : "transparent", borderRadius: 12,
-                padding: "10px 4px", marginBottom: 4, display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                borderLeft: attiva ? `4px solid ${ROSSO}` : "4px solid transparent",
+                width: verticale ? 128 : "100%", flexShrink: 0, border: "none", background: attiva ? "#fff3f4" : "transparent", borderRadius: 12,
+                padding: "10px 4px", marginBottom: verticale ? 0 : 4, display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                borderLeft: !verticale && attiva ? `4px solid ${ROSSO}` : "4px solid transparent",
+                borderBottom: verticale && attiva ? `5px solid ${ROSSO}` : "5px solid transparent",
               }}>
-                <Foto p={prodotti.find((p) => p.id_categoria === c.id)} lato={64} tondo />
-                <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.1, textAlign: "center", textTransform: "uppercase" }}>{c.nome}</span>
+                <Foto p={prodotti.find((p) => p.id_categoria === c.id)} lato={verticale ? 76 : 64} tondo />
+                <span style={{ fontSize: verticale ? 14 : 13, fontWeight: 700, lineHeight: 1.1, textAlign: "center", textTransform: "uppercase" }}>{c.nome}</span>
               </button>
             );
           })}
         </nav>
 
-        <section className="scorri" style={{ flex: 1, padding: "20px 24px" }}>
-          <h1 style={{ fontSize: 30, fontWeight: 800, textTransform: "uppercase", margin: "0 0 16px" }}>{catCorrente?.nome}</h1>
-          <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))" }}>
+        <section className="scorri" style={{ flex: 1, padding: verticale ? "22px 24px" : "20px 24px" }}>
+          <h1 style={{ fontSize: verticale ? 36 : 30, fontWeight: 800, textTransform: "uppercase", margin: "0 0 16px" }}>{catCorrente?.nome}</h1>
+          <div style={{ display: "grid", gap: verticale ? 18 : 14, gridTemplateColumns: verticale ? "repeat(3, 1fr)" : "repeat(auto-fill, minmax(190px, 1fr))" }}>
             {prodotti.filter((p) => p.id_categoria === categoria).map((p) => (
               <button key={p.id} onClick={() => setAperto(p)} className="carta" style={{ padding: 14, textAlign: "left", display: "flex", flexDirection: "column", gap: 8, cursor: "pointer" }}>
-                <Foto p={p} lato={150} largo />
-                <div style={{ fontWeight: 700, fontSize: 16, textTransform: "uppercase", lineHeight: 1.15 }}>{p.nome}</div>
-                <div style={{ fontSize: 16 }}>{p.prezzo > 0 ? euro(p.prezzo) : <span className="muto">prezzo alla cassa</span>}</div>
+                <Foto p={p} lato={verticale ? 210 : 150} largo />
+                <div style={{ fontWeight: 700, fontSize: verticale ? 20 : 16, textTransform: "uppercase", lineHeight: 1.15 }}>{p.nome}</div>
+                {verticale && p.descrizione && <div className="muto" style={{ fontSize: 14, lineHeight: 1.25, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.descrizione}</div>}
+                <div style={{ fontSize: verticale ? 20 : 16, fontWeight: 700 }}>{p.prezzo > 0 ? euro(p.prezzo) : <span className="muto">prezzo alla cassa</span>}</div>
               </button>
             ))}
           </div>
         </section>
       </div>
 
-      <div style={{ padding: "14px 24px", borderTop: "1px solid var(--bordo)", background: "#fff", display: "flex", alignItems: "center", gap: 16 }}>
-        <button onClick={ricomincia} style={{ fontSize: 16, padding: "12px 18px", borderRadius: 999 }}>Annulla</button>
+      <div style={{ padding: verticale ? "18px 24px" : "14px 24px", borderTop: "1px solid var(--bordo)", background: "#fff", display: "flex", alignItems: "center", gap: 16 }}>
+        <button onClick={ricomincia} style={{ fontSize: verticale ? 20 : 16, padding: verticale ? "16px 22px" : "12px 18px", borderRadius: 999 }}>Annulla</button>
         <div style={{ flex: 1 }}>
-          <div className="muto" style={{ fontSize: 14 }}>Il tuo ordine · {articoli} {articoli === 1 ? "articolo" : "articoli"}</div>
-          <div style={{ fontSize: 26, fontWeight: 800 }}>{euro(totale)}</div>
+          <div className="muto" style={{ fontSize: verticale ? 17 : 14 }}>Il tuo ordine · {articoli} {articoli === 1 ? "articolo" : "articoli"}</div>
+          <div style={{ fontSize: verticale ? 32 : 26, fontWeight: 800 }}>{euro(totale)}</div>
         </div>
-        <button onClick={() => setPasso("carrello")} disabled={carrello.length === 0} className="primario" style={{ fontSize: 20, padding: "16px 32px", borderRadius: 999, fontWeight: 800 }}>
+        <button onClick={() => setPasso("carrello")} disabled={carrello.length === 0} className="primario" style={{ fontSize: verticale ? 26 : 20, padding: verticale ? "22px 44px" : "16px 32px", borderRadius: 999, fontWeight: 800 }}>
           Vedi ordine
         </button>
       </div>
@@ -226,7 +249,7 @@ function SchedaProdotto({ p, varianti, chiudi, aggiungi }: {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 10 }} onClick={chiudi}>
-      <div className="schermo" style={{ height: "94dvh", maxWidth: 720, borderRadius: "24px 24px 0 0", background: "#fff" }} onClick={(e) => e.stopPropagation()}>
+      <div className="schermo" style={{ height: "94dvh", maxWidth: 760, borderRadius: "24px 24px 0 0", background: "#fff" }} onClick={(e) => e.stopPropagation()}>
         <div className="scorri" style={{ flex: 1, padding: "20px 28px", textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center" }}><Foto p={p} lato={220} largo /></div>
           <h2 style={{ fontSize: 28, fontWeight: 800, textTransform: "uppercase", margin: "16px 0 6px" }}>{p.nome}</h2>

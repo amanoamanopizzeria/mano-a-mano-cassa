@@ -9,7 +9,7 @@ import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 import {
-  aggiungiRiga, chiaveRiga, euro, gruppiDi, leggiMenu, nuovaRiga, prezzoRiga, righePerInvio, totaleRighe, variantiPer,
+  aggiungiRiga, chiaveRiga, euro, gruppiDi, leggiMenu, nuovaRiga, prezzoDi, prezzoRiga, righePerInvio, riprezzaRighe, totaleRighe, variantiPer,
   type CategoriaMenu, type ProdottoMenu, type RigaOrdine, type VarianteMenu,
 } from "@/lib/menu";
 import type { Variazione } from "@/lib/types";
@@ -57,6 +57,7 @@ function Cassa() {
     })();
   }, []);
 
+  const listino = tipo === "tavolo" ? "tavolo" : "asporto";
   const catCorrente = categorie.find((c) => c.id === categoria);
   const rigaSel = righe.find((r) => r.chiave === selezionata) ?? null;
   const prodottoSel = rigaSel ? prodotti.find((p) => p.id === rigaSel.id_prodotto) : undefined;
@@ -69,10 +70,16 @@ function Cassa() {
   function toccaProdotto(p: ProdottoMenu) {
     setEsito(null);
     const cat = categorie.find((c) => c.id === p.id_categoria);
-    const r = nuovaRiga(p, cat, quantitaDigitata, []);
+    const r = nuovaRiga(p, cat, quantitaDigitata, [], listino);
     setRighe((prev) => aggiungiRiga(prev, r));
     setSelezionata(r.chiave);
     setDigitato("");
+  }
+
+  // Tavolo = listino L3, tutto il resto L1: cambiando tipo si riprezzano le righe già in comanda.
+  function cambiaTipo(t: Tipo) {
+    setTipo(t);
+    setRighe((prev) => riprezzaRighe(prev, prodotti, t === "tavolo" ? "tavolo" : "asporto"));
   }
 
   function toccaRiga(r: RigaOrdine) {
@@ -170,7 +177,7 @@ function Cassa() {
               {prodotti.filter((p) => p.id_categoria === categoria).map((p) => (
                 <button key={p.id} className="tessera" onClick={() => toccaProdotto(p)} style={{ background: chiaro(catCorrente?.colore), flexDirection: "column", gap: 4 }}>
                   <span>{p.nome}</span>
-                  <span style={{ fontWeight: 500, fontSize: 12, textTransform: "none", opacity: .8 }}>{p.prezzo > 0 ? euro(p.prezzo) : "da impostare"}</span>
+                  <span style={{ fontWeight: 500, fontSize: 12, textTransform: "none", opacity: .8 }}>{prezzoDi(p, listino) > 0 ? euro(prezzoDi(p, listino)) : "da impostare"}</span>
                 </button>
               ))}
             </div>
@@ -208,7 +215,7 @@ function Cassa() {
       <aside style={{ width: 340, display: "flex", flexDirection: "column", background: "#fff", borderLeft: "1px solid var(--bordo)" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, padding: 6 }}>
           {TIPI.map((t) => (
-            <button key={t.v} onClick={() => setTipo(t.v)} className={tipo === t.v ? "primario" : ""} style={{ padding: "8px 2px", fontSize: 13 }}>{t.t}</button>
+            <button key={t.v} onClick={() => cambiaTipo(t.v)} className={tipo === t.v ? "primario" : ""} style={{ padding: "8px 2px", fontSize: 13 }}>{t.t}</button>
           ))}
         </div>
         {tipo === "tavolo" && (

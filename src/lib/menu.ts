@@ -9,7 +9,12 @@ export interface CategoriaMenu {
 }
 export interface ProdottoMenu {
   id: string; id_categoria: string | null; nome: string; descrizione: string | null;
-  prezzo: number; foto_url: string | null; visibile_totem: boolean;
+  prezzo: number; prezzo_tavolo: number | null; foto_url: string | null; visibile_totem: boolean;
+}
+/** I listini di Velocissimo: L1 asporto (banco, ritiro, domicilio, totem), L3 tavoli. L2 è per le piattaforme. */
+export type Listino = "asporto" | "tavolo";
+export function prezzoDi(p: ProdottoMenu, listino: Listino) {
+  return listino === "tavolo" && p.prezzo_tavolo != null ? p.prezzo_tavolo : p.prezzo;
 }
 export interface VarianteMenu { id: string; nome: string; prezzo: number; gruppo: string; id_categoria: string | null }
 
@@ -22,12 +27,12 @@ export interface RigaOrdine {
 export async function leggiMenu(soloTotem = false) {
   const supabase = supabaseBrowser();
   let qc = supabase.from("categoria").select("id, nome, ordine, colore, destinazione, visibile_totem").order("ordine");
-  let qp = supabase.from("prodotto").select("id, id_categoria, nome, descrizione, prezzo, foto_url, visibile_totem").eq("attivo", true).order("ordine");
+  let qp = supabase.from("prodotto").select("id, id_categoria, nome, descrizione, prezzo, prezzo_tavolo, foto_url, visibile_totem").eq("attivo", true).order("ordine");
   if (soloTotem) { qc = qc.eq("visibile_totem", true); qp = qp.eq("visibile_totem", true); }
   const [c, p, v] = await Promise.all([qc, qp, supabase.from("variazione").select("id, nome, prezzo, gruppo, id_categoria").order("gruppo").order("nome")]);
   return {
     categorie: (c.data ?? []) as CategoriaMenu[],
-    prodotti: ((p.data ?? []) as ProdottoMenu[]).map((x) => ({ ...x, prezzo: Number(x.prezzo) })),
+    prodotti: ((p.data ?? []) as ProdottoMenu[]).map((x) => ({ ...x, prezzo: Number(x.prezzo), prezzo_tavolo: x.prezzo_tavolo == null ? null : Number(x.prezzo_tavolo) })),
     varianti: ((v.data ?? []) as VarianteMenu[]).map((x) => ({ ...x, prezzo: Number(x.prezzo) })),
     errore: c.error?.message ?? p.error?.message ?? v.error?.message ?? null,
   };
@@ -46,11 +51,19 @@ export function chiaveRiga(idProdotto: string, variazioni: Variazione[]) {
   return idProdotto + "|" + variazioni.map((v) => v.tipo + ":" + v.nome).sort().join(",");
 }
 
-export function nuovaRiga(p: ProdottoMenu, cat: CategoriaMenu | undefined, quantita: number, variazioni: Variazione[]): RigaOrdine {
+export function nuovaRiga(p: ProdottoMenu, cat: CategoriaMenu | undefined, quantita: number, variazioni: Variazione[], listino: Listino = "asporto"): RigaOrdine {
   return {
     chiave: chiaveRiga(p.id, variazioni), id_prodotto: p.id, descrizione: p.nome, quantita,
-    prezzo_unit: p.prezzo, variazioni, destinazione: cat?.destinazione ?? "cucina",
+    prezzo_unit: prezzoDi(p, listino), variazioni, destinazione: cat?.destinazione ?? "cucina",
   };
+}
+
+/** Cambiato il tipo d'ordine (tavolo ↔ asporto) le righe già in comanda prendono il listino nuovo. */
+export function riprezzaRighe(righe: RigaOrdine[], prodotti: ProdottoMenu[], listino: Listino): RigaOrdine[] {
+  return righe.map((r) => {
+    const p = prodotti.find((x) => x.id === r.id_prodotto);
+    return p ? { ...r, prezzo_unit: prezzoDi(p, listino) } : r;
+  });
 }
 
 /** Aggiunge una riga al carrello: se c'è già la stessa (prodotto e varianti), somma le quantità. */
