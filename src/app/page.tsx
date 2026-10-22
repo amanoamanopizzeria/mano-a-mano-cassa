@@ -18,6 +18,10 @@ export default function Home() {
           <strong>Cliente</strong>
           <p className="muto">Cerca dal telefono, scheda, note fisse, indirizzi.</p>
         </Link>
+        <Link href="/cassa/menu" className="carta">
+          <strong>Menù</strong>
+          <p className="muto">Prodotti, varianti e pacchetti.</p>
+        </Link>
         <Link href="/cassa/capacita" className="carta">
           <strong>Capacità</strong>
           <p className="muto">Turni del giorno, pizze e consegne per quarto d&apos;ora, blocchi.</p>
