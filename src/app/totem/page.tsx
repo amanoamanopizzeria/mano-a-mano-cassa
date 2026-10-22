@@ -1,11 +1,12 @@
 "use client";
 
-// Totem self-order per i clienti, stile chiosco McDonald's: schermata d'avvio «Ordina qui»,
-// categorie in colonna a sinistra, schede grandi con foto e prezzo, scheda prodotto con quantità
-// e ingredienti a gruppi, carrello in basso, conferma. Torna all'avvio da solo dopo 90 s fermo.
-// Passa dalla stessa capacità di app, sito e cassa (funzione ordine_da_totem).
-// Il totem vero è in piedi, 9:16 (1080×1920): in verticale le categorie stanno in una striscia
-// in alto e i prodotti su tre colonne; in orizzontale (un tablet appoggiato) la colonna a sinistra.
+// Totem self-order per i clienti, nella veste dell'app iOS «A Mano A Mano Pugliese»:
+// bianco, vino e oro, il bollino, Oswald per i titoli. Avvio «Ordina qui» sulla foto
+// delle mani nell'impasto, categorie con la foto tonda, schede grandi, scheda prodotto
+// con quantità e ingredienti a gruppi, carrello, conferma. Torna all'avvio da solo
+// dopo 90 s fermo. Passa dalla stessa capacità di app, sito e cassa (ordine_da_totem).
+// Il totem vero è in piedi, 9:16: in verticale le categorie stanno in una striscia in
+// alto e i prodotti su tre colonne; in orizzontale (un tablet) la colonna a sinistra.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
@@ -14,9 +15,15 @@ import {
   type CategoriaMenu, type ProdottoMenu, type RigaOrdine, type VarianteMenu,
 } from "@/lib/menu";
 import type { Variazione } from "@/lib/types";
+import "@fontsource/oswald/500.css";
+import "@fontsource/oswald/600.css";
+import "@fontsource/oswald/700.css";
+import "@fontsource/figtree/400.css";
+import "@fontsource/figtree/600.css";
+import "@fontsource/figtree/800.css";
+import "./totem.css";
 
 const FERMO_MS = 90_000;
-const ROSSO = "#c8102e";
 
 /** Vero quando lo schermo è più alto che largo (il totem in piedi). */
 function usaVerticale() {
@@ -49,7 +56,7 @@ function Totem() {
   const [categoria, setCategoria] = useState<string | null>(null);
   const [aperto, setAperto] = useState<ProdottoMenu | null>(null);
   const [carrello, setCarrello] = useState<RigaOrdine[]>([]);
-  const [esito, setEsito] = useState<{ ok: boolean; testo: string } | null>(null);
+  const [esito, setEsito] = useState<{ ok: boolean; testo: string; numero?: number } | null>(null);
   const [invio, setInvio] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const verticale = usaVerticale();
@@ -79,6 +86,7 @@ function Totem() {
   const catCorrente = useMemo(() => categorie.find((c) => c.id === categoria), [categorie, categoria]);
   const articoli = carrello.reduce((s, r) => s + r.quantita, 0);
   const totale = totaleRighe(carrello);
+  const inCategoria = prodotti.filter((p) => p.id_categoria === categoria);
 
   function inizia() {
     setCategoria(categorie[0]?.id ?? null);
@@ -101,7 +109,7 @@ function Totem() {
     setInvio(false);
     if (error) { setEsito({ ok: false, testo: "Non siamo riusciti a inviare l'ordine. Chiedi alla cassa." }); setPasso("fatto"); return; }
     const r = data as { esito: string; numero?: number };
-    if (r.esito === "accettato") { setEsito({ ok: true, testo: `Ordine n. ${r.numero}` }); setCarrello([]); }
+    if (r.esito === "accettato") { setEsito({ ok: true, testo: "Paga e ritira lo scontrino alla cassa.", numero: r.numero }); setCarrello([]); }
     else if (r.esito === "pieno") setEsito({ ok: false, testo: "In questo momento la cucina è al completo. Chiedi alla cassa per un altro orario." });
     else setEsito({ ok: false, testo: "Ordine non inviato. Chiedi alla cassa." });
     setPasso("fatto");
@@ -110,117 +118,105 @@ function Totem() {
   // Dopo l'ordine, torna all'avvio da solo.
   useEffect(() => {
     if (passo !== "fatto") return;
-    const t = setTimeout(ricomincia, 10_000);
+    const t = setTimeout(ricomincia, 12_000);
     return () => clearTimeout(t);
   }, [passo, ricomincia]);
 
   if (passo === "avvio") {
     return (
-      <div className="schermo" onPointerDown={inizia} style={{ alignItems: "center", justifyContent: "center", background: "#fbf7ef", cursor: "pointer" }}>
-        <Logo grande />
-        <div style={{ marginTop: verticale ? 80 : 48, background: ROSSO, color: "#fff", borderRadius: 999, padding: verticale ? "34px 80px" : "26px 56px", fontSize: verticale ? 48 : 34, fontWeight: 800, letterSpacing: 1 }}>
-          ORDINA QUI
+      <div className="schermo totem t-avvio" onPointerDown={inizia}>
+        <img className="foto" src="/brand/impasto-mani.jpg" alt="" />
+        <div className="velo" />
+        <div className="corpo">
+          <img className="bollino" src="/brand/bollino.png" alt="A Mano A Mano Pugliese" />
+          <div className="t-ordina pulsa">Ordina qui</div>
+          <div className="sotto">Tocca lo schermo per iniziare</div>
         </div>
-        <p className="muto" style={{ marginTop: 24, fontSize: verticale ? 26 : 18 }}>Tocca lo schermo per iniziare</p>
       </div>
     );
   }
 
   if (passo === "fatto") {
     return (
-      <div className="schermo" style={{ alignItems: "center", justifyContent: "center", textAlign: "center", padding: 32 }}>
-        <Logo />
-        <div style={{ fontSize: 64, marginTop: 24 }}>{esito?.ok ? "✓" : "!"}</div>
-        <h1 style={{ fontSize: 36, margin: "16px 0 8px" }}>{esito?.ok ? "Grazie!" : "Ops"}</h1>
-        <p style={{ fontSize: 24, maxWidth: 560 }}>{esito?.testo}</p>
-        {esito?.ok && <p style={{ fontSize: 20 }} className="muto">Paga e ritira lo scontrino alla cassa.</p>}
-        <button onClick={ricomincia} style={{ marginTop: 32, fontSize: 20, padding: "14px 28px", borderRadius: 999 }}>Nuovo ordine</button>
+      <div className="schermo totem t-fatto">
+        <img src="/brand/bollino.png" alt="" style={{ width: 160 }} />
+        <div className={"cerchio" + (esito?.ok ? "" : " no")}>{esito?.ok ? "✓" : "!"}</div>
+        <h1>{esito?.ok ? "Grazie!" : "Ops"}</h1>
+        {esito?.numero != null && <div className="numero">Ordine n. {esito.numero}</div>}
+        <p style={{ fontSize: 22, maxWidth: 560, color: "var(--grigio)" }}>{esito?.testo}</p>
+        <button onClick={ricomincia} className="t-b-vino" style={{ marginTop: 28 }}>Nuovo ordine</button>
       </div>
     );
   }
 
   if (passo === "carrello") {
     return (
-      <div className="schermo">
-        <Testata titolo="Il tuo ordine" indietro={() => setPasso("menu")} />
-        <div className="scorri" style={{ flex: 1, padding: "8px 24px" }}>
-          {carrello.length === 0 && <p className="muto" style={{ fontSize: 20 }}>Il carrello è vuoto.</p>}
+      <div className="schermo totem">
+        <Testata indietro={() => setPasso("menu")} />
+        <div className="scorri" style={{ flex: 1, padding: "18px 22px" }}>
+          <h1 className="t-titolo">Il tuo ordine <small>{articoli} {articoli === 1 ? "articolo" : "articoli"}</small></h1>
+          {carrello.length === 0 && <p style={{ fontSize: 20, color: "var(--grigio)" }}>Il carrello è vuoto.</p>}
           {carrello.map((r) => (
-            <div key={r.chiave} className="carta" style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 10, padding: 16 }}>
-              <Foto p={prodotti.find((p) => p.id === r.id_prodotto)} lato={72} />
+            <div key={r.chiave} className="t-riga">
+              <Foto p={prodotti.find((p) => p.id === r.id_prodotto)} classe="foto" />
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 20 }}>{r.descrizione}</div>
-                {r.variazioni.length > 0 && <div className="muto" style={{ fontSize: 15 }}>{r.variazioni.map((v) => v.nome).join(" · ")}</div>}
-                <div style={{ fontSize: 17, marginTop: 4 }}>{euro(prezzoRiga(r))}</div>
+                <div className="nome">{r.descrizione}</div>
+                {r.variazioni.length > 0 && <div className="var">{r.variazioni.map((v) => v.nome).join(" · ")}</div>}
+                <div className="prezzo">{euro(prezzoRiga(r))}</div>
               </div>
               <Contatore n={r.quantita} meno={() => cambiaQuantita(r.chiave, -1)} piu={() => cambiaQuantita(r.chiave, 1)} />
             </div>
           ))}
         </div>
-        <div style={{ padding: 20, borderTop: "1px solid var(--bordo)", background: "#fff", display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ flex: 1 }}>
-            <div className="muto" style={{ fontSize: 15 }}>{articoli} articoli</div>
-            <div style={{ fontSize: 30, fontWeight: 800 }}>{euro(totale)}</div>
-          </div>
-          <button onClick={() => setPasso("menu")} style={{ fontSize: 18, padding: "16px 22px", borderRadius: 999 }}>Aggiungi altro</button>
-          <button onClick={conferma} disabled={carrello.length === 0 || invio} className="primario" style={{ fontSize: 20, padding: "16px 32px", borderRadius: 999, fontWeight: 800 }}>
-            {invio ? "Invio…" : "Conferma ordine"}
+        <div className="t-barra">
+          <button onClick={() => setPasso("menu")} className="t-b-ghost">Aggiungi altro</button>
+          <div className="tot"><small>Totale</small><b>{euro(totale)}</b></div>
+          <button onClick={conferma} disabled={carrello.length === 0 || invio} className="t-b-oro">
+            {invio ? "Invio…" : "Conferma"}
           </button>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="schermo">
-      <div style={{ flex: 1, display: "flex", flexDirection: verticale ? "column" : "row", minHeight: 0 }}>
-        {/* Categorie: striscia in alto se il totem è in piedi, colonna a sinistra se è sdraiato. */}
-        <nav className="scorri" style={verticale
-          ? { display: "flex", gap: 6, padding: "12px 16px", background: "#fff", borderBottom: "1px solid var(--bordo)", overflowX: "auto", overflowY: "hidden", flexShrink: 0, alignItems: "flex-start" }
-          : { width: 150, background: "#fff", borderRight: "1px solid var(--bordo)", padding: "12px 8px" }}>
-          {verticale
-            ? <div style={{ display: "flex", alignItems: "center", paddingRight: 10, alignSelf: "center" }}><Logo piccolo /></div>
-            : <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}><Logo piccolo /></div>}
-          {categorie.map((c) => {
-            const attiva = c.id === categoria;
-            return (
-              <button key={c.id} onClick={() => setCategoria(c.id)} style={{
-                width: verticale ? 128 : "100%", flexShrink: 0, border: "none", background: attiva ? "#fff3f4" : "transparent", borderRadius: 12,
-                padding: "10px 4px", marginBottom: verticale ? 0 : 4, display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                borderLeft: !verticale && attiva ? `4px solid ${ROSSO}` : "4px solid transparent",
-                borderBottom: verticale && attiva ? `5px solid ${ROSSO}` : "5px solid transparent",
-              }}>
-                <Foto p={prodotti.find((p) => p.id_categoria === c.id)} lato={verticale ? 76 : 64} tondo />
-                <span style={{ fontSize: verticale ? 14 : 13, fontWeight: 700, lineHeight: 1.1, textAlign: "center", textTransform: "uppercase" }}>{c.nome}</span>
-              </button>
-            );
-          })}
-        </nav>
+  const strisciaCategorie = (
+    <nav className={verticale ? "t-cat-striscia" : "t-cat-colonna scorri"}>
+      {categorie.map((c) => (
+        <button key={c.id} onClick={() => setCategoria(c.id)} className={"t-cat" + (c.id === categoria ? " attiva" : "")}>
+          <Foto p={prodotti.find((p) => p.id_categoria === c.id && p.foto_url) ?? prodotti.find((p) => p.id_categoria === c.id)} classe="tondo" tondo />
+          <span className="nome">{c.nome}</span>
+        </button>
+      ))}
+    </nav>
+  );
 
-        <section className="scorri" style={{ flex: 1, padding: verticale ? "22px 24px" : "20px 24px" }}>
-          <h1 style={{ fontSize: verticale ? 36 : 30, fontWeight: 800, textTransform: "uppercase", margin: "0 0 16px" }}>{catCorrente?.nome}</h1>
-          <div style={{ display: "grid", gap: verticale ? 18 : 14, gridTemplateColumns: verticale ? "repeat(3, 1fr)" : "repeat(auto-fill, minmax(190px, 1fr))" }}>
-            {prodotti.filter((p) => p.id_categoria === categoria).map((p) => (
-              <button key={p.id} onClick={() => setAperto(p)} className="carta" style={{ padding: 14, textAlign: "left", display: "flex", flexDirection: "column", gap: 8, cursor: "pointer" }}>
-                <Foto p={p} lato={verticale ? 210 : 150} largo />
-                <div style={{ fontWeight: 700, fontSize: verticale ? 20 : 16, textTransform: "uppercase", lineHeight: 1.15 }}>{p.nome}</div>
-                {verticale && p.descrizione && <div className="muto" style={{ fontSize: 14, lineHeight: 1.25, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.descrizione}</div>}
-                <div style={{ fontSize: verticale ? 20 : 16, fontWeight: 700 }}>{p.prezzo > 0 ? euro(p.prezzo) : <span className="muto">prezzo alla cassa</span>}</div>
+  return (
+    <div className="schermo totem">
+      <Testata annulla={ricomincia} />
+      <div style={{ flex: 1, display: "flex", flexDirection: verticale ? "column" : "row", minHeight: 0 }}>
+        {strisciaCategorie}
+        <section className="scorri" style={{ flex: 1, padding: verticale ? "18px 22px 24px" : "18px 24px" }}>
+          <h1 className="t-titolo">{catCorrente?.nome} <small>{inCategoria.length} {inCategoria.length === 1 ? "proposta" : "proposte"}</small></h1>
+          <div className="t-griglia" style={{ gridTemplateColumns: verticale ? "repeat(3, 1fr)" : "repeat(auto-fill, minmax(210px, 1fr))" }}>
+            {inCategoria.map((p) => (
+              <button key={p.id} onClick={() => setAperto(p)} className="t-carta">
+                <Foto p={p} classe="foto" />
+                {catCorrente && /novit/i.test(catCorrente.nome) && <span className="t-etichetta">Novità</span>}
+                <div className="nome">{p.nome}</div>
+                <div className="descr">{p.descrizione ?? ""}</div>
+                <div className="prezzo">
+                  <span>{p.prezzo > 0 ? euro(p.prezzo) : "alla cassa"}</span>
+                  <span className="piu">+</span>
+                </div>
               </button>
             ))}
           </div>
         </section>
       </div>
 
-      <div style={{ padding: verticale ? "18px 24px" : "14px 24px", borderTop: "1px solid var(--bordo)", background: "#fff", display: "flex", alignItems: "center", gap: 16 }}>
-        <button onClick={ricomincia} style={{ fontSize: verticale ? 20 : 16, padding: verticale ? "16px 22px" : "12px 18px", borderRadius: 999 }}>Annulla</button>
-        <div style={{ flex: 1 }}>
-          <div className="muto" style={{ fontSize: verticale ? 17 : 14 }}>Il tuo ordine · {articoli} {articoli === 1 ? "articolo" : "articoli"}</div>
-          <div style={{ fontSize: verticale ? 32 : 26, fontWeight: 800 }}>{euro(totale)}</div>
-        </div>
-        <button onClick={() => setPasso("carrello")} disabled={carrello.length === 0} className="primario" style={{ fontSize: verticale ? 26 : 20, padding: verticale ? "22px 44px" : "16px 32px", borderRadius: 999, fontWeight: 800 }}>
-          Vedi ordine
-        </button>
+      <div className="t-barra">
+        <div className="tot"><small>Il tuo ordine · {articoli} {articoli === 1 ? "articolo" : "articoli"}</small><b>{euro(totale)}</b></div>
+        <button onClick={() => setPasso("carrello")} disabled={carrello.length === 0} className="t-b-oro">Vedi ordine</button>
       </div>
 
       {aperto && (
@@ -248,43 +244,40 @@ function SchedaProdotto({ p, varianti, chiudi, aggiungi }: {
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 10 }} onClick={chiudi}>
-      <div className="schermo" style={{ height: "94dvh", maxWidth: 760, borderRadius: "24px 24px 0 0", background: "#fff" }} onClick={(e) => e.stopPropagation()}>
-        <div className="scorri" style={{ flex: 1, padding: "20px 28px", textAlign: "center" }}>
-          <div style={{ display: "flex", justifyContent: "center" }}><Foto p={p} lato={220} largo /></div>
-          <h2 style={{ fontSize: 28, fontWeight: 800, textTransform: "uppercase", margin: "16px 0 6px" }}>{p.nome}</h2>
-          {p.descrizione && <p className="muto" style={{ fontSize: 17, margin: "0 auto 10px", maxWidth: 520 }}>{p.descrizione}</p>}
-          <div style={{ fontSize: 20, fontWeight: 700 }}>{p.prezzo > 0 ? euro(p.prezzo) : "prezzo alla cassa"}</div>
+    <div className="t-velo" onClick={chiudi}>
+      <div className="t-scheda" onClick={(e) => e.stopPropagation()}>
+        <div className="corpo">
+          <Foto p={p} classe="foto-grande" />
+          <h2>{p.nome}</h2>
+          {p.descrizione && <p className="descr">{p.descrizione}</p>}
+          <div className="prezzo">{p.prezzo > 0 ? euro(p.prezzo) : "prezzo alla cassa"}</div>
 
-          <h3 style={{ fontSize: 22, margin: "28px 0 10px" }}>Quantità</h3>
+          <h3>Quantità</h3>
           <div style={{ display: "flex", justifyContent: "center" }}>
             <Contatore n={q} meno={() => setQ(Math.max(1, q - 1))} piu={() => setQ(q + 1)} grande />
           </div>
 
-          {gruppi.length > 0 && <h3 style={{ fontSize: 22, margin: "32px 0 4px" }}>Aggiungi ingredienti</h3>}
+          {gruppi.length > 0 && <h3 style={{ marginTop: 34 }}>Aggiungi ingredienti</h3>}
           {gruppi.map((g) => (
-            <div key={g} style={{ textAlign: "left", maxWidth: 520, margin: "0 auto" }}>
-              <div style={{ textAlign: "center", fontWeight: 800, fontSize: 13, letterSpacing: 1.5, textTransform: "uppercase", margin: "18px 0 6px" }}>{g}</div>
+            <div key={g} style={{ maxWidth: 560, margin: "0 auto" }}>
+              <div className="t-gruppo">{g}</div>
               {varianti.filter((v) => v.gruppo === g).map((v) => {
                 const on = scelte.some((x) => x.id === v.id);
                 return (
-                  <button key={v.id} onClick={() => alterna(v)} style={{
-                    width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 10px", border: "none",
-                    borderBottom: "1px solid var(--bordo)", background: on ? "#fff3f4" : "transparent", textAlign: "left", fontSize: 17,
-                  }}>
-                    <span style={{ width: 26, height: 26, borderRadius: 999, border: `2px solid ${on ? ROSSO : "#bbb"}`, background: on ? ROSSO : "#fff", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{on ? "✓" : ""}</span>
-                    <span style={{ flex: 1 }}>{v.nome}</span>
-                    <span className="muto" style={{ fontSize: 15 }}>{v.prezzo > 0 ? "+ " + euro(v.prezzo) : ""}</span>
+                  <button key={v.id} onClick={() => alterna(v)} className={"t-opz" + (on ? " on" : "")}>
+                    <span className="spunta">{on ? "✓" : ""}</span>
+                    <span>{v.nome}</span>
+                    <span className="extra">{v.prezzo > 0 ? "+ " + euro(v.prezzo) : ""}</span>
                   </button>
                 );
               })}
             </div>
           ))}
         </div>
-        <div style={{ padding: 18, borderTop: "1px solid var(--bordo)", display: "flex", gap: 12 }}>
-          <button onClick={chiudi} style={{ fontSize: 18, padding: "16px 22px", borderRadius: 999 }}>Annulla</button>
-          <button onClick={() => aggiungi(q, scelte.map((v) => ({ nome: v.nome, prezzo: v.prezzo, tipo: "aggiunta" as const })))} className="primario" style={{ flex: 1, fontSize: 20, padding: 16, borderRadius: 999, fontWeight: 800 }}>
-            Aggiungi all&apos;ordine · {euro((p.prezzo + extra) * q)}
+        <div className="piede">
+          <button onClick={chiudi} className="t-b-linea">Annulla</button>
+          <button onClick={() => aggiungi(q, scelte.map((v) => ({ nome: v.nome, prezzo: v.prezzo, tipo: "aggiunta" as const })))} className="t-b-vino" style={{ flex: 1, fontSize: 22 }}>
+            Aggiungi · {euro((p.prezzo + extra) * q)}
           </button>
         </div>
       </div>
@@ -293,45 +286,35 @@ function SchedaProdotto({ p, varianti, chiudi, aggiungi }: {
 }
 
 function Contatore({ n, meno, piu, grande }: { n: number; meno: () => void; piu: () => void; grande?: boolean }) {
-  const d = grande ? 56 : 44;
-  const tondo = { width: d, height: d, borderRadius: 999, fontSize: grande ? 28 : 22, fontWeight: 700, padding: 0 } as const;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-      <button onClick={meno} style={tondo}>−</button>
-      <span style={{ fontSize: grande ? 30 : 22, fontWeight: 800, minWidth: 32, textAlign: "center" }}>{n}</span>
-      <button onClick={piu} style={{ ...tondo, background: ROSSO, color: "#fff", borderColor: ROSSO }}>+</button>
+    <div className={"t-cont" + (grande ? " grande" : "")}>
+      <button onClick={meno}>−</button>
+      <span>{n}</span>
+      <button onClick={piu} className="piu">+</button>
     </div>
   );
 }
 
-function Testata({ titolo, indietro }: { titolo: string; indietro: () => void }) {
+/** La fascia vino con il logo, come l'app: «← Menù» a sinistra quando si può tornare, «Annulla» quando si ricomincia. */
+function Testata({ indietro, annulla }: { indietro?: () => void; annulla?: () => void }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 24px", background: "#fff", borderBottom: "1px solid var(--bordo)" }}>
-      <button onClick={indietro} style={{ fontSize: 18, borderRadius: 999, padding: "10px 18px" }}>← Menù</button>
-      <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, textTransform: "uppercase" }}>{titolo}</h1>
-    </div>
+    <>
+      <div className="t-testata">
+        {indietro && <button className="indietro" onClick={indietro}>← Menù</button>}
+        {annulla && <button className="indietro" onClick={annulla}>Annulla</button>}
+        <img src="/brand/logo-amanoamano-chiaro.png" alt="A Mano A Mano" />
+      </div>
+      <div className="t-oro-linea" />
+    </>
   );
 }
 
-/** Foto del prodotto, o un disco col colore della pizzeria e l'iniziale finché la foto non c'è. */
-function Foto({ p, lato, largo, tondo }: { p?: ProdottoMenu; lato: number; largo?: boolean; tondo?: boolean }) {
-  const stile = { width: largo ? "100%" : lato, height: lato, borderRadius: tondo ? 999 : 14, objectFit: "cover" as const, flexShrink: 0 };
-  if (p?.foto_url) return <img src={p.foto_url} alt="" style={stile} />;
+/** Foto del prodotto, o un disco oro con l'iniziale finché la foto non c'è. */
+function Foto({ p, classe, tondo }: { p?: ProdottoMenu; classe: string; tondo?: boolean }) {
+  if (p?.foto_url) return <img src={p.foto_url} alt="" className={classe} />;
   return (
-    <div style={{ ...stile, background: "linear-gradient(135deg, #f3e2c7, #e3b98a)", display: "flex", alignItems: "center", justifyContent: "center", color: "#8a5a2b", fontSize: lato / 2.6, fontWeight: 800 }}>
+    <div className={"t-manca" + (tondo ? " tondo" : "")}>
       {(p?.nome ?? "?").replace(/^(la|il|le|i|l')\s+/i, "").charAt(0).toUpperCase()}
-    </div>
-  );
-}
-
-function Logo({ grande, piccolo }: { grande?: boolean; piccolo?: boolean }) {
-  const d = grande ? 220 : piccolo ? 80 : 140;
-  return (
-    <div style={{ width: d, height: d, borderRadius: 999, border: `${grande ? 6 : 3}px solid #1d1b17`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", lineHeight: 1 }}>
-      <div style={{ fontSize: d / 16, letterSpacing: 2 }}>PIZZA ITALIANA</div>
-      <div style={{ fontSize: d / 9, fontWeight: 900, margin: `${d / 30}px 0` }}>A MANO A MANO</div>
-      <div style={{ fontSize: d / 11, fontWeight: 800, color: ROSSO }}>PUGLIESE</div>
-      <div style={{ fontSize: d / 16, letterSpacing: 2 }}>FORNO A LEGNA</div>
     </div>
   );
 }
