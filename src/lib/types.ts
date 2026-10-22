@@ -89,6 +89,41 @@ export interface Consegna {
   note?: string | null;
 }
 
+/** Riga della lista consegne vista dal rider (funzione consegne_rider). */
+export interface ConsegnaRider {
+  id: string;
+  id_ordine: string;
+  stato: StatoConsegna;
+  id_rider?: string | null;
+  numero: number;
+  tipo: TipoOrdine;
+  canale: CanaleOrdine;
+  totale: number;
+  ora_consegna?: string | null;
+  note?: string | null;
+  contanti_da_incassare: number;
+  cliente_nome?: string | null;
+  cliente_telefono?: string | null;
+  via?: string | null;
+  civico?: string | null;
+  cap?: string | null;
+  citta?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  zona?: string | null;
+  righe: { descrizione: string; quantita: number; variazioni: Variazione[] }[];
+}
+
+/** Rider con ultima posizione, per la mappa della cassa (funzione rider_in_mappa). */
+export interface RiderInMappa {
+  id: string;
+  nome: string;
+  lat?: number | null;
+  lng?: number | null;
+  aggiornata_il?: string | null;
+  consegne_in_corso: number;
+}
+
 /** Il totale di un ordine = somma(righe × quantità + variazioni). */
 export function calcolaTotale(righe: OrdineRiga[]): number {
   const tot = righe.reduce((acc, r) => {

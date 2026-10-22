@@ -10,10 +10,14 @@ export default function Home() {
           <strong>Cassa</strong>
           <p className="muto">Ordini in arrivo, stati, stampa comanda.</p>
         </Link>
-        <div className="carta" aria-disabled>
+        <Link href="/rider" className="carta">
           <strong>Rider</strong>
-          <p className="muto">Consegne e mappa live — in arrivo.</p>
-        </div>
+          <p className="muto">Consegne libere, prendi, naviga, consegnato.</p>
+        </Link>
+        <Link href="/cassa/mappa" className="carta">
+          <strong>Mappa rider</strong>
+          <p className="muto">Dove sono i rider, in tempo reale.</p>
+        </Link>
         <div className="carta" aria-disabled>
           <strong>Cliente</strong>
           <p className="muto">Menù e ordini — in arrivo.</p>
