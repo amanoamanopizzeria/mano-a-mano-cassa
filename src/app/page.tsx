@@ -30,6 +30,10 @@ export default function Home() {
           <strong>Totem</strong>
           <p className="muto">Ordina al self-order (profilo totem).</p>
         </Link>
+        <Link href="/cassa/nuovo" className="carta">
+          <strong>Nuovo ordine</strong>
+          <p className="muto">Banco, tavolo, asporto o domicilio: dal menù, alla cucina.</p>
+        </Link>
         <Link href="/cassa/capacita" className="carta">
           <strong>Capacità</strong>
           <p className="muto">Turni del giorno, pizze e consegne per quarto d&apos;ora, blocchi.</p>
