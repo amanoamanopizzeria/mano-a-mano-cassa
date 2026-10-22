@@ -155,6 +155,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
     const r = data as { esito: string; numero?: number };
     if (r.esito === "accettato") { setEsito({ ok: true, testo: pag === "pos" ? "Vai alla cassa e paga col POS: lo scontrino è lì." : "Vai alla cassa e paga in contanti: lo scontrino è lì.", numero: r.numero }); setCarrello([]); }
     else if (r.esito === "pieno") setEsito({ ok: false, testo: "In questo momento la cucina è al completo. Chiedi alla cassa per un altro orario." });
+    else if (r.esito === "fuori_orario") setEsito({ ok: false, testo: "A quest'ora la cucina è chiusa. Chiedi alla cassa." });
     else setEsito({ ok: false, testo: "Ordine non inviato. Chiedi alla cassa." });
     setPasso("fatto");
   }
