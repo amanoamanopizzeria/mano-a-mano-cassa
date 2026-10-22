@@ -76,7 +76,7 @@ function Cassa() {
     setDigitato("");
   }
 
-  // Tavolo = listino L3, tutto il resto L1: cambiando tipo si riprezzano le righe già in comanda.
+  // Tavolo = listino L2 (sala), tutto il resto L1: cambiando tipo si riprezzano le righe già in comanda.
   function cambiaTipo(t: Tipo) {
     setTipo(t);
     setRighe((prev) => riprezzaRighe(prev, prodotti, t === "tavolo" ? "tavolo" : "asporto"));

@@ -11,7 +11,7 @@ export interface ProdottoMenu {
   id: string; id_categoria: string | null; nome: string; descrizione: string | null;
   prezzo: number; prezzo_tavolo: number | null; foto_url: string | null; visibile_totem: boolean;
 }
-/** I listini di Velocissimo: L1 asporto (banco, ritiro, domicilio, totem), L3 tavoli. L2 è per le piattaforme. */
+/** I listini di Velocissimo: L1 asporto (banco, ritiro, domicilio, totem), L2 sala/tavoli, L3 piattaforme (Deliverect). */
 export type Listino = "asporto" | "tavolo";
 export function prezzoDi(p: ProdottoMenu, listino: Listino) {
   return listino === "tavolo" && p.prezzo_tavolo != null ? p.prezzo_tavolo : p.prezzo;

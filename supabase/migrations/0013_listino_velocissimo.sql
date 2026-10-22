@@ -6,8 +6,10 @@
 -- (Applicata sul progetto con apply_migration, nome listino_velocissimo.)
 
 alter table prodotto add column if not exists id_velocissimo int unique;
-alter table prodotto add column if not exists prezzo_tavolo numeric(10,2);        -- listino L3
-alter table prodotto add column if not exists prezzo_piattaforme numeric(10,2);   -- listino L2
+-- Listini di Velocissimo (Edoardo, 22/10/2026, controllato sul menù del QR in sala:
+-- la Margherita in sala è 8,50): L1 = asporto, L2 = sala/tavoli, L3 = piattaforme (Deliverect).
+alter table prodotto add column if not exists prezzo_tavolo numeric(10,2);        -- L2        -- listino L3
+alter table prodotto add column if not exists prezzo_piattaforme numeric(10,2);   -- L3   -- listino L2
 
 -- categorie che mancavano
 with g as (select id, nome from gruppo_categoria)
@@ -201,7 +203,7 @@ with dati(id_velocissimo, nome, categoria, prezzo, l2, l3, descrizione, foto_url
   (280, 'Torriero', 'La nostra cantina', 16.00, 16.00, 16.00, 'Chardonnay bianco cantina vecchia torre', 'https://service.web-app.it/pluto_h725_clienti/A_MANO_A_MANO_PUGLIESE_1686829560/ImgFoto/142299e21034dd0da23cc69e1efb0f33.jpeg', 8)
 )
 insert into prodotto (id_velocissimo, nome, id_categoria, prezzo, prezzo_piattaforme, prezzo_tavolo, descrizione, foto_url, ordine, attivo)
-select d.id_velocissimo, d.nome, c.id, d.prezzo, d.l2, d.l3, d.descrizione, d.foto_url, d.ordine, true
+select d.id_velocissimo, d.nome, c.id, d.prezzo, d.l3, d.l2, d.descrizione, d.foto_url, d.ordine, true
 from dati d join categoria c on c.nome = d.categoria
 on conflict (id_velocissimo) do update set
   nome = excluded.nome, id_categoria = excluded.id_categoria, prezzo = excluded.prezzo,
