@@ -2,7 +2,10 @@
 
 // Home della cassa: si digita il telefono, se il cliente è conosciuto si apre la scheda
 // (nome, indirizzi, note fisse, ultimi ordini); se no si crea al volo.
-import { useState } from "react";
+// Quando il telefono squilla (tabella `chiamata`, scritta da /api/telefono/chiamata) il numero
+// compare da solo e la scheda si apre: riconoscimento del chiamante, come fa oggi la cassa.
+// L'indirizzo si cerca su Google Maps (o OpenStreetMap senza chiave): via, civico, CAP e coordinate.
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 
@@ -10,9 +13,14 @@ interface Scheda {
   esito: "trovato" | "nuovo" | "numero_corto";
   telefono?: string;
   cliente?: { id: string; nome: string | null; telefono: string; note: string | null };
-  indirizzi?: { id: string; via: string; civico: string | null; cap: string | null; citta: string | null }[];
+  indirizzi?: { id: string; via: string; civico: string | null; cap: string | null; citta: string | null; lat: number | null; lng: number | null }[];
   ultimi_ordini?: { numero: number; creato_il: string; totale: number; tipo: string; canale: string }[];
 }
+interface Suggerimento {
+  testo: string; via: string | null; civico: string | null; cap: string | null; citta: string | null;
+  lat: number | null; lng: number | null; place_id: string | null; fonte: "google" | "osm"; km: number | null;
+}
+interface Chiamata { id: string; numero: string; origine: string; ricevuta_il: string }
 
 export default function ClientePagina() {
   return (
@@ -27,33 +35,89 @@ function Cliente() {
   const [scheda, setScheda] = useState<Scheda | null>(null);
   const [nome, setNome] = useState("");
   const [note, setNote] = useState("");
-  const [via, setVia] = useState("");
+  const [cercaVia, setCercaVia] = useState("");
+  const [suggerimenti, setSuggerimenti] = useState<Suggerimento[]>([]);
+  const [fonte, setFonte] = useState<"google" | "osm" | null>(null);
+  const [scelto, setScelto] = useState<Suggerimento | null>(null);
   const [civico, setCivico] = useState("");
+  const [chiamata, setChiamata] = useState<Chiamata | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [salvato, setSalvato] = useState(false);
+  const ultimaRicerca = useRef(0);
 
-  async function cerca() {
-    setErrore(null);
-    setSalvato(false);
-    const { data, error } = await supabaseBrowser().rpc("cerca_cliente", { p_telefono: telefono });
+  const cerca = useCallback(async (numero: string) => {
+    setErrore(null); setSalvato(false);
+    const { data, error } = await supabaseBrowser().rpc("cerca_cliente", { p_telefono: numero });
     if (error) { setErrore(error.message); return; }
     const s = data as Scheda;
     setScheda(s);
     setNome(s.cliente?.nome ?? "");
     setNote(s.cliente?.note ?? "");
+  }, []);
+
+  // Il telefono squilla: il numero arriva in tempo reale e la scheda si apre da sola.
+  useEffect(() => {
+    const supabase = supabaseBrowser();
+    const canale = supabase
+      .channel("chiamate")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chiamata" }, (p) => {
+        const c = p.new as Chiamata;
+        setChiamata(c);
+        setTelefono(c.numero);
+        cerca(c.numero);
+        try { new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ==").play().catch(() => {}); } catch {}
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(canale); };
+  }, [cerca]);
+
+  // Ricerca dell'indirizzo mentre si scrive (dopo 3 lettere, con un piccolo ritardo).
+  useEffect(() => {
+    const q = cercaVia.trim();
+    if (scelto && q === scelto.testo) return;
+    if (q.length < 3) { setSuggerimenti([]); return; }
+    const mio = ++ultimaRicerca.current;
+    const t = setTimeout(async () => {
+      const r = await fetch("/api/indirizzi/cerca?q=" + encodeURIComponent(q));
+      const j = (await r.json()) as { risultati: Suggerimento[]; fonte: "google" | "osm"; errore?: string };
+      if (mio !== ultimaRicerca.current) return;
+      if (j.errore) setErrore("Ricerca indirizzi: " + j.errore);
+      setSuggerimenti(j.risultati ?? []);
+      setFonte(j.fonte ?? null);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [cercaVia, scelto]);
+
+  async function scegli(s: Suggerimento) {
+    let pieno = s;
+    if (s.fonte === "google" && s.place_id && s.lat == null) {
+      const r = await fetch("/api/indirizzi/dettaglio?id=" + encodeURIComponent(s.place_id));
+      if (r.ok) pieno = { ...s, ...(await r.json()) };
+    }
+    setScelto(pieno);
+    setCercaVia(pieno.testo);
+    if (pieno.civico) setCivico(pieno.civico);
+    setSuggerimenti([]);
   }
 
   async function salva() {
     setErrore(null);
-    const { error } = await supabaseBrowser().rpc("salva_cliente", {
+    const via = scelto?.via ?? (cercaVia.trim() || null);
+    const { error } = await supabaseBrowser().rpc("salva_cliente2", {
       p_telefono: telefono, p_nome: nome || null, p_note: note || null,
-      p_via: via || null, p_civico: civico || null, p_cap: null, p_citta: "Roma",
+      p_via: via, p_civico: civico || scelto?.civico || null, p_cap: scelto?.cap ?? null, p_citta: scelto?.citta ?? "Roma",
+      p_lat: scelto?.lat ?? null, p_lng: scelto?.lng ?? null, p_place_id: scelto?.place_id ?? null,
     });
     if (error) { setErrore(error.message); return; }
     setSalvato(true);
-    setVia("");
-    setCivico("");
-    await cerca();
+    setCercaVia(""); setScelto(null); setCivico("");
+    await cerca(telefono);
+  }
+
+  async function provaChiamata() {
+    const n = telefono || "3331234567";
+    const { error } = await supabaseBrowser().rpc("segna_chiamata", { p_numero: n, p_origine: "prova" });
+    if (error) setErrore(error.message);
   }
 
   return (
@@ -61,7 +125,19 @@ function Cliente() {
       <h1>Cassa — cliente</h1>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
-      <form onSubmit={(e) => { e.preventDefault(); cerca(); }} className="carta" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      {chiamata && (
+        <div className="carta" style={{ marginBottom: 12, borderColor: "var(--accento)", background: "#fff3f4", display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 28 }}>📞</span>
+          <div style={{ flex: 1 }}>
+            <strong>Sta chiamando {chiamata.numero}</strong>
+            <div className="muto">{new Date(chiamata.ricevuta_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{chiamata.origine === "prova" ? " · prova" : ""}</div>
+          </div>
+          <a href={"/cassa/nuovo?telefono=" + encodeURIComponent(chiamata.numero)} className="primario" style={{ padding: "8px 14px", borderRadius: 8, background: "var(--accento)", color: "#fff", textDecoration: "none" }}>Prendi l&apos;ordine</a>
+          <button onClick={() => setChiamata(null)}>✕</button>
+        </div>
+      )}
+
+      <form onSubmit={(e) => { e.preventDefault(); cerca(telefono); }} className="carta" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <input
           type="tel"
           inputMode="tel"
@@ -71,6 +147,7 @@ function Cliente() {
           style={{ flex: 1, minWidth: 180, fontSize: 18 }}
         />
         <button className="primario" type="submit">Cerca</button>
+        <button type="button" onClick={provaChiamata} title="Simula una telefonata in arrivo con questo numero">Prova chiamata</button>
       </form>
 
       {scheda?.esito === "numero_corto" && <p className="muto">Numero troppo corto.</p>}
@@ -89,7 +166,12 @@ function Cliente() {
           <h3 style={{ fontSize: 14, marginTop: 12 }}>Indirizzi</h3>
           <ul>
             {(scheda.indirizzi ?? []).map((i) => (
-              <li key={i.id}>{i.via} {i.civico ?? ""} {i.citta ?? ""}</li>
+              <li key={i.id}>
+                {i.via} {i.civico ?? ""} {i.cap ?? ""} {i.citta ?? ""}
+                {i.lat != null && i.lng != null && (
+                  <a className="muto" style={{ marginLeft: 8 }} target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${i.lat},${i.lng}`}>mappa</a>
+                )}
+              </li>
             ))}
             {(scheda.indirizzi ?? []).length === 0 && <li className="muto">Nessun indirizzo</li>}
           </ul>
@@ -108,10 +190,34 @@ function Cliente() {
           <strong>{scheda.esito === "nuovo" ? "Cliente nuovo: crea la scheda" : "Modifica la scheda"}</strong>
           <input placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
           <textarea placeholder="Note fisse (es. citofono rotto, non suonare)" value={note} onChange={(e) => setNote(e.target.value)} />
-          <div style={{ display: "flex", gap: 8 }}>
-            <input placeholder="Via" value={via} onChange={(e) => setVia(e.target.value)} style={{ flex: 3 }} />
-            <input placeholder="Civico" value={civico} onChange={(e) => setCivico(e.target.value)} style={{ flex: 1 }} />
+          <div style={{ position: "relative" }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                placeholder="Via (scrivi e scegli dalla lista)"
+                value={cercaVia}
+                onChange={(e) => { setCercaVia(e.target.value); setScelto(null); }}
+                autoComplete="off"
+                style={{ flex: 3 }}
+              />
+              <input placeholder="Civico" value={civico} onChange={(e) => setCivico(e.target.value)} style={{ flex: 1 }} />
+            </div>
+            {suggerimenti.length > 0 && (
+              <div className="carta" style={{ position: "absolute", left: 0, right: 0, top: "100%", zIndex: 5, padding: 4, boxShadow: "0 8px 24px rgba(0,0,0,.12)" }}>
+                {suggerimenti.map((s, i) => (
+                  <button key={i} type="button" onClick={() => scegli(s)} style={{ display: "flex", width: "100%", textAlign: "left", border: "none", borderRadius: 6, padding: "8px 10px", gap: 8 }}>
+                    <span style={{ flex: 1 }}>{s.testo}</span>
+                    {s.km != null && <span className="muto">{s.km.toFixed(1).replace(".", ",")} km</span>}
+                  </button>
+                ))}
+                <div className="muto" style={{ padding: "4px 10px", fontSize: 11 }}>{fonte === "google" ? "Google Maps" : "OpenStreetMap (senza chiave Google)"}</div>
+              </div>
+            )}
           </div>
+          {scelto && scelto.lat != null && (
+            <div className="muto">
+              {scelto.via ?? scelto.testo}{scelto.cap ? ", " + scelto.cap : ""}{scelto.citta ? " " + scelto.citta : ""} · {scelto.km != null ? `${scelto.km.toFixed(1).replace(".", ",")} km dalla pizzeria` : ""}
+            </div>
+          )}
           <button className="primario" onClick={salva}>{salvato ? "Salvato" : "Salva scheda"}</button>
         </div>
       )}

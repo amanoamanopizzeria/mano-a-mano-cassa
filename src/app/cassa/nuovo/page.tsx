@@ -43,9 +43,26 @@ function Cassa() {
   const [tipo, setTipo] = useState<Tipo>("banco");
   const [idTavolo, setIdTavolo] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  // Il cliente che ha chiamato (da /cassa/cliente, «Prendi l'ordine»): si lega all'ordine.
+  const [cliente, setCliente] = useState<{ id: string; nome: string | null; telefono: string; indirizzo: string | null } | null>(null);
   const [esito, setEsito] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [invio, setInvio] = useState(false);
+
+  useEffect(() => {
+    const tel = new URLSearchParams(window.location.search).get("telefono");
+    if (!tel) return;
+    supabaseBrowser().rpc("cerca_cliente", { p_telefono: tel }).then(({ data }) => {
+      const s = data as { esito: string; cliente?: { id: string; nome: string | null; telefono: string }; indirizzi?: { via: string; civico: string | null }[] } | null;
+      if (s?.esito === "trovato" && s.cliente) {
+        const i = s.indirizzi?.[0];
+        setCliente({ ...s.cliente, indirizzo: i ? `${i.via} ${i.civico ?? ""}`.trim() : null });
+        setTipo("domicilio");
+      } else {
+        setCliente({ id: "", nome: null, telefono: tel, indirizzo: null });
+      }
+    });
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -134,7 +151,7 @@ function Cassa() {
     setErrore(null); setInvio(true);
     const { data, error } = await supabaseBrowser().rpc("ordine_da_cassa", {
       p_tipo: tipo, p_righe: righePerInvio(righe),
-      p_id_tavolo: tipo === "tavolo" ? idTavolo : null, p_id_cliente: null, p_note: note || null,
+      p_id_tavolo: tipo === "tavolo" ? idTavolo : null, p_id_cliente: cliente?.id || null, p_note: note || null,
     });
     setInvio(false);
     if (error) { setErrore(error.message); return; }
@@ -218,6 +235,16 @@ function Cassa() {
             <button key={t.v} onClick={() => cambiaTipo(t.v)} className={tipo === t.v ? "primario" : ""} style={{ padding: "8px 2px", fontSize: 13 }}>{t.t}</button>
           ))}
         </div>
+        {cliente && (
+          <div style={{ margin: "0 6px 6px", padding: "6px 10px", borderRadius: 8, background: "#fff3f4", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
+            <span>📞</span>
+            <div style={{ flex: 1 }}>
+              <b>{cliente.nome ?? "Nuovo cliente"}</b> · {cliente.telefono}
+              {cliente.indirizzo && <div className="muto" style={{ fontSize: 12 }}>{cliente.indirizzo}</div>}
+            </div>
+            <button onClick={() => setCliente(null)} style={{ padding: "2px 8px" }}>✕</button>
+          </div>
+        )}
         {tipo === "tavolo" && (
           <select value={idTavolo ?? ""} onChange={(e) => setIdTavolo(e.target.value || null)} style={{ margin: "0 6px 6px", padding: 8, fontSize: 15 }}>
             <option value="">Scegli il tavolo</option>
