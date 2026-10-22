@@ -4,14 +4,15 @@
 // bianco, vino e oro, il bollino, Oswald per i titoli. Avvio «Ordina qui» sulla foto
 // delle mani nell'impasto, categorie con la foto tonda, schede grandi, scheda prodotto
 // con quantità e ingredienti a gruppi, carrello, conferma. Torna all'avvio da solo
-// dopo 90 s fermo. Passa dalla stessa capacità di app, sito e cassa (ordine_da_totem).
+// dopo 90 s fermo. Passa dalla stessa capacità di app, sito e cassa (ordine_da_totem_api).
+// Non ha un utente (Edoardo, 23/10/2026): è un ordine al banco che il cliente fa da solo. Si attiva
+// una volta con un codice (resta nel browser del totem), alla fine chiede il nome e contanti o POS.
 // Il totem vero è in piedi, 9:16: in verticale le categorie stanno in una striscia in
 // alto e i prodotti su tre colonne; in orizzontale (un tablet) la colonna a sinistra.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import AuthGate from "@/components/AuthGate";
 import {
-  aggiungiRiga, euro, gruppiDi, leggiMenu, nuovaRiga, prezzoRiga, righePerInvio, totaleRighe, variantiPer,
+  aggiungiRiga, euro, gruppiDi, nuovaRiga, prezzoRiga, righePerInvio, totaleRighe, variantiPer,
   type CategoriaMenu, type ProdottoMenu, type RigaOrdine, type VarianteMenu,
 } from "@/lib/menu";
 import type { Variazione } from "@/lib/types";
@@ -38,17 +39,51 @@ function usaVerticale() {
   return verticale;
 }
 
+const CHIAVE_LS = "totem:chiave";
+
 export default function TotemPagina() {
+  const [chiave, setChiave] = useState<string | null>(null);
+  const [pronto, setPronto] = useState(false);
+  useEffect(() => {
+    try { setChiave(localStorage.getItem(CHIAVE_LS)); } catch {}
+    setPronto(true);
+  }, []);
+  if (!pronto) return null;
+  if (!chiave) return <Attivazione fatto={(c) => { try { localStorage.setItem(CHIAVE_LS, c); } catch {} setChiave(c); }} />;
+  return <Totem chiave={chiave} disattiva={() => { try { localStorage.removeItem(CHIAVE_LS); } catch {} setChiave(null); }} />;
+}
+
+/** La prima volta: il codice di attivazione (lo ha Edoardo). Da qui in poi il totem parte da solo. */
+function Attivazione({ fatto }: { fatto: (c: string) => void }) {
+  const [codice, setCodice] = useState("");
+  const [errore, setErrore] = useState<string | null>(null);
+  const [verifica, setVerifica] = useState(false);
+  async function conferma() {
+    setVerifica(true); setErrore(null);
+    const c = codice.trim().toUpperCase();
+    const { data, error } = await supabaseBrowser().rpc("totem_chiave_valida", { p_chiave: c });
+    setVerifica(false);
+    if (error || !data) { setErrore("Codice non valido."); return; }
+    fatto(c);
+  }
   return (
-    <AuthGate barra={false}>
-      <Totem />
-    </AuthGate>
+    <div className="schermo totem t-fatto">
+      <img src="/brand/bollino.png" alt="" style={{ width: 150 }} />
+      <h1 style={{ fontSize: 32 }}>Attiva questo totem</h1>
+      <p style={{ color: "var(--grigio)", fontSize: 18, maxWidth: 420 }}>Scrivi il codice di attivazione. Si fa una volta sola.</p>
+      <input value={codice} onChange={(e) => setCodice(e.target.value)} placeholder="XXXX-XXXX-XXXX" autoFocus
+        style={{ fontSize: 28, textAlign: "center", letterSpacing: 4, padding: 12, borderRadius: 12, border: "2px solid var(--linea)", width: 340, textTransform: "uppercase", fontFamily: "inherit" }}
+        onKeyDown={(e) => { if (e.key === "Enter") conferma(); }} />
+      {errore && <p style={{ color: "var(--vino)", fontWeight: 700 }}>{errore}</p>}
+      <button onClick={conferma} disabled={verifica || codice.length < 8} className="t-b-vino" style={{ marginTop: 20 }}>{verifica ? "Controllo…" : "Attiva"}</button>
+    </div>
   );
 }
 
-type Passo = "avvio" | "menu" | "carrello" | "fatto";
+type Passo = "avvio" | "menu" | "carrello" | "nome" | "pagamento" | "fatto";
+type Pagamento = "contanti" | "pos";
 
-function Totem() {
+function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void }) {
   const [categorie, setCategorie] = useState<CategoriaMenu[]>([]);
   const [prodotti, setProdotti] = useState<ProdottoMenu[]>([]);
   const [varianti, setVarianti] = useState<VarianteMenu[]>([]);
@@ -58,18 +93,24 @@ function Totem() {
   const [carrello, setCarrello] = useState<RigaOrdine[]>([]);
   const [esito, setEsito] = useState<{ ok: boolean; testo: string; numero?: number } | null>(null);
   const [invio, setInvio] = useState(false);
+  const [nome, setNome] = useState("");
+  const [pagamento, setPagamento] = useState<Pagamento | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const verticale = usaVerticale();
 
   useEffect(() => {
-    leggiMenu(true).then((m) => {
-      setCategorie(m.categorie.filter((c) => m.prodotti.some((p) => p.id_categoria === c.id)));
-      setProdotti(m.prodotti); setVarianti(m.varianti);
+    supabaseBrowser().rpc("totem_menu", { p_chiave: chiave }).then(({ data, error }) => {
+      if (error) { if (error.code === "42501") disattiva(); return; }
+      const m = data as { categorie: CategoriaMenu[]; prodotti: ProdottoMenu[]; varianti: VarianteMenu[] };
+      const prodotti = m.prodotti.map((x) => ({ ...x, prezzo: Number(x.prezzo), prezzo_tavolo: x.prezzo_tavolo == null ? null : Number(x.prezzo_tavolo) }));
+      setCategorie(m.categorie.filter((c) => prodotti.some((p) => p.id_categoria === c.id)));
+      setProdotti(prodotti);
+      setVarianti(m.varianti.map((x) => ({ ...x, prezzo: Number(x.prezzo) })));
     });
-  }, []);
+  }, [chiave, disattiva]);
 
   const ricomincia = useCallback(() => {
-    setPasso("avvio"); setCarrello([]); setAperto(null); setEsito(null);
+    setPasso("avvio"); setCarrello([]); setAperto(null); setEsito(null); setNome(""); setPagamento(null);
   }, []);
 
   // Fermo per 90 secondi: si torna all'avvio, come i chioschi dei fast food.
@@ -103,13 +144,16 @@ function Totem() {
     setCarrello((prev) => prev.map((r) => (r.chiave === chiave ? { ...r, quantita: r.quantita + delta } : r)).filter((r) => r.quantita > 0));
   }
 
-  async function conferma() {
+  async function conferma(pag: Pagamento) {
+    setPagamento(pag);
     setInvio(true);
-    const { data, error } = await supabaseBrowser().rpc("ordine_da_totem", { p_righe: righePerInvio(carrello) });
+    const { data, error } = await supabaseBrowser().rpc("ordine_da_totem_api", {
+      p_chiave: chiave, p_righe: righePerInvio(carrello), p_nome: nome, p_pagamento: pag,
+    });
     setInvio(false);
     if (error) { setEsito({ ok: false, testo: "Non siamo riusciti a inviare l'ordine. Chiedi alla cassa." }); setPasso("fatto"); return; }
     const r = data as { esito: string; numero?: number };
-    if (r.esito === "accettato") { setEsito({ ok: true, testo: "Paga e ritira lo scontrino alla cassa.", numero: r.numero }); setCarrello([]); }
+    if (r.esito === "accettato") { setEsito({ ok: true, testo: pag === "pos" ? "Vai alla cassa e paga col POS: lo scontrino è lì." : "Vai alla cassa e paga in contanti: lo scontrino è lì.", numero: r.numero }); setCarrello([]); }
     else if (r.esito === "pieno") setEsito({ ok: false, testo: "In questo momento la cucina è al completo. Chiedi alla cassa per un altro orario." });
     else setEsito({ ok: false, testo: "Ordine non inviato. Chiedi alla cassa." });
     setPasso("fatto");
@@ -141,7 +185,7 @@ function Totem() {
       <div className="schermo totem t-fatto">
         <img src="/brand/bollino.png" alt="" style={{ width: 160 }} />
         <div className={"cerchio" + (esito?.ok ? "" : " no")}>{esito?.ok ? "✓" : "!"}</div>
-        <h1>{esito?.ok ? "Grazie!" : "Ops"}</h1>
+        <h1>{esito?.ok ? (nome ? `Grazie ${nome}!` : "Grazie!") : "Ops"}</h1>
         {esito?.numero != null && <div className="numero">Ordine n. {esito.numero}</div>}
         <p style={{ fontSize: 22, maxWidth: 560, color: "var(--grigio)" }}>{esito?.testo}</p>
         <button onClick={ricomincia} className="t-b-vino" style={{ marginTop: 28 }}>Nuovo ordine</button>
@@ -171,9 +215,48 @@ function Totem() {
         <div className="t-barra">
           <button onClick={() => setPasso("menu")} className="t-b-ghost">Aggiungi altro</button>
           <div className="tot"><small>Totale</small><b>{euro(totale)}</b></div>
-          <button onClick={conferma} disabled={carrello.length === 0 || invio} className="t-b-oro">
-            {invio ? "Invio…" : "Conferma"}
+          <button onClick={() => setPasso("nome")} disabled={carrello.length === 0} className="t-b-oro">
+            Avanti
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (passo === "nome") {
+    return (
+      <div className="schermo totem">
+        <Testata indietro={() => setPasso("carrello")} />
+        <div className="t-nome">
+          <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Come ti chiami?</h1>
+          <p style={{ color: "var(--grigio)", fontSize: 19, margin: "0 0 18px" }}>Ti chiamiamo con questo nome quando l&apos;ordine è pronto.</p>
+          <div className="campo">{nome || <span style={{ color: "#bbb" }}>Il tuo nome</span>}</div>
+          <Tastiera testo={nome} cambia={setNome} />
+        </div>
+        <div className="t-barra">
+          <div className="tot"><small>{articoli} {articoli === 1 ? "articolo" : "articoli"}</small><b>{euro(totale)}</b></div>
+          <button onClick={() => setPasso("pagamento")} disabled={nome.trim().length < 2} className="t-b-oro">Avanti</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (passo === "pagamento") {
+    return (
+      <div className="schermo totem">
+        <Testata indietro={() => setPasso("nome")} />
+        <div className="t-nome">
+          <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Come vuoi pagare?</h1>
+          <p style={{ color: "var(--grigio)", fontSize: 19, margin: "0 0 26px" }}>Si paga alla cassa, quando ritiri. Totale <b style={{ color: "var(--vino)" }}>{euro(totale)}</b>.</p>
+          <div className="t-paga">
+            <button onClick={() => conferma("contanti")} disabled={invio} className={pagamento === "contanti" ? "on" : ""}>
+              <span className="icona">💶</span><span>Contanti</span>
+            </button>
+            <button onClick={() => conferma("pos")} disabled={invio} className={pagamento === "pos" ? "on" : ""}>
+              <span className="icona">💳</span><span>Carta · POS</span>
+            </button>
+          </div>
+          {invio && <p style={{ color: "var(--grigio)", fontSize: 18, marginTop: 20 }}>Invio l&apos;ordine…</p>}
         </div>
       </div>
     );
@@ -315,6 +398,25 @@ function Foto({ p, classe, tondo }: { p?: ProdottoMenu; classe: string; tondo?: 
   return (
     <div className={"t-manca" + (tondo ? " tondo" : "")}>
       {(p?.nome ?? "?").replace(/^(la|il|le|i|l')\s+/i, "").charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
+/** Tastiera sullo schermo: il totem non ha quella vera. */
+function Tastiera({ testo, cambia }: { testo: string; cambia: (t: string) => void }) {
+  const file = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+  const scrivi = (c: string) => { if (testo.length < 20) cambia(testo + (testo.length === 0 || testo.endsWith(" ") ? c : c.toLowerCase())); };
+  return (
+    <div className="t-tastiera">
+      {file.map((f, i) => (
+        <div key={i} className="fila" style={{ paddingLeft: i * 18 }}>
+          {f.split("").map((c) => <button key={c} onClick={() => scrivi(c)}>{c}</button>)}
+          {i === 2 && <button className="largo" onClick={() => cambia(testo.slice(0, -1))}>⌫</button>}
+        </div>
+      ))}
+      <div className="fila">
+        <button className="spazio" onClick={() => { if (testo && !testo.endsWith(" ")) cambia(testo + " "); }}>spazio</button>
+      </div>
     </div>
   );
 }

@@ -24,7 +24,7 @@ language sql stable security definer set search_path = public, extensions, pg_te
     (to_timestamp(floor(extract(epoch from coalesce(o.ora_consegna, o.creato_il)) / 900) * 900) at time zone 'Europe/Rome')::time as fascia,
     o.id, o.numero, o.tipo, o.canale, o.stato, o.ora_consegna, o.creato_il, o.totale,
     coalesce((select sum(r.quantita) from ordine_riga r where r.id_ordine = o.id and r.destinazione = 'cucina'), 0)::int as pizze,
-    c.nome, c.telefono,
+    coalesce(c.nome, o.nome_cliente), c.telefono,
     case when i.id is null then null else trim(concat_ws(' ', i.via, i.civico)) end as indirizzo,
     o.note
   from ordine o
