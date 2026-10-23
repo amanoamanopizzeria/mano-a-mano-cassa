@@ -89,6 +89,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
   const [varianti, setVarianti] = useState<VarianteMenu[]>([]);
   const [gruppiCat, setGruppiCat] = useState<GruppoCategoria[]>([]);
   const [pacchetti, setPacchetti] = useState<PacchettoGruppo[]>([]);
+  const [orario, setOrario] = useState<{ dalle: string; alle: string; aperto: boolean } | null>(null);
   const [passo, setPasso] = useState<Passo>("avvio");
   const [categoria, setCategoria] = useState<string | null>(null);
   const [aperto, setAperto] = useState<ProdottoMenu | null>(null);
@@ -103,13 +104,14 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
   useEffect(() => {
     supabaseBrowser().rpc("totem_menu", { p_chiave: chiave }).then(({ data, error }) => {
       if (error) { if (error.code === "42501") disattiva(); return; }
-      const m = data as { categorie: CategoriaMenu[]; prodotti: ProdottoMenu[]; varianti: VarianteMenu[]; gruppi?: GruppoCategoria[]; pacchetti?: PacchettoGruppo[] };
+      const m = data as { categorie: CategoriaMenu[]; prodotti: ProdottoMenu[]; varianti: VarianteMenu[]; gruppi?: GruppoCategoria[]; pacchetti?: PacchettoGruppo[]; orario?: { dalle: string; alle: string; aperto: boolean } | null };
       const prodotti = m.prodotti.map((x) => ({ ...x, prezzo: Number(x.prezzo), prezzo_tavolo: x.prezzo_tavolo == null ? null : Number(x.prezzo_tavolo) }));
       setCategorie(m.categorie.filter((c) => prodotti.some((p) => p.id_categoria === c.id)));
       setProdotti(prodotti);
       setVarianti(m.varianti.map((x) => ({ ...x, prezzo: Number(x.prezzo) })));
       setGruppiCat(m.gruppi ?? []);
       setPacchetti(m.pacchetti ?? []);
+      setOrario(m.orario ?? null);
     });
   }, [chiave, disattiva]);
 
@@ -133,7 +135,10 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
   const totale = totaleRighe(carrello);
   const inCategoria = prodotti.filter((p) => p.id_categoria === categoria);
 
+  // Fuori orario il totem lo dice all'avvio e non fa cominciare (critico giro 3, n. 6: lo diceva dopo venti tocchi).
+  const chiuso = orario != null && !orario.aperto;
   function inizia() {
+    if (chiuso) return;
     setCategoria(categorie[0]?.id ?? null);
     setPasso("menu");
   }
@@ -180,9 +185,19 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
         <img className="logo-alto" src="/brand/logo-amanoamano-chiaro.png" alt="" />
         <div className="corpo t-entra">
           <img className="bollino" src="/brand/bollino.png" alt="A Mano A Mano Pugliese" />
-          <div className="t-ordina pulsa">Ordina qui</div>
-          <div className="sotto"><span>Tocca lo schermo per iniziare</span><span className="freccia" /></div>
-          <div className="lapide">Ordina e ritira al banco</div>
+          {chiuso ? (
+            <>
+              <div className="t-ordina">Siamo chiusi</div>
+              <div className="sotto"><span>La cucina apre alle {orario!.dalle.slice(0, 5)}</span></div>
+              <div className="lapide">Torna a trovarci</div>
+            </>
+          ) : (
+            <>
+              <div className="t-ordina pulsa">Ordina qui</div>
+              <div className="sotto"><span>Tocca lo schermo per iniziare</span><span className="freccia" /></div>
+              <div className="lapide">Ordina e ritira al banco</div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -466,9 +481,10 @@ function Testata({ indietro, annulla }: { indietro?: () => void; annulla?: () =>
 /** Foto del prodotto, o un disco oro con l'iniziale finché la foto non c'è. */
 function Foto({ p, classe, tondo }: { p?: ProdottoMenu; classe: string; tondo?: boolean }) {
   if (p?.foto_url) return <img src={p.foto_url} alt="" className={classe} />;
+  // Senza foto: il bollino, non l'iniziale (il critico leggeva «CBurgeria», «SInsalate»).
   return (
-    <div className={"t-manca" + (tondo ? " tondo" : "")}>
-      {(p?.nome ?? "?").replace(/^(la|il|le|i|l')\s+/i, "").charAt(0).toUpperCase()}
+    <div className={"t-manca" + (tondo ? " tondo" : "")} aria-hidden>
+      <img src="/brand/bollino.png" alt="" style={{ width: tondo ? "70%" : "45%", opacity: .55 }} />
     </div>
   );
 }

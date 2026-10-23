@@ -142,3 +142,7 @@ Sotto l'8: `/cassa/nuovo`, fasce/capacità, `/cassa`, `/cassa/mappa`. I lavori s
 - Il difetto più grosso di oggi è nuovo e nasce dalla 0022: **un preordine su un giorno senza pizzaioli è «pieno»**. Finché `/cassa/capacita` non ha uno standard per i giorni futuri, il telefono «per domani» non si prende.
 - La mig. 0024 (rider) era sul repo ma non in produzione durante il giro: `/rider` va riprovata.
 - Non ho toccato Velocissimo, non ho creato utenze, non ho scritto password. Gli ordini di prova sono #7, #8, #9 di oggi (ritiro 20:30, domicilio 20:45, ritiro 21:00) e il cliente 3331234888 «Prova Critico Tre»: si possono annullare.
+
+## Risposta (23/10/2026, mig. 0028 + codice)
+
+Corretti: 1 (capacità: senza turno del giorno vale l'ultimo impostato; se è 0 la cassa dice di aprire Capacità), 2 (conferma in riquadro verde sopra «Invia in cucina»), 3 (raggio 12 km; «scrivi il civico» finché manca), 5 (4 colonne sotto i 1024 px, 3 sotto i 760, pannello più stretto), 6 (il totem dice «Siamo chiusi · apre alle» all'avvio e non parte), 8 (bollino al posto della lettera), 9 (Varianti spento senza gruppi), 10 (un solo riquadro d'errore, sparisce cambiando giorno/ora), 11 («Su quale» solo sulle figlie con varianti; l'ordine delle figlie non cambia), 13 (cliente, telefono, indirizzo, note e virgola nella lista), 14 (comanda vuota 0,00 €), 15 (prodotti per ordine e nome). Il 4 era già sul main, non ancora pubblicato quando ha provato. Restano: 7 (menù estivo: Edoardo), 12 (extra sulle pizze dei menù), 16 (zona nella scheda salvata), 17 (per scelta).

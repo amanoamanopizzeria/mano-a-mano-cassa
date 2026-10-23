@@ -259,7 +259,9 @@ function Cliente() {
               {scelto.zona !== undefined && (
                 scelto.zona
                   ? <div style={{ color: "var(--ok)", fontWeight: 600 }}>Zona {scelto.zona.nome} · consegna {scelto.zona.costo_consegna.toFixed(2).replace(".", ",")} € · minimo {scelto.zona.minimo_ordine.toFixed(0)} €</div>
-                  : <div style={{ color: "var(--accento)", fontWeight: 700 }}>Fuori dalle zone di consegna: non consegniamo qui.</div>
+                  : civico.trim() === "" && !scelto.civico
+                    ? <div style={{ color: "var(--muto)", fontWeight: 600 }}>Scrivi il civico: la zona si decide sul portone, non sulla via.</div>
+                    : <div style={{ color: "var(--accento)", fontWeight: 700 }}>Fuori dalle zone di consegna: non consegniamo qui.</div>
               )}
             </div>
           )}

@@ -17,7 +17,7 @@ export interface IndirizzoTrovato {
 }
 
 export const PIZZERIA = { lat: 41.9176, lng: 12.5037 }; // Via Novara 5/7, 00198 Roma
-const RAGGIO_M = 20_000;
+const RAGGIO_M = 12_000;   // le zone arrivano a ~6 km; a 20 km entravano Frascati e Monterotondo (critico giro 3)
 
 export function chiaveGoogle() {
   return process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || null;

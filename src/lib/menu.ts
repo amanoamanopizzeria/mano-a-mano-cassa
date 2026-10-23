@@ -39,7 +39,7 @@ export interface RigaOrdine {
 export async function leggiMenu(soloTotem = false) {
   const supabase = supabaseBrowser();
   let qc = supabase.from("categoria").select("id, nome, ordine, colore, destinazione, visibile_totem").order("ordine");
-  let qp = supabase.from("prodotto").select("id, id_categoria, nome, descrizione, prezzo, prezzo_tavolo, foto_url, visibile_totem, incluso").eq("attivo", true).order("ordine");
+  let qp = supabase.from("prodotto").select("id, id_categoria, nome, descrizione, prezzo, prezzo_tavolo, foto_url, visibile_totem, incluso").eq("attivo", true).order("ordine").order("nome");
   if (soloTotem) { qc = qc.eq("visibile_totem", true); qp = qp.eq("visibile_totem", true); }
   const [c, p, v, g, pg] = await Promise.all([
     qc, qp,

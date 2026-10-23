@@ -52,3 +52,9 @@ button.primario { background: var(--accento); color: #fff; border-color: var(--a
 }
 .tessera:active { filter: brightness(.9); }
 .scorri { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+/* La cassa touch: 6 colonne su un monitor, 4 su un tablet, 3 sotto i 700 px; il pannello della comanda si stringe
+   (critico giro 1 n. 8 e giro 3 n. 5: a 640 px le categorie finivano sotto il pannello). */
+.cassa-nuovo { --colonne: 6; }
+.cassa-comanda { width: 340px; flex: none; }
+@media (max-width: 1024px) { .cassa-nuovo { --colonne: 4; } .cassa-comanda { width: 300px; } }
+@media (max-width: 760px) { .cassa-nuovo { --colonne: 3; } .cassa-comanda { width: 250px; } .cassa-nuovo .tessera { font-size: 12px; min-height: 56px; padding: 6px 4px; } }

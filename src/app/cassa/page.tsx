@@ -11,7 +11,12 @@ import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine } from "@/lib/types";
 // cassa): si apre la pagina /cassa/comanda/<id>?stampa=1 in un riquadro nascosto e quella chiama
 // window.print(). Col Chrome della cassa avviato con --kiosk-printing esce senza chiedere.
 const STAMPA_LS = "cassa:stampa-automatica";
-type OrdineCassa = Ordine & { nome_cliente?: string | null; pagamento?: "contanti" | "pos" | null };
+type OrdineCassa = Ordine & {
+  nome_cliente?: string | null; pagamento?: "contanti" | "pos" | null;
+  cliente?: { nome: string | null; telefono: string | null; note: string | null } | null;
+  indirizzo?: { via: string; civico: string | null } | null;
+};
+const euro = (n: number) => Number(n).toFixed(2).replace(".", ",") + " €";
 
 const ETICHETTE: Record<StatoOrdine, string> = {
   ricevuto: "Ricevuto",
@@ -39,6 +44,10 @@ function Cassa() {
 
   useEffect(() => { try { setStampaAuto(localStorage.getItem(STAMPA_LS) === "1"); } catch {} }, []);
   function cambiaStampaAuto(v: boolean) { setStampaAuto(v); try { localStorage.setItem(STAMPA_LS, v ? "1" : "0"); } catch {} }
+  function completa(id: string) {
+    supabaseBrowser().from("ordine").select("*, cliente(nome, telefono, note), indirizzo(via, civico)").eq("id", id).maybeSingle()
+      .then(({ data }) => { if (data) setOrdini((prev) => prev.map((o) => (o.id === id ? (data as OrdineCassa) : o))); });
+  }
   function stampa(id: string) { setInStampa((p) => (p.includes(id) ? p : [...p, id])); setTimeout(() => setInStampa((p) => p.filter((x) => x !== id)), 15_000); }
 
   useEffect(() => {
@@ -50,7 +59,7 @@ function Cassa() {
 
     supabase
       .from("ordine")
-      .select("*")
+      .select("*, cliente(nome, telefono, note), indirizzo(via, civico)")
       .order("creato_il", { ascending: false })
       .limit(100)
       .then(({ data, error }) => {
@@ -69,11 +78,12 @@ function Cassa() {
             if (payload.eventType === "INSERT") {
               const n = payload.new as OrdineCassa;
               try { if (localStorage.getItem(STAMPA_LS) === "1") stampa(n.id); } catch {}
+              completa(n.id);   // il realtime non porta cliente e indirizzo: si rileggono
               return [n, ...prev];
             }
             if (payload.eventType === "UPDATE") {
-              const n = payload.new as Ordine;
-              return prev.map((o) => (o.id === n.id ? n : o));
+              const n = payload.new as OrdineCassa;
+              return prev.map((o) => (o.id === n.id ? { ...o, ...n } : o));
             }
             if (payload.eventType === "DELETE") {
               const v = payload.old as Partial<Ordine>;
@@ -137,13 +147,15 @@ function Cassa() {
                 </>
               )}
             </div>
-            {(o.nome_cliente || o.pagamento) && (
+            {(o.cliente?.nome || o.nome_cliente || o.cliente?.telefono || o.pagamento) && (
               <div style={{ marginTop: 6, fontWeight: 600 }}>
-                {o.nome_cliente}{o.nome_cliente && o.pagamento && " · "}{o.pagamento === "pos" ? "POS" : o.pagamento === "contanti" ? "contanti" : ""}
+                {o.cliente?.nome ?? o.nome_cliente}{o.cliente?.telefono && <span className="muto" style={{ fontWeight: 400 }}> · {o.cliente.telefono}</span>}{o.pagamento && ` · ${o.pagamento === "pos" ? "POS" : "contanti"}`}
               </div>
             )}
+            {o.indirizzo && <div>{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
+            {o.cliente?.note && <div style={{ fontSize: 13, padding: "2px 6px", borderRadius: 6, background: "#fff3c4" }}>⚠ {o.cliente.note}</div>}
             <div style={{ margin: "8px 0", fontSize: 18 }}>
-              {o.totale.toFixed(2)} €
+              {euro(o.totale)}
             </div>
             {o.note && <div className="muto">Note: {o.note}</div>}
             <div className="muto" style={{ fontSize: 12 }}>
