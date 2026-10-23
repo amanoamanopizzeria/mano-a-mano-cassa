@@ -92,12 +92,12 @@ function Rider() {
   const daSaldare = consegne.filter((c) => c.stato === "consegnata");
 
   return (
-    <main>
+    <main className="rider">
       <h1>Rider — consegne</h1>
       <p className="muto">{gps}</p>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
-      <h2 style={{ fontSize: 16 }}>Le mie ({mie.length})</h2>
+      <h2>Le mie ({mie.length})</h2>
       {mie.length === 0 && <p className="muto">Nessuna consegna in corso.</p>}
       <div className="griglia">
         {mie.map((c) => (
@@ -112,7 +112,7 @@ function Rider() {
         ))}
       </div>
 
-      <h2 style={{ fontSize: 16, marginTop: 20 }}>Disponibili ({libere.length})</h2>
+      <h2 style={{ marginTop: 24 }}>Disponibili ({libere.length})</h2>
       {libere.length === 0 && <p className="muto">Nessuna consegna libera. Quando arriva, compare qui.</p>}
       <div className="griglia">
         {libere.map((c, i) => (
@@ -122,7 +122,7 @@ function Rider() {
         ))}
       </div>
 
-      <h2 style={{ fontSize: 16, marginTop: 20 }}>Da saldare alla cassa ({daSaldare.length})</h2>
+      <h2 style={{ marginTop: 24 }}>Da saldare alla cassa ({daSaldare.length})</h2>
       {borsello && (
         <p className="muto">
           Hai in mano <b style={{ color: "var(--testo)" }}>{euro(borsello.in_mano)}</b>
@@ -135,7 +135,7 @@ function Rider() {
         {daSaldare.map((c) => (
           <article key={c.id} className="carta" style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
             <span><strong>#{c.numero}</strong> <span className="muto">{c.consegnata_il ? new Date(c.consegnata_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : ""} · {[c.via, c.civico].filter(Boolean).join(" ")}</span></span>
-            <span style={{ fontWeight: 700 }}>{euro(Number(c.contanti_da_incassare))}</span>
+            <span style={{ fontWeight: 800, fontSize: 20, color: "var(--vino)", whiteSpace: "nowrap" }}>{euro(Number(c.contanti_da_incassare))}</span>
           </article>
         ))}
       </div>
@@ -153,7 +153,7 @@ function SchedaConsegna({ c, children }: { c: ConsegnaRider; children: React.Rea
   return (
     <article className="carta">
       <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <strong>#{c.numero}</strong>
+        <strong style={{ fontSize: 22, fontFamily: "Oswald, sans-serif", fontWeight: 600 }}>#{c.numero}</strong>
         <span className={`badge ${c.stato === "da_assegnare" ? "ricevuto" : "in_consegna"}`}>{c.stato.replace("_", " ")}</span>
       </div>
       <div className="muto">
@@ -162,10 +162,10 @@ function SchedaConsegna({ c, children }: { c: ConsegnaRider; children: React.Rea
           ? "per le " + new Date(c.ora_consegna).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
           : "appena pronto"}
       </div>
-      {indirizzo && <div style={{ marginTop: 6 }}>{indirizzo}</div>}
+      {indirizzo && <div style={{ marginTop: 6, fontSize: 20, fontWeight: 700, lineHeight: 1.25 }}>{indirizzo}</div>}
       {c.cliente_nome && <div className="muto">{c.cliente_nome}</div>}
-      {c.cliente_note && <div style={{ marginTop: 4, padding: "4px 8px", borderRadius: 6, background: "#fff3c4", fontSize: 14 }}>⚠ {c.cliente_note}</div>}
-      <div style={{ margin: "8px 0", fontSize: 18 }}>
+      {c.cliente_note && <div style={{ marginTop: 4, padding: "4px 8px", borderRadius: 6, background: "var(--oro-velo)", borderLeft: "4px solid var(--oro)", fontSize: 16, fontWeight: 600 }}>⚠ {c.cliente_note}</div>}
+      <div style={{ margin: "8px 0", fontSize: 24, fontWeight: 800, color: "var(--vino)" }}>
         {c.pagato_online || Number(c.contanti_da_incassare) === 0
           ? <>Già pagato <span className="muto" style={{ fontSize: 13 }}>niente da incassare</span></>
           : c.pagamento === "pos"
@@ -181,7 +181,7 @@ function SchedaConsegna({ c, children }: { c: ConsegnaRider; children: React.Rea
         ))}
       </ul>
       {c.note && <div className="muto">Note: {c.note}</div>}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+      <div className="azioni" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
         {children}
         {naviga && <a href={naviga} target="_blank" rel="noreferrer"><button>Naviga</button></a>}
         {c.cliente_telefono && <a href={`tel:${c.cliente_telefono}`}><button>Chiama</button></a>}
