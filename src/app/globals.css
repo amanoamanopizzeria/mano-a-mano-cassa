@@ -166,7 +166,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .sala .sala-griglia { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
 .sala .sala-griglia .tavolo { padding: 10px 10px 8px; min-height: 96px; display: flex; flex-direction: column; }
 .sala .sala-griglia .num { font-size: 26px; line-height: 1; }
-.sala .sala-griglia .badge { font-size: 12px; padding: 2px 7px; }
+.sala .sala-griglia .badge { font-size: 13px; padding: 2px 7px; }
 .sala .sala-griglia .riga-min { font-size: 13px; white-space: nowrap; margin-top: 2px; }
 .sala .sala-griglia .azioni { margin-top: auto; padding-top: 6px; }
 .sala .sala-griglia .azioni button { flex: 1; padding: 6px 8px; font-size: 14px; white-space: nowrap; }
