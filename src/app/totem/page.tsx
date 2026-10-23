@@ -188,8 +188,8 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
           {chiuso ? (
             <>
               <div className="t-ordina">Siamo chiusi</div>
-              <div className="sotto"><span>La cucina apre alle {orario!.dalle.slice(0, 5)}</span></div>
-              <div className="lapide">Torna a trovarci</div>
+              <div className="sotto chiuso"><span>La cucina apre alle <b>{orario!.dalle.slice(0, 5)}</b></span></div>
+              <div className="lapide chiuso">Torna a trovarci</div>
             </>
           ) : (
             <>
@@ -484,7 +484,7 @@ function Foto({ p, classe, tondo }: { p?: ProdottoMenu; classe: string; tondo?: 
   // Senza foto: il bollino, non l'iniziale (il critico leggeva «CBurgeria», «SInsalate»).
   return (
     <div className={"t-manca" + (tondo ? " tondo" : "")} aria-hidden>
-      <img src="/brand/bollino.png" alt="" style={{ width: tondo ? "70%" : "45%", opacity: .55 }} />
+      <img src="/brand/bollino.png" alt="" style={{ width: tondo ? "74%" : "52%" }} />
     </div>
   );
 }

@@ -201,3 +201,13 @@
 .t-fatto .ritorno { position: absolute; left: 0; bottom: 0; height: 6px; background: var(--oro); animation: t-ritorno 12s linear forwards; }
 @keyframes t-ritorno { from { width: 100%; } to { width: 0; } }
 .t-fatto { position: relative; }
+
+/* ===== grafico, giro 2 (23/10/2026) ===== */
+/* Senza foto: il bollino intero su crema, in un disco bianco quando è tondo, mai l'iniziale. */
+.t-manca { background: radial-gradient(circle at 50% 45%, #fff 0%, #fbf7f0 55%, #f1e7d3 100%); }
+.t-manca img { filter: drop-shadow(0 4px 10px rgba(26,23,21,.12)); }
+.t-manca.tondo { background: #fff; }
+/* «Siamo chiusi»: l'ora di apertura si legge da lontano, in oro. */
+.t-avvio .sotto.chiuso { font-size: clamp(22px, 3vw, 34px); color: var(--nero); font-weight: 500; }
+.t-avvio .sotto.chiuso b { color: var(--vino); font-weight: 800; font-variant-numeric: tabular-nums; }
+.t-avvio .lapide.chiuso { font-size: clamp(14px, 2vw, 20px); margin-top: 3vh; }
