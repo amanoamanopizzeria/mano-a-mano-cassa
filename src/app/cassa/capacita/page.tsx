@@ -121,9 +121,9 @@ function Capacita() {
           return (
             <div key={f.ora} className="carta" style={{ opacity: f.pizze_max === 0 && f.consegne_max === 0 ? 0.5 : 1 }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <strong>{f.ora.slice(0, 5)}</strong>
+                <strong style={{ fontSize: 18, fontVariantNumeric: "tabular-nums" }}>{f.ora.slice(0, 5)}</strong>
                 {(pienoProd || pienoCons || f.bloccata_produzione || f.bloccata_consegne) && (
-                  <span className="badge annullato">SOLD OUT</span>
+                  <span className="badge ricevuto">SOLD OUT</span>
                 )}
               </div>
               <div className="muto">

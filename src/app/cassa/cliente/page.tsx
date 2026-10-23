@@ -159,13 +159,13 @@ function Cliente() {
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
       {chiamata && (
-        <div className="carta" style={{ marginBottom: 12, borderColor: "var(--accento)", background: "#fff3f4", display: "flex", alignItems: "center", gap: 12 }}>
+        <div className="carta" style={{ marginBottom: 12, borderColor: "var(--oro)", background: "var(--vino-chiaro)", display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontSize: 28 }}>📞</span>
           <div style={{ flex: 1 }}>
-            <strong>Sta chiamando {chiamata.numero}</strong>
+            <strong style={{ fontSize: 18 }}>Sta chiamando <span style={{ color: "var(--vino)", fontVariantNumeric: "tabular-nums" }}>{chiamata.numero}</span></strong>
             <div className="muto">{new Date(chiamata.ricevuta_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{chiamata.origine === "prova" ? " · prova" : ""}</div>
           </div>
-          <a href={"/cassa/nuovo?telefono=" + encodeURIComponent(chiamata.numero)} className="primario" style={{ padding: "8px 14px", borderRadius: 8, background: "var(--accento)", color: "#fff", textDecoration: "none" }}>Prendi l&apos;ordine</a>
+          <a href={"/cassa/nuovo?telefono=" + encodeURIComponent(chiamata.numero)} className="primario" style={{ padding: "10px 18px", borderRadius: 999, background: "var(--vino)", color: "#fff", textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>Prendi l&apos;ordine</a>
           <button onClick={() => setChiamata(null)}>✕</button>
         </div>
       )}
@@ -177,7 +177,7 @@ function Cliente() {
           placeholder="Numero di telefono"
           value={telefono}
           onChange={(e) => setTelefono(e.target.value)}
-          style={{ flex: 1, minWidth: 180, fontSize: 18 }}
+          style={{ flex: 1, minWidth: 180, fontSize: 20, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}
         />
         <button className="primario" type="submit">Cerca</button>
         <button type="button" onClick={provaChiamata} title="Simula una telefonata in arrivo con questo numero">Prova chiamata</button>
@@ -188,22 +188,22 @@ function Cliente() {
       {scheda?.esito === "trovato" && scheda.cliente && (
         <div className="carta" style={{ marginTop: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <strong style={{ fontSize: 18 }}>{scheda.cliente.nome ?? "Senza nome"}</strong>
-            <span className="muto">{scheda.cliente.telefono}</span>
+            <strong style={{ fontSize: 22, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".02em" }}>{scheda.cliente.nome ?? "Senza nome"}</strong>
+            <span className="muto" style={{ fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{scheda.cliente.telefono}</span>
           </div>
           {scheda.cliente.black_list && (
-            <p style={{ marginTop: 8, padding: 8, borderRadius: 8, background: "var(--accento)", color: "#fff", fontWeight: 800 }}>BLACK LIST: non si prende l&apos;ordine senza Edoardo.</p>
+            <p style={{ marginTop: 8, padding: 8, borderRadius: 8, background: "var(--vino)", color: "#fff", fontWeight: 800 }}>BLACK LIST: non si prende l&apos;ordine senza Edoardo.</p>
           )}
           <p className="muto" style={{ marginTop: 6, fontSize: 14 }}>
-            ⭐ {scheda.cliente.punti ?? 0} punti{Number(scheda.cliente.credito ?? 0) > 0 && <> · credito {Number(scheda.cliente.credito).toFixed(2).replace(".", ",")} €</>}{scheda.cliente.card && <> · card {scheda.cliente.card}</>}
-            {(scheda.cliente.tag ?? []).length > 0 && <span style={{ display: "block" }}>{(scheda.cliente.tag ?? []).map((t) => <span key={t} style={{ display: "inline-block", margin: "2px 4px 0 0", padding: "1px 6px", borderRadius: 10, background: "#eceae4", fontSize: 12 }}>{t}</span>)}</span>}
+            <span style={{ color: "var(--oro)", fontWeight: 800 }}>★ {scheda.cliente.punti ?? 0}</span> punti{Number(scheda.cliente.credito ?? 0) > 0 && <> · credito {Number(scheda.cliente.credito).toFixed(2).replace(".", ",")} €</>}{scheda.cliente.card && <> · card {scheda.cliente.card}</>}
+            {(scheda.cliente.tag ?? []).length > 0 && <span style={{ display: "block" }}>{(scheda.cliente.tag ?? []).map((t) => <span key={t} style={{ display: "inline-block", margin: "2px 4px 0 0", padding: "1px 6px", borderRadius: 999, background: "var(--oro-velo)", border: "1px solid var(--oro-chiaro)", fontSize: 13 }}>{t}</span>)}</span>}
           </p>
           {scheda.cliente.note && (
-            <p style={{ marginTop: 8, padding: 8, borderRadius: 8, border: "1px solid var(--accento)" }}>
+            <p style={{ marginTop: 8, padding: "8px 12px", borderRadius: 12, background: "var(--oro-velo)", borderLeft: "4px solid var(--oro)" }}>
               <strong>Note fisse:</strong> {scheda.cliente.note}
             </p>
           )}
-          <h3 style={{ fontSize: 14, marginTop: 12 }}>Indirizzi</h3>
+          <h3>Indirizzi</h3>
           <ul>
             {(scheda.indirizzi ?? []).map((i) => (
               <li key={i.id}>
@@ -215,7 +215,7 @@ function Cliente() {
             ))}
             {(scheda.indirizzi ?? []).length === 0 && <li className="muto">Nessun indirizzo</li>}
           </ul>
-          <h3 style={{ fontSize: 14, marginTop: 12 }}>Ultimi ordini</h3>
+          <h3>Ultimi ordini</h3>
           <ul>
             {(scheda.ultimi_ordini ?? []).map((o) => (
               <li key={o.numero}>#{o.numero} · {o.tipo} · {o.canale} · {Number(o.totale).toFixed(2)} €</li>
@@ -227,7 +227,7 @@ function Cliente() {
 
       {scheda && scheda.esito !== "numero_corto" && (
         <div className="carta" style={{ marginTop: 12, display: "grid", gap: 8 }}>
-          <strong>{scheda.esito === "nuovo" ? "Cliente nuovo: crea la scheda" : "Modifica la scheda"}</strong>
+          <strong style={{ fontFamily: "Oswald, sans-serif", textTransform: "uppercase", letterSpacing: ".04em", fontWeight: 600, fontSize: 16 }}>{scheda.esito === "nuovo" ? "Cliente nuovo: crea la scheda" : "Modifica la scheda"}</strong>
           <input placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
           <textarea placeholder="Note fisse (es. citofono rotto, non suonare)" value={note} onChange={(e) => setNote(e.target.value)} />
           <div style={{ position: "relative" }}>
@@ -244,12 +244,12 @@ function Cliente() {
             {suggerimenti.length > 0 && (
               <div className="carta" style={{ position: "absolute", left: 0, right: 0, top: "100%", zIndex: 5, padding: 4, boxShadow: "0 8px 24px rgba(0,0,0,.12)" }}>
                 {suggerimenti.map((s, i) => (
-                  <button key={i} type="button" onClick={() => scegli(s)} style={{ display: "flex", width: "100%", textAlign: "left", border: "none", borderRadius: 6, padding: "8px 10px", gap: 8 }}>
+                  <button key={i} type="button" onClick={() => scegli(s)} style={{ display: "flex", width: "100%", textAlign: "left", border: "none", borderRadius: 10, padding: "10px 12px", gap: 8, fontWeight: 400 }}>
                     <span style={{ flex: 1 }}>{s.testo}</span>
                     {s.km != null && <span className="muto">{s.km.toFixed(1).replace(".", ",")} km</span>}
                   </button>
                 ))}
-                <div className="muto" style={{ padding: "4px 10px", fontSize: 11 }}>{fonte === "google" ? "Google Maps" : "OpenStreetMap (senza chiave Google)"}</div>
+                <div className="muto" style={{ padding: "4px 10px", fontSize: 13 }}>{fonte === "google" ? "Google Maps" : "OpenStreetMap (senza chiave Google)"}</div>
               </div>
             )}
           </div>
