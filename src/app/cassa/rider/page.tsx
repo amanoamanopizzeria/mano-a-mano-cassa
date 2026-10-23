@@ -69,7 +69,7 @@ function RiderCassa() {
   }
 
   return (
-    <main>
+    <main className="borsello">
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <h1 style={{ margin: 0 }}>Rider e borsello</h1>
         <Link href="/cassa/mappa" className="muto">Mappa →</Link>
@@ -83,28 +83,30 @@ function RiderCassa() {
         {rider.map((r) => (
           <article key={r.id} className="carta" style={{ opacity: r.attivo ? 1 : 0.6 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <strong style={{ fontSize: 18 }}>{r.nome}</strong>
-              <span style={{ fontSize: 22, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{euro(r.in_mano)}</span>
+              <strong style={{ fontSize: 18, fontFamily: "Oswald, sans-serif", textTransform: "uppercase", letterSpacing: ".03em", fontWeight: 600 }}>{r.nome}</strong>
+              <span style={{ textAlign: "right" }}><span style={{ fontSize: 34, lineHeight: 1, fontWeight: 600, fontFamily: "Oswald, sans-serif", color: "var(--vino)", fontVariantNumeric: "tabular-nums" }}>{euro(r.in_mano)}</span><span className="muto" style={{ display: "block" }}>in mano</span></span>
             </div>
-            <div className="muto" style={{ fontSize: 13 }}>
-              {r.in_corso > 0 && <>{r.in_corso} in corso · </>}
-              {r.n_da_saldare} da saldare ({euro(r.da_saldare)}) · prelievi {euro(r.prelievi)} · depositi {euro(r.depositi)}
+            <div className="b-voci">
+              {r.in_corso > 0 && <span><b>{r.in_corso}</b> in corso</span>}
+              <span><b>{r.n_da_saldare}</b> da saldare <b>{euro(r.da_saldare)}</b></span>
+              <span>prelievi <b>{euro(r.prelievi)}</b></span>
+              <span>depositi <b>{euro(r.depositi)}</b></span>
             </div>
             {aperto === r.id ? (
               <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                <input inputMode="decimal" placeholder="Importo €" value={importo} onChange={(e) => setImporto(e.target.value)} style={{ padding: 8, fontSize: 16 }} />
+                <input inputMode="decimal" placeholder="Importo €" value={importo} onChange={(e) => setImporto(e.target.value)} style={{ padding: 10, fontSize: 22, fontWeight: 700, fontVariantNumeric: "tabular-nums" }} />
                 <input placeholder="Note (es. fondo serata)" value={note} onChange={(e) => setNote(e.target.value)} style={{ padding: 8, fontSize: 14 }} />
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <button onClick={() => movimento(r.id, "prelievo", true)}>Fondo</button>
-                  <button onClick={() => movimento(r.id, "prelievo")}>Prelievo</button>
-                  <button onClick={() => movimento(r.id, "deposito")}>Deposito</button>
-                  <button onClick={() => setAperto(null)}>Chiudi</button>
+                <div className="b-tasti">
+                  <button className="b-fondo" onClick={() => movimento(r.id, "prelievo", true)}>Fondo<small>dalla cassa al rider, a inizio serata</small></button>
+                  <button className="b-prelievo" onClick={() => movimento(r.id, "prelievo")}>Prelievo<small>dalla cassa al rider</small></button>
+                  <button className="b-deposito" onClick={() => movimento(r.id, "deposito")}>Deposito<small>dal rider alla cassa</small></button>
+                  <button className="b-chiudi" onClick={() => setAperto(null)}>Chiudi</button>
                 </div>
               </div>
             ) : (
-              <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-                <button className="primario" onClick={() => salda(r)} disabled={r.n_da_saldare === 0}>Salda {r.n_da_saldare > 0 ? euro(r.da_saldare) : ""}</button>
-                <button onClick={() => { setAperto(r.id); setImporto(""); setNote(""); }}>Fondo / prelievo / deposito</button>
+              <div className="b-tasti" style={{ marginTop: 10 }}>
+                <button className="primario b-salda" onClick={() => salda(r)} disabled={r.n_da_saldare === 0}>Salda {r.n_da_saldare > 0 ? euro(r.da_saldare) : ""}<small>le consegne fatte tornano in cassa</small></button>
+                <button className="b-apri" onClick={() => { setAperto(r.id); setImporto(""); setNote(""); }}>Fondo / prelievo / deposito</button>
               </div>
             )}
           </article>
@@ -112,13 +114,13 @@ function RiderCassa() {
         {rider.length === 0 && <p className="muto">Nessun rider in anagrafica.</p>}
       </div>
 
-      <h2 style={{ fontSize: 16, marginTop: 20 }}>Movimenti di oggi</h2>
+      <h2 style={{ marginTop: 24 }}>Movimenti di oggi</h2>
       {movimenti.length === 0 && <p className="muto">Nessun movimento oggi.</p>}
       {movimenti.map((m) => (
-        <div key={m.id} style={{ display: "flex", gap: 10, padding: "6px 0", borderBottom: "1px solid var(--bordo)", fontSize: 14 }}>
+        <div key={m.id} style={{ display: "flex", gap: 10, padding: "6px 0", borderBottom: "1px solid var(--bordo)", fontSize: 15, alignItems: "baseline" }}>
           <span className="muto">{new Date(m.creato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</span>
-          <span style={{ flex: 1 }}>{rider.find((r) => r.id === m.id_rider)?.nome ?? "?"} · {m.fondo_cassa ? "fondo" : m.tipo}{m.note ? ` · ${m.note}` : ""}</span>
-          <span style={{ fontWeight: 700, color: m.tipo === "deposito" ? "var(--ok)" : "inherit" }}>{m.tipo === "deposito" ? "+" : "−"} {euro(m.importo)}</span>
+          <span style={{ flex: 1 }}><b>{rider.find((r) => r.id === m.id_rider)?.nome ?? "?"}</b> · {m.fondo_cassa ? "fondo" : m.tipo} <span className="muto">({m.tipo === "deposito" ? "dal rider alla cassa" : "dalla cassa al rider"})</span>{m.note ? ` · ${m.note}` : ""}</span>
+          <span style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", color: m.tipo === "deposito" ? "var(--ok)" : "var(--vino)" }}>{m.tipo === "deposito" ? "+" : "−"} {euro(m.importo)}</span>
         </div>
       ))}
     </main>
