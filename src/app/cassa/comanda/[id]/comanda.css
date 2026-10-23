@@ -18,6 +18,9 @@
 .comanda .con { font-size: 15px; font-weight: 700; padding-left: 8px; }
 .comanda .senza { font-size: 15px; font-weight: 900; padding-left: 8px; text-decoration: underline; }
 .comanda .nota { font-size: 14px; font-style: italic; padding-left: 8px; }
+.comanda .figlia { padding-left: 10px; margin-top: 2px; }
+.comanda .figlia .descr { font-size: 15px; }
+.comanda .incluso { font-size: 14px; font-weight: 900; padding-left: 8px; margin-top: 3px; border: 1px solid #000; display: inline-block; padding: 1px 5px; }
 .comanda .note { margin-top: 10px; font-size: 15px; border: 2px solid #000; padding: 4px 6px; }
 .comanda footer { margin-top: 10px; border-top: 2px solid #000; padding-top: 6px; display: flex; justify-content: space-between; font-size: 12px; }
 .comanda footer .totale { font-weight: 900; font-size: 14px; }

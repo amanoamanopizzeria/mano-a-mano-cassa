@@ -9,8 +9,8 @@ import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 import {
-  aggiungiRiga, chiaveRiga, euro, gruppiDi, leggiMenu, nuovaRiga, prezzoDi, prezzoRiga, righePerInvio, riprezzaRighe, totaleRighe, variantiPer,
-  type CategoriaMenu, type GruppoCategoria, type ProdottoMenu, type RigaOrdine, type VarianteMenu,
+  aggiungiRiga, chiaveRiga, euro, figlieDaScelte, gruppiDi, gruppiPacchetto, leggiMenu, menuCompleto, nuovaRiga, prezzoDi, prezzoRiga, righePerInvio, riprezzaRighe, totaleRighe, variantiPer,
+  type CategoriaMenu, type GruppoCategoria, type PacchettoGruppo, type ProdottoMenu, type RigaFiglia, type RigaOrdine, type VarianteMenu,
 } from "@/lib/menu";
 import type { Variazione } from "@/lib/types";
 
@@ -33,6 +33,11 @@ function Cassa() {
   const [prodotti, setProdotti] = useState<ProdottoMenu[]>([]);
   const [varianti, setVarianti] = useState<VarianteMenu[]>([]);
   const [gruppiCat, setGruppiCat] = useState<GruppoCategoria[]>([]);
+  const [pacchetti, setPacchetti] = useState<PacchettoGruppo[]>([]);
+  // Un menu toccato (mig. 0023): si scelgono le pizze e la bibita prima che entri in comanda.
+  const [menuAperto, setMenuAperto] = useState<{ p: ProdottoMenu; gruppi: PacchettoGruppo[]; scelte: ProdottoMenu[][]; passo: number } | null>(null);
+  // Le varianti su un menu vanno sulla pizza scelta (indice fra le figlie), non sul menu.
+  const [figliaSel, setFigliaSel] = useState<number | null>(null);
   const [tavoli, setTavoli] = useState<Tavolo[]>([]);
   const [categoria, setCategoria] = useState<string | null>(null);
   const [righe, setRighe] = useState<RigaOrdine[]>([]);
@@ -89,7 +94,7 @@ function Cassa() {
         supabaseBrowser().from("zona").select("id, nome, costo_consegna, minimo_ordine").eq("attiva", true),
       ]);
       if (m.errore) setErrore(m.errore);
-      setCategorie(m.categorie); setProdotti(m.prodotti); setVarianti(m.varianti); setGruppiCat(m.gruppi);
+      setCategorie(m.categorie); setProdotti(m.prodotti); setVarianti(m.varianti); setGruppiCat(m.gruppi); setPacchetti(m.pacchetti);
       setTavoli(((t.data ?? []) as Tavolo[]).sort((a, b) => a.numero.localeCompare(b.numero, "it", { numeric: true })));
       const { data: prof } = await supabaseBrowser().from("profilo").select("id_negozio").single();
       const idNeg = (prof as { id_negozio: string | null } | null)?.id_negozio ?? null;
@@ -140,7 +145,9 @@ function Cassa() {
   const listino = tipo === "tavolo" ? "tavolo" : "asporto";
   const catCorrente = categorie.find((c) => c.id === categoria);
   const rigaSel = righe.find((r) => r.chiave === selezionata) ?? null;
-  const prodottoSel = rigaSel ? prodotti.find((p) => p.id === rigaSel.id_prodotto) : undefined;
+  const figlie = rigaSel?.figlie ?? [];
+  const figliaAttiva = figlie.length > 0 ? figlie[figliaSel != null && figliaSel < figlie.length ? figliaSel : 0] : null;
+  const prodottoSel = rigaSel ? prodotti.find((p) => p.id === (figliaAttiva ? figliaAttiva.id_prodotto : rigaSel.id_prodotto)) : undefined;
   const variantiSel = useMemo(() => variantiPer(varianti, prodottoSel?.id_categoria ?? null, gruppiCat), [varianti, prodottoSel, gruppiCat]);
   const gruppi = gruppiDi(variantiSel);
   const gruppoAttivo = gruppo && gruppi.includes(gruppo) ? gruppo : gruppi[0] ?? null;
@@ -154,11 +161,43 @@ function Cassa() {
 
   function toccaProdotto(p: ProdottoMenu) {
     setEsito(null);
+    const gruppiMenu = gruppiPacchetto(pacchetti, p.id);
+    if (gruppiMenu.length > 0) { setMenuAperto({ p, gruppi: gruppiMenu, scelte: gruppiMenu.map(() => []), passo: 0 }); return; }
     const cat = categorie.find((c) => c.id === p.id_categoria);
     const r = nuovaRiga(p, cat, quantitaDigitata, [], listino);
     setRighe((prev) => aggiungiRiga(prev, r));
     setSelezionata(r.chiave);
+    setFigliaSel(null);
     setDigitato("");
+  }
+
+  // Una scelta dentro il menu aperto: si riempie il gruppo del passo corrente, poi si passa al prossimo.
+  function toccaScelta(p: ProdottoMenu) {
+    if (!menuAperto) return;
+    const { gruppi: gm, scelte, passo } = menuAperto;
+    const g = gm[passo];
+    const gia = scelte[passo].findIndex((x) => x.id === p.id);
+    let nuove = scelte[passo];
+    if (g.quantita === 1) nuove = gia >= 0 ? [] : [p];
+    else if (nuove.length < g.quantita) nuove = [...nuove, p];
+    else return;
+    const tutte = scelte.map((s, i) => (i === passo ? nuove : s));
+    const prossimo = nuove.length === g.quantita && passo + 1 < gm.length ? passo + 1 : passo;
+    setMenuAperto({ ...menuAperto, scelte: tutte, passo: prossimo });
+  }
+  function togliScelta(passo: number, i: number) {
+    if (!menuAperto) return;
+    setMenuAperto({ ...menuAperto, scelte: menuAperto.scelte.map((s, j) => (j === passo ? s.filter((_x, k) => k !== i) : s)), passo });
+  }
+  function confermaMenu() {
+    if (!menuAperto || !menuCompleto(menuAperto.gruppi, menuAperto.scelte)) return;
+    const cat = categorie.find((c) => c.id === menuAperto.p.id_categoria);
+    const r = nuovaRiga(menuAperto.p, cat, quantitaDigitata, [], listino, figlieDaScelte(menuAperto.gruppi, menuAperto.scelte, categorie));
+    setRighe((prev) => aggiungiRiga(prev, r));
+    setSelezionata(r.chiave);
+    setFigliaSel(null);
+    setDigitato("");
+    setMenuAperto(null);
   }
 
   // Tavolo = listino L2 (sala), tutto il resto L1: cambiando tipo si riprezzano le righe già in comanda.
@@ -169,7 +208,7 @@ function Cassa() {
 
   function toccaRiga(r: RigaOrdine) {
     if (selezionata === r.chiave && !modoVarianti) { setModoVarianti(true); return; }
-    setSelezionata(r.chiave);
+    setSelezionata(r.chiave); setFigliaSel(null);
   }
 
   function cambiaQuantita(delta: number) {
@@ -193,19 +232,33 @@ function Cassa() {
     const nuova: Variazione = segno === "con"
       ? { nome: v.nome, prezzo: v.prezzo, tipo: "aggiunta" }
       : { nome: "senza " + v.nome, prezzo: 0, tipo: "rimozione" };
-    const gia = rigaSel.variazioni.some((x) => x.nome === nuova.nome && x.tipo === nuova.tipo);
-    const variazioni = gia ? rigaSel.variazioni.filter((x) => !(x.nome === nuova.nome && x.tipo === nuova.tipo)) : [...rigaSel.variazioni, nuova];
-    const chiave = chiaveRiga(rigaSel.id_prodotto, variazioni);
+    const alterna = (vs: Variazione[]) => vs.some((x) => x.nome === nuova.nome && x.tipo === nuova.tipo)
+      ? vs.filter((x) => !(x.nome === nuova.nome && x.tipo === nuova.tipo)) : [...vs, nuova];
+    let variazioni = rigaSel.variazioni;
+    let nuoveFiglie: RigaFiglia[] | undefined = rigaSel.figlie;
+    let idxFiglia = figliaSel ?? 0;
+    if (figliaAttiva && rigaSel.figlie) {
+      // la variante va sulla pizza scelta; se nel menu ce ne sono due uguali si stacca quella sola
+      const f = figliaAttiva;
+      const resto = rigaSel.figlie.filter((x) => x !== f);
+      const una: RigaFiglia = { ...f, quantita: 1, variazioni: alterna(f.variazioni) };
+      nuoveFiglie = f.quantita > 1 ? [...resto, { ...f, quantita: f.quantita - 1 }, una] : [...resto, una];
+      idxFiglia = nuoveFiglie.length - 1;
+    } else {
+      variazioni = alterna(rigaSel.variazioni);
+    }
+    const chiave = chiaveRiga(rigaSel.id_prodotto, variazioni, nuoveFiglie);
     setRighe((prev) => {
       let out = prev;
       if (rigaSel.quantita > 1) {
         out = out.map((r) => (r.chiave === rigaSel.chiave ? { ...r, quantita: r.quantita - 1 } : r));
-        return aggiungiRiga(out, { ...rigaSel, quantita: 1, variazioni, chiave });
+        return aggiungiRiga(out, { ...rigaSel, quantita: 1, variazioni, figlie: nuoveFiglie, chiave });
       }
       out = out.filter((r) => r.chiave !== rigaSel.chiave);
-      return aggiungiRiga(out, { ...rigaSel, variazioni, chiave });
+      return aggiungiRiga(out, { ...rigaSel, variazioni, figlie: nuoveFiglie, chiave });
     });
     setSelezionata(chiave);
+    setFigliaSel(nuoveFiglie ? idxFiglia : null);
   }
 
   function tasto(k: string) {
@@ -213,7 +266,7 @@ function Cassa() {
     setDigitato((d) => (d + k).replace(/^0+(?=\d)/, "").slice(0, 3));
   }
 
-  function svuota() { setRighe([]); setSelezionata(null); setModoVarianti(false); setDigitato(""); setNote(""); setEsito(null); setErrore(null); }
+  function svuota() { setRighe([]); setSelezionata(null); setModoVarianti(false); setDigitato(""); setNote(""); setEsito(null); setErrore(null); setMenuAperto(null); setFigliaSel(null); }
 
   async function invia() {
     setErrore(null); setInvio(true);
@@ -250,13 +303,49 @@ function Cassa() {
           <button className="primario">Ordine</button>
           <Link href="/cassa/tavoli" style={{ textDecoration: "none" }}><button>Sala</button></Link>
           <span style={{ marginLeft: 12, fontWeight: 800, fontSize: 16, textTransform: "uppercase" }}>
-            {modoVarianti ? `Varianti · ${rigaSel?.descrizione ?? ""}` : catCorrente?.nome}
+            {menuAperto ? `${menuAperto.p.nome} · ${menuAperto.gruppi[menuAperto.passo]?.etichetta ?? ""}` : modoVarianti ? `Varianti · ${figliaAttiva ? figliaAttiva.descrizione + " (" + (rigaSel?.descrizione ?? "") + ")" : rigaSel?.descrizione ?? ""}` : catCorrente?.nome}
           </span>
           <span style={{ flex: 1 }} />
           {esito && <span style={{ color: "var(--ok)", fontWeight: 600 }}>{esito}</span>}
         </div>
 
-        {!modoVarianti ? (
+        {menuAperto ? (
+          <>
+            {/* I passi del menu: «Scegli le 2 pizze» → «Scegli la bibita», come online (SCEGLI LA PIZZA 2–2). */}
+            <div style={{ display: "grid", gridTemplateColumns: `auto repeat(${menuAperto.gruppi.length}, 1fr) auto`, gap: 4, padding: 6, background: "#eceae4" }}>
+              <button className="tessera" onClick={() => setMenuAperto(null)} style={{ minHeight: 40, padding: "6px 14px", fontSize: 12, background: "#2d7ff9", color: "#fff" }}>← Annulla</button>
+              {menuAperto.gruppi.map((g, i) => (
+                <button key={g.id} className="tessera" onClick={() => setMenuAperto({ ...menuAperto, passo: i })} style={{
+                  minHeight: 40, padding: "6px 4px", fontSize: 12, background: menuAperto.scelte[i].length === g.quantita ? "#9ad36a" : "#ffe08a",
+                  outline: i === menuAperto.passo ? "3px solid #1d1b17" : "none", outlineOffset: -3, flexDirection: "column", gap: 2,
+                }}>
+                  <span>{g.etichetta}</span>
+                  <span style={{ fontWeight: 500, textTransform: "none", fontSize: 11 }}>{menuAperto.scelte[i].length === 0 ? `${menuAperto.scelte[i].length}/${g.quantita}` : menuAperto.scelte[i].map((x) => x.nome).join(", ")}</span>
+                </button>
+              ))}
+              <button className="tessera primario" onClick={confermaMenu} disabled={!menuCompleto(menuAperto.gruppi, menuAperto.scelte)} style={{ minHeight: 40, padding: "6px 14px", fontSize: 12 }}>
+                In comanda · {euro(prezzoDi(menuAperto.p, listino) * quantitaDigitata)}
+              </button>
+            </div>
+            {menuAperto.p.incluso && <div style={{ padding: "4px 10px", fontSize: 13, color: "var(--muto)" }}>Inclusi nel menu: <b>{menuAperto.p.incluso}</b></div>}
+            <div className="scorri" style={{ flex: 1, padding: 6, display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4, alignContent: "start" }}>
+              {(() => {
+                const g = menuAperto.gruppi[menuAperto.passo];
+                const scelte = menuAperto.scelte[menuAperto.passo];
+                return prodotti.filter((p) => g.scelte.includes(p.id)).map((p) => {
+                  const n = scelte.filter((x) => x.id === p.id).length;
+                  return (
+                    <button key={p.id} className="tessera" onClick={() => toccaScelta(p)} style={{ background: n > 0 ? "#ffe08a" : chiaro(categorie.find((c) => c.id === p.id_categoria)?.colore), flexDirection: "column", gap: 4, position: "relative" }}>
+                      <span>{p.nome}</span>
+                      {n > 0 && <span style={{ position: "absolute", top: 4, right: 6, fontSize: 12, fontWeight: 800 }}>{g.quantita > 1 ? `×${n}` : "✓"}</span>}
+                      {n > 0 && g.quantita > 1 && <span onClick={(e) => { e.stopPropagation(); togliScelta(menuAperto.passo, scelte.findIndex((x) => x.id === p.id)); }} style={{ fontWeight: 500, fontSize: 11, textTransform: "none", textDecoration: "underline" }}>togli una</span>}
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+          </>
+        ) : !modoVarianti ? (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4, padding: 6, background: "#eceae4" }}>
               {categorie.map((c) => (
@@ -286,12 +375,22 @@ function Cassa() {
                 }}>{g}</button>
               ))}
             </div>
+            {figlie.length > 0 && (
+              <div style={{ display: "flex", gap: 4, padding: "6px 6px 0", flexWrap: "wrap" }}>
+                <span className="muto" style={{ fontSize: 12, alignSelf: "center" }}>Su quale:</span>
+                {figlie.map((f, i) => (
+                  <button key={i} onClick={() => setFigliaSel(i)} style={{ padding: "4px 10px", fontSize: 13, outline: (figliaSel ?? 0) === i ? "3px solid #1d1b17" : "none", outlineOffset: -3 }}>
+                    {f.quantita > 1 ? `${f.quantita}× ` : ""}{f.descrizione}{f.variazioni.length > 0 ? ` (${f.variazioni.map((v) => v.nome).join(", ")})` : ""}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="scorri" style={{ flex: 1, padding: 6, display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4, alignContent: "start" }}>
               <button className="tessera" onClick={() => setSegno("con")} style={{ background: "#f39c2b", outline: segno === "con" ? "3px solid #1d1b17" : "none", outlineOffset: -3 }}>CON</button>
               <button className="tessera" onClick={() => setSegno("senza")} style={{ background: "#f39c2b", outline: segno === "senza" ? "3px solid #1d1b17" : "none", outlineOffset: -3 }}>SENZA</button>
               {variantiSel.filter((v) => v.gruppo === gruppoAttivo).map((v) => {
                 const nome = segno === "con" ? v.nome : "senza " + v.nome;
-                const on = rigaSel?.variazioni.some((x) => x.nome === nome);
+                const on = (figliaAttiva ? figliaAttiva.variazioni : rigaSel?.variazioni ?? []).some((x) => x.nome === nome);
                 return (
                   <button key={v.id} className="tessera" onClick={() => toccaVariante(v)} style={{ background: on ? "#ffe08a" : "#f4f2ec", textTransform: "none", flexDirection: "column", gap: 2 }}>
                     <span>{v.nome}</span>
@@ -362,6 +461,17 @@ function Cassa() {
                     {v.tipo === "rimozione" ? v.nome : "+ " + v.nome}{v.prezzo > 0 ? ` (${euro(v.prezzo)})` : ""}
                   </span>
                 ))}
+                {(r.figlie ?? []).map((f, i) => (
+                  <span key={"f" + i} style={{ display: "block", fontSize: 13, paddingLeft: 10 }}>
+                    ↳ {f.quantita > 1 ? `${f.quantita}× ` : ""}{f.descrizione}
+                    {f.variazioni.map((v, j) => (
+                      <span key={j} style={{ display: "block", paddingLeft: 14, color: v.tipo === "rimozione" ? "var(--accento)" : "var(--muto)" }}>
+                        {v.tipo === "rimozione" ? v.nome : "+ " + v.nome}{v.prezzo > 0 ? ` (${euro(v.prezzo)})` : ""}
+                      </span>
+                    ))}
+                  </span>
+                ))}
+                {r.figlie && (() => { const p = prodotti.find((x) => x.id === r.id_prodotto); return p?.incluso ? <span style={{ display: "block", fontSize: 12, paddingLeft: 10, color: "var(--muto)" }}>+ {p.incluso}</span> : null; })()}
               </span>
               <span style={{ fontVariantNumeric: "tabular-nums" }}>{euro(prezzoRiga(r))}</span>
             </button>

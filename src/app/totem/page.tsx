@@ -12,8 +12,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  aggiungiRiga, euro, gruppiDi, nuovaRiga, prezzoRiga, righePerInvio, totaleRighe, variantiPer,
-  type CategoriaMenu, type GruppoCategoria, type ProdottoMenu, type RigaOrdine, type VarianteMenu,
+  aggiungiRiga, euro, figlieDaScelte, gruppiDi, gruppiPacchetto, menuCompleto, nuovaRiga, prezzoRiga, righePerInvio, totaleRighe, variantiPer,
+  type CategoriaMenu, type GruppoCategoria, type PacchettoGruppo, type ProdottoMenu, type RigaFiglia, type RigaOrdine, type VarianteMenu,
 } from "@/lib/menu";
 import type { Variazione } from "@/lib/types";
 import "@fontsource/oswald/500.css";
@@ -88,6 +88,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
   const [prodotti, setProdotti] = useState<ProdottoMenu[]>([]);
   const [varianti, setVarianti] = useState<VarianteMenu[]>([]);
   const [gruppiCat, setGruppiCat] = useState<GruppoCategoria[]>([]);
+  const [pacchetti, setPacchetti] = useState<PacchettoGruppo[]>([]);
   const [passo, setPasso] = useState<Passo>("avvio");
   const [categoria, setCategoria] = useState<string | null>(null);
   const [aperto, setAperto] = useState<ProdottoMenu | null>(null);
@@ -102,12 +103,13 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
   useEffect(() => {
     supabaseBrowser().rpc("totem_menu", { p_chiave: chiave }).then(({ data, error }) => {
       if (error) { if (error.code === "42501") disattiva(); return; }
-      const m = data as { categorie: CategoriaMenu[]; prodotti: ProdottoMenu[]; varianti: VarianteMenu[]; gruppi?: GruppoCategoria[] };
+      const m = data as { categorie: CategoriaMenu[]; prodotti: ProdottoMenu[]; varianti: VarianteMenu[]; gruppi?: GruppoCategoria[]; pacchetti?: PacchettoGruppo[] };
       const prodotti = m.prodotti.map((x) => ({ ...x, prezzo: Number(x.prezzo), prezzo_tavolo: x.prezzo_tavolo == null ? null : Number(x.prezzo_tavolo) }));
       setCategorie(m.categorie.filter((c) => prodotti.some((p) => p.id_categoria === c.id)));
       setProdotti(prodotti);
       setVarianti(m.varianti.map((x) => ({ ...x, prezzo: Number(x.prezzo) })));
       setGruppiCat(m.gruppi ?? []);
+      setPacchetti(m.pacchetti ?? []);
     });
   }, [chiave, disattiva]);
 
@@ -136,9 +138,9 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
     setPasso("menu");
   }
 
-  function aggiungi(p: ProdottoMenu, quantita: number, variazioni: Variazione[]) {
+  function aggiungi(p: ProdottoMenu, quantita: number, variazioni: Variazione[], figlie?: RigaFiglia[]) {
     const cat = categorie.find((c) => c.id === p.id_categoria);
-    setCarrello((prev) => aggiungiRiga(prev, nuovaRiga(p, cat, quantita, variazioni)));
+    setCarrello((prev) => aggiungiRiga(prev, nuovaRiga(p, cat, quantita, variazioni, "asporto", figlie)));
     setAperto(null);
   }
 
@@ -217,6 +219,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
               <div style={{ flex: 1 }}>
                 <div className="nome">{r.descrizione}</div>
                 {r.variazioni.length > 0 && <div className="var">{r.variazioni.map((v) => v.nome).join(" · ")}</div>}
+                {r.figlie && <div className="var">{r.figlie.map((f) => (f.quantita > 1 ? `${f.quantita}× ` : "") + f.descrizione).join(" · ")}</div>}
                 <div className="prezzo">{euro(prezzoRiga(r))}</div>
               </div>
               <Contatore n={r.quantita} meno={() => cambiaQuantita(r.chiave, -1)} piu={() => cambiaQuantita(r.chiave, 1)} />
@@ -273,7 +276,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
             {carrello.map((r) => (
               <div key={r.chiave} style={{ display: "flex", gap: 10, padding: "6px 0", borderBottom: "1px solid #eee", fontSize: 18 }}>
                 <b style={{ minWidth: 34 }}>{r.quantita}×</b>
-                <span style={{ flex: 1 }}>{r.descrizione}{r.variazioni.length > 0 && <small style={{ display: "block", color: "var(--grigio)" }}>{r.variazioni.map((v) => v.nome).join(" · ")}</small>}</span>
+                <span style={{ flex: 1 }}>{r.descrizione}{r.variazioni.length > 0 && <small style={{ display: "block", color: "var(--grigio)" }}>{r.variazioni.map((v) => v.nome).join(" · ")}</small>}{r.figlie && <small style={{ display: "block", color: "var(--grigio)" }}>{r.figlie.map((f) => (f.quantita > 1 ? `${f.quantita}× ` : "") + f.descrizione).join(" · ")}</small>}</span>
                 <span>{euro(prezzoRiga(r))}</span>
               </div>
             ))}
@@ -337,24 +340,41 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
         <SchedaProdotto
           p={aperto}
           varianti={variantiPer(varianti, aperto.id_categoria, gruppiCat)}
+          gruppiMenu={gruppiPacchetto(pacchetti, aperto.id)}
+          prodotti={prodotti}
+          categorie={categorie}
           chiudi={() => setAperto(null)}
-          aggiungi={(q, v) => aggiungi(aperto, q, v)}
+          aggiungi={(q, v, f) => aggiungi(aperto, q, v, f)}
         />
       )}
     </div>
   );
 }
 
-function SchedaProdotto({ p, varianti, chiudi, aggiungi }: {
-  p: ProdottoMenu; varianti: VarianteMenu[]; chiudi: () => void; aggiungi: (q: number, v: Variazione[]) => void;
+function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, chiudi, aggiungi }: {
+  p: ProdottoMenu; varianti: VarianteMenu[]; gruppiMenu: PacchettoGruppo[]; prodotti: ProdottoMenu[]; categorie: CategoriaMenu[];
+  chiudi: () => void; aggiungi: (q: number, v: Variazione[], figlie?: RigaFiglia[]) => void;
 }) {
   const [q, setQ] = useState(1);
   const [scelte, setScelte] = useState<VarianteMenu[]>([]);
+  // Le scelte di un menu, gruppo per gruppo («Scegli le 2 pizze», «Scegli la bibita»), come online (mig. 0023).
+  const [scelteMenu, setScelteMenu] = useState<ProdottoMenu[][]>(() => gruppiMenu.map(() => []));
   const gruppi = gruppiDi(varianti);
   const extra = scelte.reduce((s, v) => s + v.prezzo, 0);
+  const completo = menuCompleto(gruppiMenu, scelteMenu);
 
   function alterna(v: VarianteMenu) {
     setScelte((prev) => (prev.some((x) => x.id === v.id) ? prev.filter((x) => x.id !== v.id) : [...prev, v]));
+  }
+  function scegli(i: number, prod: ProdottoMenu) {
+    const g = gruppiMenu[i];
+    setScelteMenu((prev) => prev.map((s, j) => {
+      if (j !== i) return s;
+      const k = s.findIndex((x) => x.id === prod.id);
+      if (g.quantita === 1) return k >= 0 ? [] : [prod];
+      if (k >= 0 && s.length >= g.quantita) return s.filter((_x, idx) => idx !== k);   // pieno: un tocco toglie
+      return s.length < g.quantita ? [...s, prod] : s;
+    }));
   }
 
   return (
@@ -365,8 +385,25 @@ function SchedaProdotto({ p, varianti, chiudi, aggiungi }: {
           <h2>{p.nome}</h2>
           {p.descrizione && <p className="descr">{p.descrizione}</p>}
           <div className="prezzo">{p.prezzo > 0 ? euro(p.prezzo) : "prezzo alla cassa"}</div>
+          {p.incluso && <p className="descr" style={{ fontWeight: 700 }}>Inclusi nel menu: {p.incluso}</p>}
 
-          <h3>Quantità</h3>
+          {gruppiMenu.map((g, i) => (
+            <div key={g.id} style={{ maxWidth: 560, margin: "0 auto" }}>
+              <h3 style={{ marginTop: 28 }}>{g.etichetta} <small style={{ fontWeight: 400, color: "var(--grigio)" }}>{scelteMenu[i].length}/{g.quantita}</small></h3>
+              {prodotti.filter((x) => g.scelte.includes(x.id)).map((x) => {
+                const n = scelteMenu[i].filter((y) => y.id === x.id).length;
+                return (
+                  <button key={x.id} onClick={() => scegli(i, x)} className={"t-opz" + (n > 0 ? " on" : "")}>
+                    <span className="spunta">{n > 0 ? (g.quantita > 1 ? `×${n}` : "✓") : ""}</span>
+                    <span>{x.nome}</span>
+                    <span className="extra"></span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+
+          <h3 style={{ marginTop: gruppiMenu.length > 0 ? 28 : undefined }}>Quantità</h3>
           <div style={{ display: "flex", justifyContent: "center" }}>
             <Contatore n={q} meno={() => setQ(Math.max(1, q - 1))} piu={() => setQ(q + 1)} grande />
           </div>
@@ -390,8 +427,11 @@ function SchedaProdotto({ p, varianti, chiudi, aggiungi }: {
         </div>
         <div className="piede">
           <button onClick={chiudi} className="t-b-linea">Annulla</button>
-          <button onClick={() => aggiungi(q, scelte.map((v) => ({ nome: v.nome, prezzo: v.prezzo, tipo: "aggiunta" as const })))} className="t-b-vino" style={{ flex: 1, fontSize: 22 }}>
-            Aggiungi · {euro((p.prezzo + extra) * q)}
+          <button
+            disabled={!completo}
+            onClick={() => aggiungi(q, scelte.map((v) => ({ nome: v.nome, prezzo: v.prezzo, tipo: "aggiunta" as const })), gruppiMenu.length > 0 ? figlieDaScelte(gruppiMenu, scelteMenu, categorie) : undefined)}
+            className="t-b-vino" style={{ flex: 1, fontSize: 22 }}>
+            {completo ? `Aggiungi · ${euro((p.prezzo + extra) * q)}` : "Completa le scelte"}
           </button>
         </div>
       </div>

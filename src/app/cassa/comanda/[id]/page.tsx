@@ -11,8 +11,10 @@ import type { Variazione } from "@/lib/types";
 import "./comanda.css";
 
 interface RigaComanda {
+  id?: string; id_riga_padre?: string | null; incluso?: string | null;
   descrizione: string; quantita: number; variazioni: Variazione[]; note: string | null;
   destinazione: "cucina" | "cassa" | "nessuna"; reparto: string; reparto_ordine: number;
+  figlie?: RigaComanda[];
 }
 interface Comanda {
   id: string; numero: number; canale: string; tipo: string; stato: string;
@@ -53,13 +55,17 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
   if (errore) return <main><p style={{ color: "var(--accento)" }}>{errore}</p></main>;
   if (!c) return <main><p className="muto">Carico la comanda…</p></main>;
 
-  // i reparti nell'ordine del menù; le righe «nessuna» (es. sconti) non vanno in cucina
+  // i reparti nell'ordine del menù; le righe «nessuna» (es. sconti) non vanno in cucina.
+  // Le scelte di un menu (mig. 0023) stanno sotto il menu, non sparse nei reparti delle pizze.
+  const figlieDi = (id?: string) => (id ? c.righe.filter((x) => x.id_riga_padre === id) : []);
   const reparti: { nome: string; righe: RigaComanda[] }[] = [];
-  for (const r of c.righe.filter((r) => r.destinazione !== "nessuna")) {
+  for (const r of c.righe.filter((r) => r.destinazione !== "nessuna" && !r.id_riga_padre)) {
+    const riga = { ...r, figlie: figlieDi(r.id) };
     const g = reparti.find((x) => x.nome === r.reparto);
-    if (g) g.righe.push(r); else reparti.push({ nome: r.reparto, righe: [r] });
+    if (g) g.righe.push(riga); else reparti.push({ nome: r.reparto, righe: [riga] });
   }
-  const pezzi = c.righe.filter((r) => r.destinazione === "cucina").reduce((s, r) => s + r.quantita, 0);
+  // i pezzi in cucina: le pizze vere, non la riga «Menu» che le contiene
+  const pezzi = c.righe.filter((r) => r.destinazione === "cucina" && !(r.id && c.righe.some((x) => x.id_riga_padre === r.id))).reduce((s, r) => s + r.quantita, 0);
 
   return (
     <div className="comanda-pagina">
@@ -102,6 +108,14 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
                   {r.variazioni.filter((v) => v.tipo === "rimozione").map((v, j) => <div key={"s" + j} className="senza">SENZA {v.nome}</div>)}
                   {r.variazioni.filter((v) => v.tipo === "nota").map((v, j) => <div key={"n" + j} className="nota">{v.nome}</div>)}
                   {r.note && <div className="nota">{r.note}</div>}
+                  {(r.figlie ?? []).map((f, k) => (
+                    <div key={"f" + k} className="figlia">
+                      <div className="descr">{f.quantita > 1 ? `${f.quantita}× ` : "· "}{f.descrizione}</div>
+                      {f.variazioni.filter((v) => v.tipo === "aggiunta").map((v, j) => <div key={"a" + j} className="con">CON {v.nome}</div>)}
+                      {f.variazioni.filter((v) => v.tipo === "rimozione").map((v, j) => <div key={"s" + j} className="senza">SENZA {v.nome}</div>)}
+                    </div>
+                  ))}
+                  {r.incluso && <div className="incluso">+ {r.incluso.toUpperCase()}</div>}
                 </div>
               </div>
             ))}
