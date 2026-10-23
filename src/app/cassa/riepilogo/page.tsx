@@ -58,38 +58,38 @@ function Riepilogo() {
   for (const o of validi) perCanale.set(o.canale, (perCanale.get(o.canale) ?? 0) + 1);
 
   return (
-    <main>
+    <main className="riepilogo">
       <h1>Riepilogo di oggi</h1>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
       <div className="griglia">
-        <div className="carta"><div className="muto">Ordini</div><strong style={{ fontSize: 24 }}>{validi.length}</strong></div>
-        <div className="carta"><div className="muto">Pizze</div><strong style={{ fontSize: 24 }}>{pizze}</strong></div>
-        <div className="carta"><div className="muto">Consegne</div><strong style={{ fontSize: 24 }}>{consegne}</strong></div>
-        <div className="carta"><div className="muto">Totale</div><strong style={{ fontSize: 24 }}>{incasso.toFixed(2)} €</strong></div>
+        <div className="carta numero"><div className="eti">Ordini</div><strong>{validi.length}</strong></div>
+        <div className="carta numero"><div className="eti">Pizze</div><strong>{pizze}</strong></div>
+        <div className="carta numero"><div className="eti">Consegne</div><strong>{consegne}</strong></div>
+        <div className="carta numero vino"><div className="eti">Totale</div><strong>{incasso.toFixed(2).replace(".", ",")} €</strong></div>
       </div>
 
-      <h2 style={{ fontSize: 16, marginTop: 16 }}>Per canale</h2>
+      <h2>Per canale</h2>
       <div className="griglia">
         {[...perCanale.entries()].map(([canale, n]) => (
-          <div key={canale} className="carta"><strong>{canale}</strong><div className="muto">{n} ordini</div></div>
+          <div key={canale} className="carta numero"><div className="eti">{canale}</div><strong>{n}<small> {n === 1 ? "ordine" : "ordini"}</small></strong></div>
         ))}
         {perCanale.size === 0 && <p className="muto">Nessun ordine oggi.</p>}
       </div>
 
-      <h2 style={{ fontSize: 16, marginTop: 16 }}>Ordini</h2>
+      <h2>Ordini</h2>
       <div className="griglia">
         {ordini.map((o) => (
           <article key={o.id} className="carta">
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <strong>#{o.numero}</strong>
+              <strong style={{ fontSize: 20, fontFamily: "Oswald, sans-serif", fontWeight: 600 }}>#{o.numero}</strong>
               <span className={`badge ${o.stato}`}>{o.stato.replace("_", " ")}</span>
             </div>
             <div className="muto">
               {o.canale} · {o.tipo}
               {o.ora_consegna && " · per le " + new Date(o.ora_consegna).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" })}
             </div>
-            <div style={{ marginTop: 4 }}>{Number(o.totale).toFixed(2)} €</div>
+            <div style={{ marginTop: 4, fontWeight: 800, fontSize: 18, color: "var(--vino)" }}>{Number(o.totale).toFixed(2).replace(".", ",")} €</div>
           </article>
         ))}
       </div>
