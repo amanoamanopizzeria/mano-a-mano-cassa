@@ -1,7 +1,7 @@
 "use client";
 
 // Accesso per lo staff (cassa, rider) e per i clienti.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -11,6 +11,11 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [messaggio, setMessaggio] = useState<string | null>(null);
   const [inCorso, setInCorso] = useState(false);
+
+  // Chi è già dentro non deve rivedere il modulo (critico giro 4b): si va alla home.
+  useEffect(() => {
+    supabaseBrowser().auth.getSession().then(({ data }) => { if (data.session) router.replace("/"); });
+  }, [router]);
 
   async function accedi(registra: boolean) {
     setInCorso(true);
