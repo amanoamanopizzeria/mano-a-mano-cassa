@@ -88,7 +88,7 @@ function Tavoli() {
       {sezioni.map((s) => (
         <section key={s.zona} style={{ marginTop: 14 }}>
           <h2>{s.titolo}</h2>
-          <div className="griglia">
+          <div className="griglia sala-griglia">
             {tavoli.filter((t) => t.zona === s.zona).sort((a, b) => a.numero.localeCompare(b.numero, "it", { numeric: true })).map((t) => {
               const min = minutiDa(t.aperto_il);
               const allarme = t.stato !== "libero" && min >= ALERT_MINUTI;
@@ -97,16 +97,16 @@ function Tavoli() {
                   key={t.id}
                   className={"carta tavolo " + t.stato + (allarme ? " allarme" : "")}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4 }}>
                     <strong className="num">{t.numero}</strong>
-                    <span className={`badge stato-${t.stato}`}>{t.stato}</span>
+                    <span className={`badge stato-${t.stato}`}>{t.stato === "occupato" ? "occ." : t.stato}</span>
                   </div>
                   {t.stato !== "libero" && (
-                    <div className="muto">
-                      {t.coperti} coperti · <b style={allarme ? { color: "var(--vino)" } : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
+                    <div className="muto riga-min">
+                      {t.coperti} cop. · <b style={allarme ? { color: "var(--vino)" } : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
                     </div>
                   )}
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                  <div className="azioni" style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
                     {t.stato === "libero" && <button className="primario" onClick={() => apri(t)}>Apri</button>}
                     {t.stato === "occupato" && <button onClick={() => passaAlConto(t)}>Conto</button>}
                     {t.stato !== "libero" && <button onClick={() => chiudi(t)}>Libera</button>}
