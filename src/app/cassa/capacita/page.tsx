@@ -86,7 +86,7 @@ function Capacita() {
   }
 
   return (
-    <main>
+    <main className="capacita">
       <h1>Capacità — quarti d&apos;ora</h1>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
@@ -137,11 +137,11 @@ function Capacita() {
                 {f.bloccata_consegne && " · bloccata"}
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-                <button onClick={() => alterna(f.ora, "produzione", f.bloccata_produzione)}>
-                  {f.bloccata_produzione ? "Sblocca pizze" : "Blocca pizze"}
+                <button className={f.bloccata_produzione ? "primario" : "blocco"} onClick={() => alterna(f.ora, "produzione", f.bloccata_produzione)}>
+                  {f.bloccata_produzione ? "✕ Pizze bloccate · sblocca" : "Blocca pizze"}
                 </button>
-                <button onClick={() => alterna(f.ora, "consegne", f.bloccata_consegne)}>
-                  {f.bloccata_consegne ? "Sblocca consegne" : "Blocca consegne"}
+                <button className={f.bloccata_consegne ? "primario" : "blocco"} onClick={() => alterna(f.ora, "consegne", f.bloccata_consegne)}>
+                  {f.bloccata_consegne ? "✕ Consegne bloccate · sblocca" : "Blocca consegne"}
                 </button>
               </div>
             </div>
