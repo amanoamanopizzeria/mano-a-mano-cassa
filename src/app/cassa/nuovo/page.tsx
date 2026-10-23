@@ -332,18 +332,19 @@ function Cassa() {
     else setErrore("Ordine non inserito (" + r.esito + "). Chiedi a Edoardo.");
   }
 
-  const scheda = { display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "#fff", borderBottom: "1px solid var(--bordo)" } as const;
+  const scheda = { display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "var(--vino)", color: "#fff", borderBottom: "3px solid var(--oro)" } as const;
+  const ghost = { background: "rgba(255,255,255,.14)", color: "#fff", borderColor: "transparent", padding: "8px 12px", fontSize: 13 } as const;
 
   return (
     <div className="schermo cassa-nuovo" style={{ flexDirection: "row" }}>
       {/* ===== Sinistra: categorie e tessere ===== */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <div style={scheda}>
-          <Link href="/cassa" style={{ textDecoration: "none" }}><button>⌂</button></Link>
-          <Link href="/cassa/cliente" style={{ textDecoration: "none" }}><button>Dati cliente</button></Link>
-          <button className="primario">Ordine</button>
-          <Link href="/cassa/tavoli" style={{ textDecoration: "none" }}><button>Sala</button></Link>
-          <span style={{ marginLeft: 12, fontWeight: 800, fontSize: 16, textTransform: "uppercase", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div className="barra" style={scheda}>
+          <Link href="/cassa" style={{ textDecoration: "none" }}><button style={ghost}>⌂</button></Link>
+          <Link href="/cassa/cliente" style={{ textDecoration: "none" }}><button style={ghost}>Dati cliente</button></Link>
+          <button style={{ ...ghost, background: "var(--oro)", color: "var(--testo)" }}>Ordine</button>
+          <Link href="/cassa/tavoli" style={{ textDecoration: "none" }}><button style={ghost}>Sala</button></Link>
+          <span style={{ marginLeft: 12, fontFamily: "Oswald, sans-serif", fontWeight: 600, letterSpacing: ".04em", fontSize: 16, textTransform: "uppercase", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {menuAperto ? `${menuAperto.p.nome} · ${menuAperto.gruppi[menuAperto.passo]?.etichetta ?? ""}` : modoVarianti ? `Varianti · ${figliaAttiva ? figliaAttiva.descrizione + " (" + (rigaSel?.descrizione ?? "") + ")" : rigaSel?.descrizione ?? ""}` : catCorrente?.nome}
           </span>
           <span style={{ flex: 1 }} />
@@ -352,18 +353,18 @@ function Cassa() {
         {menuAperto ? (
           <>
             {/* I passi del menu: «Scegli le 2 pizze» → «Scegli la bibita», come online (SCEGLI LA PIZZA 2–2). */}
-            <div style={{ display: "grid", gridTemplateColumns: `auto repeat(${menuAperto.gruppi.length}, 1fr) auto`, gap: 4, padding: 6, background: "#eceae4" }}>
-              <button className="tessera" onClick={() => setMenuAperto(null)} style={{ minHeight: 40, padding: "6px 14px", fontSize: 12, background: "#2d7ff9", color: "#fff" }}>← Annulla</button>
+            <div style={{ display: "grid", gridTemplateColumns: `auto repeat(${menuAperto.gruppi.length}, 1fr) auto`, gap: 4, padding: 6, background: "var(--sfondo)" }}>
+              <button className="tessera" onClick={() => setMenuAperto(null)} style={{ minHeight: 40, padding: "6px 14px", fontSize: 13, color: "var(--vino)", borderColor: "var(--vino)" }}>← Annulla</button>
               {menuAperto.gruppi.map((g, i) => (
-                <button key={g.id} className="tessera" onClick={() => setMenuAperto({ ...menuAperto, passo: i })} style={{
-                  minHeight: 40, padding: "6px 4px", fontSize: 12, background: menuAperto.scelte[i].length === g.quantita ? "#9ad36a" : "#ffe08a",
-                  outline: i === menuAperto.passo ? "3px solid #1d1b17" : "none", outlineOffset: -3, flexDirection: "column", gap: 2,
+                <button key={g.id} className={"tessera" + (menuAperto.scelte[i].length === g.quantita ? " oro" : "")} onClick={() => setMenuAperto({ ...menuAperto, passo: i })} style={{
+                  minHeight: 40, padding: "6px 4px", fontSize: 13,
+                  outline: i === menuAperto.passo ? "3px solid var(--vino)" : "none", outlineOffset: -3, flexDirection: "column", gap: 2,
                 }}>
                   <span>{g.etichetta}</span>
-                  <span style={{ fontWeight: 500, textTransform: "none", fontSize: 11 }}>{menuAperto.scelte[i].length === 0 ? `${menuAperto.scelte[i].length}/${g.quantita}` : menuAperto.scelte[i].map((x) => x.nome).join(", ")}</span>
+                  <span className="prezzo">{menuAperto.scelte[i].length === 0 ? `${menuAperto.scelte[i].length}/${g.quantita}` : menuAperto.scelte[i].map((x) => x.nome).join(", ")}</span>
                 </button>
               ))}
-              <button className="tessera primario" onClick={confermaMenu} disabled={!menuCompleto(menuAperto.gruppi, menuAperto.scelte)} style={{ minHeight: 40, padding: "6px 14px", fontSize: 12 }}>
+              <button className="tessera primario" onClick={confermaMenu} disabled={!menuCompleto(menuAperto.gruppi, menuAperto.scelte)} style={{ minHeight: 40, padding: "6px 14px", fontSize: 13 }}>
                 In comanda · {euro(prezzoDi(menuAperto.p, listino) * quantitaDigitata)}
               </button>
             </div>
@@ -375,10 +376,10 @@ function Cassa() {
                 return prodotti.filter((p) => g.scelte.includes(p.id)).map((p) => {
                   const n = scelte.filter((x) => x.id === p.id).length;
                   return (
-                    <button key={p.id} className="tessera" onClick={() => toccaScelta(p)} style={{ background: n > 0 ? "#ffe08a" : chiaro(categorie.find((c) => c.id === p.id_categoria)?.colore), flexDirection: "column", gap: 4, position: "relative" }}>
+                    <button key={p.id} className={"tessera" + (n > 0 ? " oro" : "")} onClick={() => toccaScelta(p)} style={{ boxShadow: n > 0 ? undefined : striscia(categorie.find((c) => c.id === p.id_categoria)?.colore), flexDirection: "column", gap: 4, position: "relative" }}>
                       <span>{p.nome}</span>
-                      {n > 0 && <span style={{ position: "absolute", top: 4, right: 6, fontSize: 12, fontWeight: 800 }}>{g.quantita > 1 ? `×${n}` : "✓"}</span>}
-                      {n > 0 && g.quantita > 1 && <span onClick={(e) => { e.stopPropagation(); togliScelta(menuAperto.passo, scelte.findIndex((x) => x.id === p.id)); }} style={{ fontWeight: 500, fontSize: 11, textTransform: "none", textDecoration: "underline" }}>togli una</span>}
+                      {n > 0 && <span style={{ position: "absolute", top: 4, right: 6, fontSize: 13, fontWeight: 700, color: "var(--vino)" }}>{g.quantita > 1 ? `×${n}` : "✓"}</span>}
+                      {n > 0 && g.quantita > 1 && <span onClick={(e) => { e.stopPropagation(); togliScelta(menuAperto.passo, scelte.findIndex((x) => x.id === p.id)); }} className="prezzo" style={{ textDecoration: "underline" }}>togli una</span>}
                     </button>
                   );
                 });
@@ -387,54 +388,52 @@ function Cassa() {
           </>
         ) : !modoVarianti ? (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(var(--colonne), 1fr)", gap: 4, padding: 6, background: "#eceae4" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(var(--colonne), 1fr)", gap: 4, padding: 6, background: "var(--sfondo)" }}>
               {categorie.map((c) => (
-                <button key={c.id} className="tessera" onClick={() => setCategoria(c.id)} style={{
-                  minHeight: 40, padding: "6px 4px", fontSize: 12, background: c.colore ?? "#ddd",
-                  outline: c.id === categoria ? "3px solid #1d1b17" : "none", outlineOffset: -3,
+                <button key={c.id} className={"tessera" + (c.id === categoria ? " attiva" : "")} onClick={() => setCategoria(c.id)} style={{
+                  minHeight: 40, padding: "6px 4px", fontSize: 13, boxShadow: c.id === categoria ? undefined : striscia(c.colore),
                 }}>{c.nome}</button>
               ))}
             </div>
             <div className="scorri" style={{ flex: 1, padding: 6, display: "grid", gridTemplateColumns: "repeat(var(--colonne), 1fr)", gap: 4, alignContent: "start" }}>
               {prodotti.filter((p) => p.id_categoria === categoria).map((p) => (
-                <button key={p.id} className="tessera" onClick={() => toccaProdotto(p)} style={{ background: chiaro(catCorrente?.colore), flexDirection: "column", gap: 4 }}>
+                <button key={p.id} className="tessera" onClick={() => toccaProdotto(p)} style={{ boxShadow: striscia(catCorrente?.colore), flexDirection: "column", gap: 4 }}>
                   <span>{p.nome}</span>
-                  <span style={{ fontWeight: 500, fontSize: 12, textTransform: "none", opacity: .8 }}>{prezzoDi(p, listino) > 0 ? euro(prezzoDi(p, listino)) : "da impostare"}</span>
+                  <span className="prezzo">{prezzoDi(p, listino) > 0 ? euro(prezzoDi(p, listino)) : "da impostare"}</span>
                 </button>
               ))}
             </div>
           </>
         ) : (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: `auto repeat(${Math.max(gruppi.length, 1)}, 1fr)`, gap: 4, padding: 6, background: "#eceae4" }}>
-              <button className="tessera" onClick={() => setModoVarianti(false)} style={{ minHeight: 40, padding: "6px 14px", fontSize: 12, background: "#2d7ff9", color: "#fff" }}>← Prodotti</button>
+            <div style={{ display: "grid", gridTemplateColumns: `auto repeat(${Math.max(gruppi.length, 1)}, 1fr)`, gap: 4, padding: 6, background: "var(--sfondo)" }}>
+              <button className="tessera" onClick={() => setModoVarianti(false)} style={{ minHeight: 40, padding: "6px 14px", fontSize: 13, color: "var(--vino)", borderColor: "var(--vino)" }}>← Prodotti</button>
               {gruppi.map((g) => (
-                <button key={g} className="tessera" onClick={() => setGruppo(g)} style={{
-                  minHeight: 40, padding: "6px 4px", fontSize: 12, background: "#9ad36a",
-                  outline: g === gruppoAttivo ? "3px solid #1d1b17" : "none", outlineOffset: -3,
+                <button key={g} className={"tessera" + (g === gruppoAttivo ? " attiva" : "")} onClick={() => setGruppo(g)} style={{
+                  minHeight: 40, padding: "6px 4px", fontSize: 13,
                 }}>{g}</button>
               ))}
             </div>
             {figlie.length > 0 && (
               <div style={{ display: "flex", gap: 4, padding: "6px 6px 0", flexWrap: "wrap" }}>
-                <span className="muto" style={{ fontSize: 12, alignSelf: "center" }}>Su quale:</span>
+                <span className="muto" style={{ fontSize: 13, alignSelf: "center" }}>Su quale:</span>
                 {figlie.map((f, i) => ({ f, i })).filter(({ f }) => gruppiPerCategoria(gruppiCat, prodotti.find((p) => p.id === f.id_prodotto)?.id_categoria ?? null).length > 0).map(({ f, i }) => (
-                  <button key={i} onClick={() => setFigliaSel(i)} style={{ padding: "4px 10px", fontSize: 13, outline: (figliaSel ?? 0) === i ? "3px solid #1d1b17" : "none", outlineOffset: -3 }}>
+                  <button key={i} onClick={() => setFigliaSel(i)} className={(figliaSel ?? 0) === i ? "primario" : ""} style={{ padding: "4px 10px", fontSize: 13 }}>
                     {f.quantita > 1 ? `${f.quantita}× ` : ""}{f.descrizione}{f.variazioni.length > 0 ? ` (${f.variazioni.map((v) => v.nome).join(", ")})` : ""}
                   </button>
                 ))}
               </div>
             )}
             <div className="scorri" style={{ flex: 1, padding: 6, display: "grid", gridTemplateColumns: "repeat(var(--colonne), 1fr)", gap: 4, alignContent: "start" }}>
-              <button className="tessera" onClick={() => setSegno("con")} style={{ background: "#f39c2b", outline: segno === "con" ? "3px solid #1d1b17" : "none", outlineOffset: -3 }}>CON</button>
-              <button className="tessera" onClick={() => setSegno("senza")} style={{ background: "#f39c2b", outline: segno === "senza" ? "3px solid #1d1b17" : "none", outlineOffset: -3 }}>SENZA</button>
+              <button className={"tessera" + (segno === "con" ? " attiva" : "")} onClick={() => setSegno("con")} style={{ fontWeight: 600, boxShadow: segno === "con" ? undefined : striscia("#c9973f") }}>CON</button>
+              <button className={"tessera" + (segno === "senza" ? " attiva" : "")} onClick={() => setSegno("senza")} style={{ fontWeight: 600, boxShadow: segno === "senza" ? undefined : striscia("#c9973f") }}>SENZA</button>
               {variantiSel.filter((v) => v.gruppo === gruppoAttivo).map((v) => {
                 const nome = segno === "con" ? v.nome : "senza " + v.nome;
                 const on = (figliaAttiva ? figliaAttiva.variazioni : rigaSel?.variazioni ?? []).some((x) => x.nome === nome);
                 return (
-                  <button key={v.id} className="tessera" onClick={() => toccaVariante(v)} style={{ background: on ? "#ffe08a" : "#f4f2ec", textTransform: "none", flexDirection: "column", gap: 2 }}>
+                  <button key={v.id} className={"tessera" + (on ? " oro" : "")} onClick={() => toccaVariante(v)} style={{ textTransform: "none", flexDirection: "column", gap: 2 }}>
                     <span>{v.nome}</span>
-                    {segno === "con" && v.prezzo > 0 && <span style={{ fontWeight: 500, fontSize: 12, opacity: .8 }}>+ {euro(v.prezzo)}</span>}
+                    {segno === "con" && v.prezzo > 0 && <span className="prezzo">+ {euro(v.prezzo)}</span>}
                   </button>
                 );
               })}
@@ -444,18 +443,18 @@ function Cassa() {
       </div>
 
       {/* ===== Destra: comanda, tastierino, invio ===== */}
-      <aside className="cassa-comanda" style={{ display: "flex", flexDirection: "column", background: "#fff", borderLeft: "1px solid var(--bordo)" }}>
+      <aside className="cassa-comanda" style={{ display: "flex", flexDirection: "column", background: "#fff", borderLeft: "1px solid var(--bordo)", boxShadow: "-6px 0 18px rgba(26,23,21,.05)" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, padding: 6 }}>
           {TIPI.map((t) => (
-            <button key={t.v} onClick={() => cambiaTipo(t.v)} className={tipo === t.v ? "primario" : ""} style={{ padding: "8px 2px", fontSize: 13 }}>{t.t}</button>
+            <button key={t.v} onClick={() => cambiaTipo(t.v)} className={tipo === t.v ? "primario" : ""} style={{ padding: "8px 2px", fontSize: 13, whiteSpace: "nowrap" }}>{t.t}</button>
           ))}
         </div>
         {cliente && (
-          <div style={{ margin: "0 6px 6px", padding: "6px 10px", borderRadius: 8, background: "#fff3f4", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{ margin: "0 6px 6px", padding: "6px 10px", borderRadius: 12, background: "var(--vino-chiaro)", border: "1px solid var(--oro-chiaro)", fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
             <span>📞</span>
             <div style={{ flex: 1 }}>
               <b>{cliente.nome ?? "Nuovo cliente"}</b> · {cliente.telefono}
-              {cliente.indirizzo && <div className="muto" style={{ fontSize: 12 }}>{cliente.indirizzo}</div>}
+              {cliente.indirizzo && <div className="muto">{cliente.indirizzo}</div>}
             </div>
             <button onClick={() => setCliente(null)} style={{ padding: "2px 8px" }}>✕</button>
           </div>
@@ -491,9 +490,9 @@ function Cassa() {
           {righe.map((r) => (
             <button key={r.chiave} onClick={() => toccaRiga(r)} style={{
               width: "100%", display: "flex", gap: 8, alignItems: "flex-start", textAlign: "left", border: "none", borderRadius: 0,
-              borderBottom: "1px solid var(--bordo)", padding: "8px 10px", background: r.chiave === selezionata ? "#fff3c4" : "#fff",
+              borderBottom: "1px solid var(--bordo)", padding: "8px 10px", background: r.chiave === selezionata ? "var(--oro-velo)" : "#fff", boxShadow: r.chiave === selezionata ? "inset 4px 0 0 var(--oro)" : undefined,
             }}>
-              <span style={{ fontWeight: 800, minWidth: 28 }}>{r.quantita}×</span>
+              <span style={{ fontWeight: 800, minWidth: 28, color: "var(--vino)" }}>{r.quantita}×</span>
               <span style={{ flex: 1 }}>
                 <span style={{ fontWeight: 600 }}>{r.descrizione}</span>
                 {r.variazioni.map((v, i) => (
@@ -511,9 +510,9 @@ function Cassa() {
                     ))}
                   </span>
                 ))}
-                {r.figlie && (() => { const p = prodotti.find((x) => x.id === r.id_prodotto); return p?.incluso ? <span style={{ display: "block", fontSize: 12, paddingLeft: 10, color: "var(--muto)" }}>+ {p.incluso}</span> : null; })()}
+                {r.figlie && (() => { const p = prodotti.find((x) => x.id === r.id_prodotto); return p?.incluso ? <span style={{ display: "block", fontSize: 13, paddingLeft: 10, color: "var(--muto)" }}>+ {p.incluso}</span> : null; })()}
               </span>
-              <span style={{ fontVariantNumeric: "tabular-nums" }}>{euro(prezzoRiga(r))}</span>
+              <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{euro(prezzoRiga(r))}</span>
             </button>
           ))}
         </div>
@@ -522,17 +521,17 @@ function Cassa() {
           <button onClick={() => cambiaQuantita(-1)} disabled={!rigaSel}>−</button>
           <button onClick={() => cambiaQuantita(1)} disabled={!rigaSel}>+</button>
           <button onClick={() => setModoVarianti(true)} disabled={!rigaSel || (variantiSel.length === 0 && figlie.length === 0)} title={rigaSel && variantiSel.length === 0 && figlie.length === 0 ? "Niente varianti per questa categoria" : undefined}>Varianti</button>
-          <button onClick={togliRiga} disabled={!rigaSel} style={{ color: "var(--accento)" }}>Togli</button>
+          <button onClick={togliRiga} disabled={!rigaSel} style={{ color: "var(--vino)", borderColor: "var(--vino)" }}>Togli</button>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr) 1.4fr", gap: 4, padding: "0 6px 6px" }}>
           {["7", "8", "9", "1", "2", "3", "4", "5", "6", "0", "00", "C"].map((k, i) => (
-            <button key={k} onClick={() => tasto(k)} style={{ padding: "10px 0", fontSize: 17, fontWeight: 700, gridColumn: i % 3 === 0 && i > 0 ? undefined : undefined }}>{k}</button>
+            <button key={k} onClick={() => tasto(k)} style={{ padding: "10px 0", fontSize: 17, fontWeight: 700, borderRadius: 12 }}>{k}</button>
           ))}
           <div style={{ gridColumn: "4", gridRow: "1 / span 4", display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ flex: 1, border: "1px solid var(--bordo)", borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#f8f6f1" }}>
-              <span className="muto" style={{ fontSize: 11 }}>quantità</span>
-              <span style={{ fontSize: 28, fontWeight: 800 }}>{digitato || "1"}</span>
+            <div style={{ flex: 1, border: "1px solid var(--oro-chiaro)", borderRadius: 12, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "var(--oro-velo)" }}>
+              <span className="muto" style={{ fontSize: 13 }}>quantità</span>
+              <span style={{ fontSize: 28, fontWeight: 800, color: "var(--vino)" }}>{digitato || "1"}</span>
             </div>
           </div>
         </div>
@@ -559,42 +558,42 @@ function Cassa() {
               <input inputMode="decimal" placeholder="paga con…" value={pagaCon} onChange={(e) => setPagaCon(e.target.value)} style={{ flex: 1, minWidth: 0, padding: 6, fontSize: 14 }} />
             )}
             {pagamento === "contanti" && tipo === "domicilio" && Number(pagaCon.replace(",", ".")) > totale + costoConsegna && (
-              <span style={{ fontSize: 12, whiteSpace: "nowrap" }}>resto {euro(Number(pagaCon.replace(",", ".")) - totale - costoConsegna)}</span>
+              <span style={{ fontSize: 13, whiteSpace: "nowrap" }}>resto {euro(Number(pagaCon.replace(",", ".")) - totale - costoConsegna)}</span>
             )}
           </div>
         )}
         <div style={{ display: "flex", gap: 4, margin: "0 6px 6px", alignItems: "center" }}>
           <input placeholder="Coupon" value={codiceCoupon} onChange={(e) => { setCodiceCoupon(e.target.value.toUpperCase()); setCoupon(null); setErroreCoupon(null); }} onKeyDown={(e) => { if (e.key === "Enter") verificaCoupon(); }} style={{ flex: 1, minWidth: 0, padding: 6, fontSize: 14, textTransform: "uppercase" }} />
           <button onClick={verificaCoupon} disabled={!codiceCoupon.trim() || righe.length === 0} style={{ padding: "6px 10px", fontSize: 13 }}>Applica</button>
-          {coupon && <span style={{ fontSize: 12, color: "var(--ok)", fontWeight: 700, whiteSpace: "nowrap" }}>−{euro(coupon.sconto)}</span>}
+          {coupon && <span style={{ fontSize: 13, color: "var(--ok)", fontWeight: 700, whiteSpace: "nowrap" }}>−{euro(coupon.sconto)}</span>}
         </div>
         {erroreCoupon && <div style={{ margin: "-2px 6px 6px", fontSize: 13, color: "var(--accento)", fontWeight: 700 }}>{erroreCoupon}</div>}
         <input placeholder="Note (es. ben cotta)" value={note} onChange={(e) => setNote(e.target.value)} style={{ margin: "0 6px 6px", padding: 8, fontSize: 14 }} />
         {errore && (
-          <div role="alert" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 10, background: "#fff3f4", border: "2px solid var(--accento)", color: "var(--accento)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
+          <div role="alert" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 12, background: "var(--vino-chiaro)", border: "2px solid var(--vino)", color: "var(--vino)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
             {errore}
           </div>
         )}
         {esito && (
-          <div role="status" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 10, background: "#eef7ea", border: "2px solid var(--ok)", color: "var(--ok)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
+          <div role="status" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 12, background: "#eef7ea", border: "2px solid var(--ok)", color: "var(--ok)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
             {esito}
           </div>
         )}
         {/* n. 10 del giro 3: gli errori stanno in UN posto, vicino al bottone */}
         {!errore && tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo) && righe.length > 0 && (
-          <div style={{ margin: "0 6px 6px", padding: "8px 12px", borderRadius: 10, background: "#fff3f4", border: "2px solid var(--accento)", color: "var(--accento)", fontWeight: 700, fontSize: 14 }}>
+          <div style={{ margin: "0 6px 6px", padding: "8px 12px", borderRadius: 12, background: "var(--vino-chiaro)", border: "2px solid var(--vino)", color: "var(--vino)", fontWeight: 700, fontSize: 14 }}>
             {!idIndirizzo ? "Serve l'indirizzo di consegna: aprilo da Dati cliente." : fuoriZona ? "Fuori dalle zone di consegna: non consegniamo lì." : `Minimo d'ordine ${euro(zonaSel!.minimo_ordine)}: mancano ${euro(zonaSel!.minimo_ordine - totale)}.`}
           </div>
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 6px 6px" }}>
           <button onClick={svuota} disabled={righe.length === 0}>Svuota</button>
           <span style={{ flex: 1, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-            {costoConsegna > 0 && <span className="muto" style={{ display: "block", fontSize: 12 }}>+ consegna {euro(costoConsegna)}</span>}
-            {coupon && <span className="muto" style={{ display: "block", fontSize: 12 }}>− {coupon.nome} {euro(coupon.sconto)}</span>}
-            <span style={{ fontSize: 26, fontWeight: 800 }}>{euro(righe.length === 0 ? 0 : Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0)))}</span>
+            {costoConsegna > 0 && <span className="muto" style={{ display: "block" }}>+ consegna {euro(costoConsegna)}</span>}
+            {coupon && <span className="muto" style={{ display: "block" }}>− {coupon.nome} {euro(coupon.sconto)}</span>}
+            <span style={{ fontSize: 26, fontWeight: 800, color: "var(--vino)" }}>{euro(righe.length === 0 ? 0 : Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0)))}</span>
           </span>
         </div>
-        <button onClick={invia} className="primario" disabled={invio || righe.length === 0 || (tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)} style={{ margin: 6, padding: 16, fontSize: 18, fontWeight: 800, borderRadius: 10 }}>
+        <button onClick={invia} className="primario" disabled={invio || righe.length === 0 || (tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
           {invio ? "Invio…" : "Invia in cucina"}
         </button>
       </aside>
@@ -607,10 +606,9 @@ function isoLocale(d: Date) {
 }
 function oggiISO() { return isoLocale(new Date()); }
 
-/** Il colore della categoria, schiarito per le tessere dei prodotti. */
-function chiaro(hex: string | null | undefined) {
-  if (!hex || !/^#[0-9a-f]{6}$/i.test(hex)) return "#f4f2ec";
-  const n = parseInt(hex.slice(1), 16);
-  const m = (c: number) => Math.round(c + (255 - c) * 0.45);
-  return `rgb(${m(n >> 16)}, ${m((n >> 8) & 255)}, ${m(n & 255)})`;
+/** Il colore della categoria (quello di Velocissimo) resta come striscia sotto la tessera, non più come fondo:
+ * la tessera è bianca col marchio, il colore aiuta ancora l'occhio a ritrovare il reparto. */
+function striscia(hex: string | null | undefined) {
+  const c = hex && /^#[0-9a-f]{6}$/i.test(hex) ? hex : "#e8d2a6";
+  return `inset 0 -4px 0 ${c}, 0 1px 2px rgba(26,23,21,.06)`;
 }

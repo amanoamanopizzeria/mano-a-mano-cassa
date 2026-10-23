@@ -1,12 +1,19 @@
+/* Il marchio in tutta la cassa (grafico, 23/10/2026): vino per le azioni, oro per gli accenti,
+   crema di fondo, Oswald per i titoli in maiuscolo, Figtree per testo e numeri. Il riferimento vivo
+   è src/app/totem/totem.css; il rosso #c8102e di prima è sparito. I caratteri sono ospitati da noi
+   (@fontsource, importati in layout.tsx): niente Google Fonts, la CSP non li lascia passare. */
 :root {
-  --sfondo: #f6f4ef;
+  --vino: #8a1538; --vino-scuro: #6e0f2c; --vino-chiaro: #fff5f7;
+  --oro: #c9973f; --oro-chiaro: #e8d2a6; --oro-velo: #fff8ea;
+  --sfondo: #fbf7f0;
   --carta: #ffffff;
-  --testo: #1d1b17;
-  --muto: #6b675f;
-  --bordo: #e4e0d8;
-  --accento: #c8102e;
+  --testo: #1a1715;
+  --muto: #6f6a63;
+  --bordo: #ece6da;
+  --accento: var(--vino);
   --ok: #2e7d32;
-  --attesa: #ef6c00;
+  --attesa: var(--oro);
+  --ombra: 0 1px 2px rgba(26,23,21,.05), 0 10px 26px rgba(26,23,21,.07);
 }
 
 * { box-sizing: border-box; }
@@ -14,47 +21,68 @@ html, body { margin: 0; padding: 0; }
 body {
   background: var(--sfondo);
   color: var(--testo);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
 }
 a { color: inherit; }
 main { padding: 16px; max-width: 1100px; margin: 0 auto; }
-h1 { font-size: 22px; margin: 0 0 12px; }
+h1, h2, h3 { font-family: "Oswald", "Figtree", sans-serif; text-transform: uppercase; letter-spacing: .02em; font-weight: 600; }
+h1 { font-size: 26px; margin: 0 0 12px; }
+h2 { font-size: 18px; margin: 18px 0 8px; }
+h3 { font-size: 15px; margin: 12px 0 6px; color: var(--muto); letter-spacing: .08em; }
 .griglia { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 .carta {
   background: var(--carta);
   border: 1px solid var(--bordo);
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 18px;
+  padding: 14px 16px;
+  box-shadow: var(--ombra);
 }
 .badge {
-  display: inline-block; padding: 2px 8px; border-radius: 999px;
-  font-size: 12px; font-weight: 600; color: #fff; background: var(--muto);
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .06em;
+  font-size: 13px; font-weight: 500; color: #fff; background: var(--muto);
 }
-.badge.ricevuto { background: var(--accento); }
-.badge.in_preparazione { background: var(--attesa); }
+.badge.ricevuto { background: var(--vino); }
+.badge.in_preparazione { background: var(--oro); color: var(--testo); }
 .badge.pronto, .badge.consegnato, .badge.ritirato { background: var(--ok); }
 .badge.in_consegna { background: #1565c0; }
 .muto { color: var(--muto); font-size: 13px; }
 button {
-  font: inherit; padding: 8px 12px; border-radius: 8px;
-  border: 1px solid var(--bordo); background: #fff; cursor: pointer;
+  font: inherit; padding: 8px 14px; border-radius: 999px; font-weight: 600;
+  border: 1px solid var(--bordo); background: #fff; color: var(--testo); cursor: pointer;
 }
-button.primario { background: var(--accento); color: #fff; border-color: var(--accento); }
+button:disabled { opacity: .45; cursor: default; }
+button.primario { background: var(--vino); color: #fff; border-color: var(--vino); }
+button.primario:disabled { opacity: .45; }
+input, select, textarea {
+  font: inherit; color: var(--testo); background: #fff;
+  border: 1px solid var(--bordo); border-radius: 10px; padding: 8px 10px;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outline-offset: 0; border-color: var(--oro); }
 
 /* ===== Schermate a tutto schermo (totem e cassa touch) ===== */
 .schermo { height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; background: var(--sfondo); }
 .schermo button { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+/* Le tessere della cassa: stesse misure di prima (min-height 68, 14 px), il nome in Oswald come sul totem. */
 .tessera {
-  border-radius: 8px; border: 1px solid rgba(0,0,0,.12); padding: 10px 8px;
-  font-weight: 600; font-size: 14px; line-height: 1.15; text-align: center; min-height: 68px;
-  display: flex; align-items: center; justify-content: center; text-transform: uppercase; color: #1d1b17;
+  border-radius: 12px; border: 1px solid rgba(26,23,21,.08); padding: 10px 8px;
+  font-family: "Oswald", "Figtree", sans-serif; letter-spacing: .02em;
+  font-weight: 500; font-size: 14px; line-height: 1.15; text-align: center; min-height: 68px;
+  display: flex; align-items: center; justify-content: center; text-transform: uppercase; color: var(--testo);
+  background: #fff; box-shadow: 0 1px 2px rgba(26,23,21,.06);
 }
-.tessera:active { filter: brightness(.9); }
+.tessera:active { filter: brightness(.94); }
+.tessera.attiva { background: var(--vino); color: #fff; border-color: var(--vino); }
+.tessera.primario { background: var(--vino); color: #fff; border-color: var(--vino); }
+.tessera.oro { background: var(--oro-velo); border-color: var(--oro); box-shadow: inset 0 0 0 2px var(--oro); }
 .scorri { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 /* La cassa touch: 6 colonne su un monitor, 4 su un tablet, 3 sotto i 700 px; il pannello della comanda si stringe
    (critico giro 1 n. 8 e giro 3 n. 5: a 640 px le categorie finivano sotto il pannello). */
 .cassa-nuovo { --colonne: 6; }
+.cassa-nuovo .tessera .prezzo { font-family: "Figtree", sans-serif; font-weight: 600; font-size: 13px; text-transform: none; letter-spacing: 0; opacity: .8; }
+.cassa-nuovo .barra button { white-space: nowrap; }
 .cassa-comanda { width: 340px; flex: none; }
 @media (max-width: 1024px) { .cassa-nuovo { --colonne: 4; } .cassa-comanda { width: 300px; } }
-@media (max-width: 760px) { .cassa-nuovo { --colonne: 3; } .cassa-comanda { width: 250px; } .cassa-nuovo .tessera { font-size: 12px; min-height: 56px; padding: 6px 4px; } }
+@media (max-width: 760px) { .cassa-nuovo { --colonne: 3; } .cassa-comanda { width: 250px; } .cassa-nuovo .tessera { font-size: 13px; min-height: 56px; padding: 6px 4px; } }

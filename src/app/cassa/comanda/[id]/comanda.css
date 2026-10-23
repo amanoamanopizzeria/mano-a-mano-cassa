@@ -10,7 +10,7 @@
 .comanda .chi, .comanda .dove { margin-bottom: 8px; }
 .comanda .chi .nome, .comanda .dove .nome { font-size: 17px; font-weight: 900; }
 .comanda .reparto { margin-top: 6px; }
-.comanda .reparto h2 { font-size: 13px; margin: 0 0 4px; padding: 2px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-transform: uppercase; letter-spacing: .08em; text-align: center; font-weight: 900; }
+.comanda .reparto h2 { font-family: inherit; font-size: 13px; margin: 0 0 4px; padding: 2px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; text-transform: uppercase; letter-spacing: .08em; text-align: center; font-weight: 900; }
 .comanda .riga { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px dotted #999; }
 .comanda .q { font-size: 26px; font-weight: 900; min-width: 30px; line-height: 1; }
 .comanda .cosa { flex: 1; }
