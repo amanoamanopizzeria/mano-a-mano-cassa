@@ -107,9 +107,16 @@ function Fasce() {
         <h1 style={{ margin: 0 }}>Planner — fasce</h1>
         <input type="date" value={giorno} onChange={(e) => setGiorno(e.target.value)} />
         <Link href="/cassa/capacita" className="muto">Pizzaioli e rider del giorno →</Link>
-        <span className="muto" style={{ marginLeft: "auto" }}>
-          {totali.ordini} ordini · {totali.pizze} pizze · {totali.consegne} consegne · {totali.euro.toFixed(2).replace(".", ",")} €
+        <span className="f-totale" style={{ marginLeft: "auto" }}>
+          <b>{totali.ordini}</b> ordini · <b>{totali.pizze}</b> pizze · <b>{totali.consegne}</b> consegne · <b>{totali.euro.toFixed(2).replace(".", ",")} €</b>
         </span>
+      </div>
+      <div className="f-legenda">
+        <span><span className="f-pill libera">0/20</span> posti liberi</span>
+        <span><span className="f-pill quasi">14/20</span> quasi piena</span>
+        <span><span className="f-pill piena">20/20</span> sold out</span>
+        <span><span className="f-pill lente">🔍 2</span> gli ordini della fascia: tocca per vederli</span>
+        <span className="muto">Tocca una cella per cambiare il massimo solo di quella fascia.</span>
       </div>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
@@ -176,9 +183,6 @@ function Fasce() {
           </tbody>
         </table>
       </div>
-      <p className="muto" style={{ marginTop: 8 }}>
-        Grigio: posti liberi · oro: quasi piena · vino: sold out. Tocca una cella per cambiare il massimo solo di quella fascia.
-      </p>
 
       {modifica && (
         <div onClick={() => setModifica(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}>
