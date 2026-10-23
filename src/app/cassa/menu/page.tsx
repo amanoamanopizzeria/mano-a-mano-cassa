@@ -72,8 +72,9 @@ function Menu() {
           {categorie.filter((c) => c.id_gruppo === g.id).map((c) => (
             <div key={c.id} className="carta" style={{ marginBottom: 10 }}>
               <strong className="cat">{c.nome}</strong>
-              <ul className="prodotti">
-                {prodotti.filter((p) => p.id_categoria === c.id).map((p) => {
+              {(() => {
+                const della = prodotti.filter((p) => p.id_categoria === c.id);
+                const riga = (p: Prodotto) => {
                   const pacchetto = componenti.filter((k) => k.id_pacchetto === p.id);
                   return (
                     <li key={p.id} className={p.attivo ? undefined : "spento"}>
@@ -85,8 +86,20 @@ function Menu() {
                       )}
                     </li>
                   );
-                })}
-              </ul>
+                };
+                const spenti = della.filter((p) => !p.attivo);
+                return (
+                  <>
+                    <ul className="prodotti">{della.filter((p) => p.attivo).map(riga)}</ul>
+                    {spenti.length > 0 && (
+                      <details className="spenti">
+                        <summary>Spenti ({spenti.length}): non si vendono, restano in anagrafica</summary>
+                        <ul className="prodotti">{spenti.map(riga)}</ul>
+                      </details>
+                    )}
+                  </>
+                );
+              })()}
               {gruppiVar.some((g) => g.id_categoria === c.id) && (
                 <div className="muto" style={{ marginTop: 6 }}>
                   Varianti: {gruppiVar.filter((g) => g.id_categoria === c.id).map((g) =>
