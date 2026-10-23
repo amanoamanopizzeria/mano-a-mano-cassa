@@ -209,7 +209,7 @@ function Cliente() {
               <li key={i.id}>
                 {i.via} {i.civico ?? ""} {i.cap ?? ""} {i.citta ?? ""}
                 {i.lat != null && i.lng != null && (
-                  <a className="muto" style={{ marginLeft: 8 }} target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${i.lat},${i.lng}`}>mappa</a>
+                  <a className="mappa-link" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${i.lat},${i.lng}`}>Mappa ↗</a>
                 )}
               </li>
             ))}
@@ -218,7 +218,7 @@ function Cliente() {
           <h3>Ultimi ordini</h3>
           <ul>
             {(scheda.ultimi_ordini ?? []).map((o) => (
-              <li key={o.numero}>#{o.numero} · {o.tipo} · {o.canale} · {Number(o.totale).toFixed(2)} €</li>
+              <li key={o.numero}>#{o.numero} · {o.tipo} · {o.canale} · <b>{Number(o.totale).toFixed(2).replace(".", ",")} €</b></li>
             ))}
             {(scheda.ultimi_ordini ?? []).length === 0 && <li className="muto">Nessun ordine</li>}
           </ul>

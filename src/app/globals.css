@@ -153,3 +153,24 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .accesso { padding-top: 40px; text-align: center; }
 .accesso .bollino { width: 120px; margin: 0 auto 12px; display: block; }
 .accesso .carta { text-align: left; }
+
+/* ===== giro 3 del grafico (23/10/2026): i minori del critico 4b ===== */
+.mappa-link { display: inline-block; margin-left: 8px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--vino); color: var(--vino); font-weight: 600; font-size: 14px; text-decoration: none; white-space: nowrap; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.capacita button.blocco { color: var(--muto); }
+.capacita button.primario { white-space: nowrap; }
+.home .carta.principale { grid-column: 1 / -1; background: var(--vino); border-color: var(--vino); border-bottom-color: var(--oro); }
+.home .carta.principale strong { color: #fff; font-size: 22px; }
+.home .carta.principale p { color: rgba(255,255,255,.85); }
+/* La sala in una schermata: schede piccole, numero grande, colore = stato. */
+.sala .sala-griglia { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.sala .sala-griglia .tavolo { padding: 10px 10px 8px; min-height: 96px; display: flex; flex-direction: column; }
+.sala .sala-griglia .num { font-size: 26px; line-height: 1; }
+.sala .sala-griglia .badge { font-size: 12px; padding: 2px 7px; }
+.sala .sala-griglia .riga-min { font-size: 13px; white-space: nowrap; margin-top: 2px; }
+.sala .sala-griglia .azioni { margin-top: auto; padding-top: 6px; }
+.sala .sala-griglia .azioni button { flex: 1; padding: 6px 8px; font-size: 14px; white-space: nowrap; }
+/* Il menù: gli spenti chiusi in un ramo sotto la categoria. */
+.menu-lettura details.spenti { margin-top: 8px; }
+.menu-lettura details.spenti summary { cursor: pointer; font-size: 14px; color: var(--muto); font-weight: 600; }
+.menu-lettura details.spenti summary::marker { color: var(--oro); }
