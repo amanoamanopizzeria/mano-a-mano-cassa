@@ -110,7 +110,10 @@ function Cassa() {
     };
   }, []);
 
+  const [daConfermare, setDaConfermare] = useState<string | null>(null);   // id dell'ordine su cui «Annullato» aspetta il secondo tocco
   async function cambiaStato(id: string, stato: StatoOrdine) {
+    if (stato === "annullato" && daConfermare !== id) { setDaConfermare(id); setTimeout(() => setDaConfermare((d) => (d === id ? null : d)), 4000); return; }
+    setDaConfermare(null);
     const r = await fetch(`/api/ordini/${id}/stato`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -173,10 +176,10 @@ function Cassa() {
               {TRANSIZIONI_ORDINE[o.stato].map((s) => (
                 <button
                   key={s}
-                  className={s === "annullato" ? "" : "azione"}
+                  className={s === "annullato" ? (daConfermare === o.id ? "primario" : "") : "azione"}
                   onClick={() => cambiaStato(o.id, s)}
                 >
-                  {ETICHETTE[s]}
+                  {s === "annullato" && daConfermare === o.id ? "Sicuro? Tocca ancora" : ETICHETTE[s]}
                 </button>
               ))}
             </div>

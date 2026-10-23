@@ -14,7 +14,7 @@ interface Scheda {
   telefono?: string;
   cliente?: { id: string; nome: string | null; telefono: string; note: string | null; punti?: number; credito?: number; tag?: string[]; black_list?: boolean; card?: string | null };
   indirizzi?: { id: string; via: string; civico: string | null; cap: string | null; citta: string | null; lat: number | null; lng: number | null; id_zona: string | null }[];
-  ultimi_ordini?: { numero: number; creato_il: string; totale: number; tipo: string; canale: string }[];
+  ultimi_ordini?: { numero: number; numero_visibile?: string | null; creato_il: string; totale: number; tipo: string; canale: string }[];
 }
 interface Suggerimento {
   testo: string; via: string | null; civico: string | null; cap: string | null; citta: string | null;
@@ -221,7 +221,7 @@ function Cliente() {
           <h3>Ultimi ordini</h3>
           <ul>
             {(scheda.ultimi_ordini ?? []).map((o) => (
-              <li key={o.numero}>#{o.numero} · {o.tipo} · {o.canale} · <b>{Number(o.totale).toFixed(2).replace(".", ",")} €</b></li>
+              <li key={o.numero}>{o.numero_visibile ?? `#${o.numero}`} · {new Date(o.creato_il).toLocaleDateString("it-IT", { day: "numeric", month: "short" })} · {o.tipo} · <b>{Number(o.totale).toFixed(2).replace(".", ",")} €</b></li>
             ))}
             {(scheda.ultimi_ordini ?? []).length === 0 && <li className="muto">Nessun ordine</li>}
           </ul>

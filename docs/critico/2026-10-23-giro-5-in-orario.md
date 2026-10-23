@@ -173,3 +173,34 @@ le schede 18:30–19:30 sono bianche come le altre. **8**.
 ## Risposta (23/10/2026 sera, codice)
 
 I tre gravi: nel menù combo del totem ogni passo ha il numero (✓ quando è fatto), le scelte sono divise per categoria (Pizze / Pucce) e il tasto in fondo dice «Manca: bibita ↓» e ci porta, invece di restare spento; la comanda battuta resta anche andando a Dati cliente e tornando (bozza di 30 minuti), e dalla scheda del cliente cercato a mano c'è «Prendi l'ordine»; il resto da portare ha la sua riga in cassa e nella lista /cassa la scheda dice «paga con 20,00 €, resto 4,20 €». Minori rimasti per i prossimi giri: descrizioni e foto dei menù (anagrafica), T-12 nel quarto passato, due consegne allo stesso civico, quarti passati in grigio, conferma su «Annullato».
+
+## Giro 6 (23/10/2026, 19:50–19:57): i tre gravi dopo `0e7b7fe`
+
+Deploy READY su `0e7b7fe` (controllato prima di aprire). Stesse regole;
+ordine di prova **C-14** (domicilio, Prova Critico Tre, contanti paga con
+20) creato e **annullato** a fine giro. Nessun ordine dal totem: bastava la
+scheda del menù.
+
+| # | Cosa doveva cambiare | Esito | La prova |
+|---|---|---|---|
+| 1 | Totem, menu combo: passi numerati, scelte per categoria, «Manca: … ↓» che porta | **Risolto** | Menu puccia: «① SCEGLI LA PUCCIA 0/1», tasto **«Manca: scegli la puccia ↓»** (bianco col bordo vino, non più spento) che tocca e scorre al passo; scelta la Puccia vegetariana il cerchio diventa ✓ «1/1» e il tasto dice **«Manca: scegli la bibita ↓»** e porta al passo ② con le bibite divise in «Bevande» (Chinotto, Coca cola, Coca zero, Fanta, acque) e «Birre» (Peroni). Menu classico X1: passo ① con l'etichetta «Pizze classiche» sopra le pizze (le pucce sotto la loro), ② SCEGLI LA BIBITA con Bevande/Birre. |
+| 2 | Cassa: la comanda resta andando a Dati cliente; «Prendi l'ordine» dal cliente cercato a mano | **Risolto** | La diavola + La marinara → «Dati cliente» → 3331234888 → Cerca → sotto il nome c'è **«Prendi l'ordine»** (pillola vino) → torno su `/cassa/nuovo?telefono=…`: **le due righe ci sono** (8,40 + 6,40), il cliente è agganciato (📞 Prova Critico Tre · Via Nomentana 120 · BOLOGNA SPALLANZANI 1,00 €) e il tipo è passato da solo a Domicilio. |
+| 3 | «Resto da portare» in cassa e «paga con 20,00 €, resto …» in lista | **Risolto** | Contanti → paga con 20 → sotto la riga dei pagamenti compare **«Resto da portare: 4,20 €»** su una riga sua, intera (prima «esto 4,20 €» tagliato). Invia → «Ordine n. 14 inviato in cucina · BOLOGNA SPALLANZANI, consegna 1,00 €». In `/cassa` la scheda C-14 dice «Prova Critico Tre · 3331234888 · contanti · **paga con 20,00 €, resto 4,20 €**» in vino, sopra la via e la nota fissa. |
+
+**Minori visti passando.**
+- Nel menù combo le etichette delle categorie («Pizze classiche»,
+  «Bevande», «Birre») sono a 13 px grigio centrate, più piccole dei nomi
+  delle scelte: si leggono, ma il titolo del gruppo è meno visibile delle
+  righe che raggruppa.
+- La scheda del «Menu puccia» (senza foto) apre con il bollino a tutta
+  larghezza: mezza finestra di logo prima del nome e del prezzo.
+- Negli «Ultimi ordini» del cliente compare anche #13, che è annullato:
+  un ordine annullato fra gli ultimi fatti.
+- Annullando C-14 dalla lista nessuna domanda, come ieri sera.
+
+**Voti dopo il giro 6:** totem 8 → **9**, `/cassa/nuovo` 8 → **9**,
+`/cassa/cliente` 8 → **9**, `/cassa` (lista) 9. Il resto come nel giro 5.
+
+## Risposta al giro 6 (23/10/2026 sera, mig. 0030 + codice)
+
+I quattro minori: gli annullati non stanno più fra gli ultimi ordini del cliente, che si leggono «C-13 · 23 ott · domicilio · 15,40 €» (mig. 0030); «Annullato» chiede un secondo tocco («Sicuro? Tocca ancora», quattro secondi) senza finestre del browser; al totem le etichette delle categorie nel menù sono a 15 px in vino e il bollino nella foto grande non è più a tutta larghezza.

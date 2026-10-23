@@ -415,7 +415,7 @@ function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, chiudi, 
                 </h3>
                 {(cats.length > 1 ? cats : [null]).map((c) => (
                   <div key={c?.id ?? "tutte"}>
-                    {c && <div className="lapide" style={{ marginTop: 14, marginBottom: 2 }}>{c.nome}</div>}
+                    {c && <div className="lapide" style={{ marginTop: 14, marginBottom: 2, fontSize: 15, color: "var(--vino)" }}>{c.nome}</div>}
                     {voci.filter((x) => !c || x.id_categoria === c.id).map((x) => {
                       const n = scelteMenu[i].filter((y) => y.id === x.id).length;
                       return (
