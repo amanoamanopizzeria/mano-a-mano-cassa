@@ -7,6 +7,10 @@ export default function Home() {
       <h1>Mano a Mano Cassa</h1>
       <p className="muto" style={{ marginTop: -6, marginBottom: 16 }}>Il sistema ordini della pizzeria. Scegli la postazione.</p>
       <div className="griglia">
+        <Link href="/cassa/nuovo" className="carta principale">
+          <strong>Nuovo ordine</strong>
+          <p className="muto">Banco, tavolo, asporto o domicilio: dal menù, alla cucina.</p>
+        </Link>
         <Link href="/cassa" className="carta">
           <strong>Cassa</strong>
           <p className="muto">Ordini in arrivo, stati, stampa comanda.</p>
@@ -30,10 +34,6 @@ export default function Home() {
         <Link href="/totem" className="carta">
           <strong>Totem</strong>
           <p className="muto">Ordina al self-order (profilo totem).</p>
-        </Link>
-        <Link href="/cassa/nuovo" className="carta">
-          <strong>Nuovo ordine</strong>
-          <p className="muto">Banco, tavolo, asporto o domicilio: dal menù, alla cucina.</p>
         </Link>
         <Link href="/cassa/fasce" className="carta">
           <strong>Planner fasce</strong>
