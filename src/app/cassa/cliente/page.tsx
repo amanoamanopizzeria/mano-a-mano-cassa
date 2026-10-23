@@ -13,12 +13,13 @@ interface Scheda {
   esito: "trovato" | "nuovo" | "numero_corto";
   telefono?: string;
   cliente?: { id: string; nome: string | null; telefono: string; note: string | null };
-  indirizzi?: { id: string; via: string; civico: string | null; cap: string | null; citta: string | null; lat: number | null; lng: number | null }[];
+  indirizzi?: { id: string; via: string; civico: string | null; cap: string | null; citta: string | null; lat: number | null; lng: number | null; id_zona: string | null }[];
   ultimi_ordini?: { numero: number; creato_il: string; totale: number; tipo: string; canale: string }[];
 }
 interface Suggerimento {
   testo: string; via: string | null; civico: string | null; cap: string | null; citta: string | null;
   lat: number | null; lng: number | null; place_id: string | null; fonte: "google" | "osm"; km: number | null;
+  zona?: { nome: string; costo_consegna: number; minimo_ordine: number } | null;
 }
 interface Chiamata { id: string; numero: string; origine: string; ricevuta_il: string }
 
@@ -54,6 +55,12 @@ function Cliente() {
     setNome(s.cliente?.nome ?? "");
     setNote(s.cliente?.note ?? "");
   }, []);
+
+  // Dalla cassa («Serve l'indirizzo») si arriva col numero già nell'indirizzo della pagina.
+  useEffect(() => {
+    const tel = new URLSearchParams(window.location.search).get("telefono");
+    if (tel) { setTelefono(tel); cerca(tel); }
+  }, [cerca]);
 
   // Il telefono squilla: il numero arriva in tempo reale e la scheda si apre da sola.
   useEffect(() => {
@@ -216,6 +223,11 @@ function Cliente() {
           {scelto && scelto.lat != null && (
             <div className="muto">
               {scelto.via ?? scelto.testo}{scelto.cap ? ", " + scelto.cap : ""}{scelto.citta ? " " + scelto.citta : ""} · {scelto.km != null ? `${scelto.km.toFixed(1).replace(".", ",")} km dalla pizzeria` : ""}
+              {scelto.zona !== undefined && (
+                scelto.zona
+                  ? <div style={{ color: "var(--ok)", fontWeight: 600 }}>Zona {scelto.zona.nome} · consegna {scelto.zona.costo_consegna.toFixed(2).replace(".", ",")} € · minimo {scelto.zona.minimo_ordine.toFixed(0)} €</div>
+                  : <div style={{ color: "var(--accento)", fontWeight: 700 }}>Fuori dalle zone di consegna: non consegniamo qui.</div>
+              )}
             </div>
           )}
           <button className="primario" onClick={salva}>{salvato ? "Salvato" : "Salva scheda"}</button>

@@ -17,7 +17,7 @@ interface RigaComanda {
 interface Comanda {
   id: string; numero: number; canale: string; tipo: string; stato: string;
   creato_il: string; ora_consegna: string | null; totale: number; note: string | null;
-  pagamento: "contanti" | "pos" | null; cliente: string | null; telefono: string | null;
+  pagamento: "contanti" | "pos" | null; costo_consegna: number; cliente: string | null; telefono: string | null;
   tavolo: number | null; indirizzo: { via: string; civico: string | null; cap: string | null; citta: string | null; zona: string | null } | null;
   righe: RigaComanda[];
 }
@@ -40,7 +40,7 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
     supabaseBrowser().rpc("comanda_ordine", { p_id: id }).then(({ data, error }) => {
       if (error || !data) { setErrore(error?.message ?? "Ordine non trovato"); return; }
       const d = data as Comanda;
-      setC({ ...d, totale: Number(d.totale), righe: d.righe.map((r) => ({ ...r, quantita: Number(r.quantita) })) });
+      setC({ ...d, totale: Number(d.totale), costo_consegna: Number(d.costo_consegna ?? 0), righe: d.righe.map((r) => ({ ...r, quantita: Number(r.quantita) })) });
     });
   }, [id]);
 
@@ -112,7 +112,7 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
 
         <footer>
           <div>{pezzi} {pezzi === 1 ? "pezzo" : "pezzi"} in cucina</div>
-          <div className="totale">Totale {c.totale.toFixed(2).replace(".", ",")} €{c.pagamento && ` · ${c.pagamento === "pos" ? "POS" : "CONTANTI"}`}</div>
+          <div className="totale">{c.costo_consegna > 0 && <>consegna {c.costo_consegna.toFixed(2).replace(".", ",")} € · </>}Totale {c.totale.toFixed(2).replace(".", ",")} €{c.pagamento && ` · ${c.pagamento === "pos" ? "POS" : "CONTANTI"}`}</div>
         </footer>
       </article>
     </div>

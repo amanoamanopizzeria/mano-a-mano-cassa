@@ -45,6 +45,12 @@ function Cassa() {
   const [note, setNote] = useState("");
   // Il cliente che ha chiamato (da /cassa/cliente, «Prendi l'ordine»): si lega all'ordine.
   const [cliente, setCliente] = useState<{ id: string; nome: string | null; telefono: string; indirizzo: string | null } | null>(null);
+  // Gli indirizzi del cliente, con la zona vera: a domicilio se ne sceglie uno (la zona dà costo e minimo).
+  type Indirizzo = { id: string; via: string; civico: string | null; id_zona: string | null };
+  type Zona = { id: string; nome: string; costo_consegna: number; minimo_ordine: number };
+  const [indirizzi, setIndirizzi] = useState<Indirizzo[]>([]);
+  const [idIndirizzo, setIdIndirizzo] = useState<string | null>(null);
+  const [zone, setZone] = useState<Zona[]>([]);
   const [esito, setEsito] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [invio, setInvio] = useState(false);
@@ -53,10 +59,12 @@ function Cassa() {
     const tel = new URLSearchParams(window.location.search).get("telefono");
     if (!tel) return;
     supabaseBrowser().rpc("cerca_cliente", { p_telefono: tel }).then(({ data }) => {
-      const s = data as { esito: string; cliente?: { id: string; nome: string | null; telefono: string }; indirizzi?: { via: string; civico: string | null }[] } | null;
+      const s = data as { esito: string; cliente?: { id: string; nome: string | null; telefono: string }; indirizzi?: Indirizzo[] } | null;
       if (s?.esito === "trovato" && s.cliente) {
         const i = s.indirizzi?.[0];
         setCliente({ ...s.cliente, indirizzo: i ? `${i.via} ${i.civico ?? ""}`.trim() : null });
+        setIndirizzi(s.indirizzi ?? []);
+        setIdIndirizzo(i?.id ?? null);
         setTipo("domicilio");
       } else {
         setCliente({ id: "", nome: null, telefono: tel, indirizzo: null });
@@ -66,10 +74,15 @@ function Cassa() {
 
   useEffect(() => {
     (async () => {
-      const [m, t] = await Promise.all([leggiMenu(), supabaseBrowser().from("tavolo").select("id, numero, stato").order("numero")]);
+      const [m, t, z] = await Promise.all([
+        leggiMenu(),
+        supabaseBrowser().from("tavolo").select("id, numero, stato").order("numero"),
+        supabaseBrowser().from("zona").select("id, nome, costo_consegna, minimo_ordine").eq("attiva", true),
+      ]);
       if (m.errore) setErrore(m.errore);
       setCategorie(m.categorie); setProdotti(m.prodotti); setVarianti(m.varianti);
       setTavoli((t.data ?? []) as Tavolo[]);
+      setZone(((z.data ?? []) as Zona[]).map((x) => ({ ...x, costo_consegna: Number(x.costo_consegna), minimo_ordine: Number(x.minimo_ordine) })));
       setCategoria(m.categorie[0]?.id ?? null);
     })();
   }, []);
@@ -82,6 +95,11 @@ function Cassa() {
   const gruppi = gruppiDi(variantiSel);
   const gruppoAttivo = gruppo && gruppi.includes(gruppo) ? gruppo : gruppi[0] ?? null;
   const totale = totaleRighe(righe);
+  const indirizzoSel = indirizzi.find((i) => i.id === idIndirizzo) ?? null;
+  const zonaSel = indirizzoSel ? zone.find((z) => z.id === indirizzoSel.id_zona) ?? null : null;
+  const costoConsegna = tipo === "domicilio" && zonaSel ? zonaSel.costo_consegna : 0;
+  const sottoMinimo = tipo === "domicilio" && zonaSel != null && righe.length > 0 && totale < zonaSel.minimo_ordine;
+  const fuoriZona = tipo === "domicilio" && indirizzoSel != null && !indirizzoSel.id_zona;
   const quantitaDigitata = Math.max(1, parseInt(digitato || "1", 10) || 1);
 
   function toccaProdotto(p: ProdottoMenu) {
@@ -149,15 +167,19 @@ function Cassa() {
 
   async function invia() {
     setErrore(null); setInvio(true);
-    const { data, error } = await supabaseBrowser().rpc("ordine_da_cassa", {
+    const { data, error } = await supabaseBrowser().rpc("ordine_da_cassa2", {
       p_tipo: tipo, p_righe: righePerInvio(righe),
       p_id_tavolo: tipo === "tavolo" ? idTavolo : null, p_id_cliente: cliente?.id || null, p_note: note || null,
+      p_id_indirizzo: tipo === "domicilio" ? idIndirizzo : null,
     });
     setInvio(false);
     if (error) { setErrore(error.message); return; }
-    const r = data as { esito: string; numero?: number; libere?: number; motivo?: string };
-    if (r.esito === "accettato") { svuota(); setEsito(`Ordine n. ${r.numero} inviato in cucina.`); }
+    const r = data as { esito: string; numero?: number; libere?: number; motivo?: string; minimo?: number; zona?: string; costo_consegna?: number };
+    if (r.esito === "accettato") { svuota(); setEsito(`Ordine n. ${r.numero} inviato in cucina${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
     else if (r.esito === "pieno") setErrore(`Quarto d'ora al completo${r.motivo ? ` (${r.motivo})` : ""}${r.libere !== undefined ? `: ne restano ${r.libere}` : ""}.`);
+    else if (r.esito === "minimo") setErrore(`Minimo d'ordine a domicilio ${euro(Number(r.minimo))}.`);
+    else if (r.esito === "fuori_zona") setErrore("Indirizzo fuori dalle zone di consegna.");
+    else if (r.esito === "manca_indirizzo") setErrore("Scegli l'indirizzo di consegna (Dati cliente).");
     else setErrore("Ordine non inserito: " + r.esito);
   }
 
@@ -245,6 +267,25 @@ function Cassa() {
             <button onClick={() => setCliente(null)} style={{ padding: "2px 8px" }}>✕</button>
           </div>
         )}
+        {tipo === "domicilio" && (
+          <div style={{ margin: "0 6px 6px" }}>
+            {indirizzi.length > 0 ? (
+              <select value={idIndirizzo ?? ""} onChange={(e) => setIdIndirizzo(e.target.value || null)} style={{ width: "100%", padding: 8, fontSize: 15 }}>
+                <option value="">Scegli l&apos;indirizzo</option>
+                {indirizzi.map((i) => {
+                  const z = zone.find((x) => x.id === i.id_zona);
+                  return <option key={i.id} value={i.id}>{i.via} {i.civico ?? ""} · {z ? `${z.nome} (${euro(z.costo_consegna)})` : "fuori zona"}</option>;
+                })}
+              </select>
+            ) : (
+              <Link href={cliente?.telefono ? `/cassa/cliente?telefono=${encodeURIComponent(cliente.telefono)}` : "/cassa/cliente"} style={{ textDecoration: "none" }}>
+                <button style={{ width: "100%", color: "var(--accento)", fontWeight: 600 }}>Serve l&apos;indirizzo: apri Dati cliente</button>
+              </Link>
+            )}
+            {fuoriZona && <div style={{ color: "var(--accento)", fontWeight: 700, fontSize: 13, marginTop: 4 }}>Fuori dalle zone di consegna.</div>}
+            {sottoMinimo && zonaSel && <div style={{ color: "var(--accento)", fontWeight: 700, fontSize: 13, marginTop: 4 }}>Minimo d&apos;ordine {euro(zonaSel.minimo_ordine)}: mancano {euro(zonaSel.minimo_ordine - totale)}.</div>}
+          </div>
+        )}
         {tipo === "tavolo" && (
           <select value={idTavolo ?? ""} onChange={(e) => setIdTavolo(e.target.value || null)} style={{ margin: "0 6px 6px", padding: 8, fontSize: 15 }}>
             <option value="">Scegli il tavolo</option>
@@ -295,9 +336,12 @@ function Cassa() {
         <input placeholder="Note (es. ben cotta)" value={note} onChange={(e) => setNote(e.target.value)} style={{ margin: "0 6px 6px", padding: 8, fontSize: 14 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 6px 6px" }}>
           <button onClick={svuota} disabled={righe.length === 0}>Svuota</button>
-          <span style={{ flex: 1, textAlign: "right", fontSize: 26, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{euro(totale)}</span>
+          <span style={{ flex: 1, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+            {costoConsegna > 0 && <span className="muto" style={{ display: "block", fontSize: 12 }}>+ consegna {euro(costoConsegna)}</span>}
+            <span style={{ fontSize: 26, fontWeight: 800 }}>{euro(totale + costoConsegna)}</span>
+          </span>
         </div>
-        <button onClick={invia} className="primario" disabled={invio || righe.length === 0 || (tipo === "tavolo" && !idTavolo)} style={{ margin: 6, padding: 16, fontSize: 18, fontWeight: 800, borderRadius: 10 }}>
+        <button onClick={invia} className="primario" disabled={invio || righe.length === 0 || (tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo))} style={{ margin: 6, padding: 16, fontSize: 18, fontWeight: 800, borderRadius: 10 }}>
           {invio ? "Invio…" : "Invia in cucina"}
         </button>
       </aside>
