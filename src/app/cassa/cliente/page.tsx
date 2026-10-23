@@ -12,7 +12,7 @@ import AuthGate from "@/components/AuthGate";
 interface Scheda {
   esito: "trovato" | "nuovo" | "numero_corto";
   telefono?: string;
-  cliente?: { id: string; nome: string | null; telefono: string; note: string | null };
+  cliente?: { id: string; nome: string | null; telefono: string; note: string | null; punti?: number; credito?: number; tag?: string[]; black_list?: boolean; card?: string | null };
   indirizzi?: { id: string; via: string; civico: string | null; cap: string | null; citta: string | null; lat: number | null; lng: number | null; id_zona: string | null }[];
   ultimi_ordini?: { numero: number; creato_il: string; totale: number; tipo: string; canale: string }[];
 }
@@ -191,6 +191,13 @@ function Cliente() {
             <strong style={{ fontSize: 18 }}>{scheda.cliente.nome ?? "Senza nome"}</strong>
             <span className="muto">{scheda.cliente.telefono}</span>
           </div>
+          {scheda.cliente.black_list && (
+            <p style={{ marginTop: 8, padding: 8, borderRadius: 8, background: "var(--accento)", color: "#fff", fontWeight: 800 }}>BLACK LIST: non si prende l&apos;ordine senza Edoardo.</p>
+          )}
+          <p className="muto" style={{ marginTop: 6, fontSize: 14 }}>
+            ⭐ {scheda.cliente.punti ?? 0} punti{Number(scheda.cliente.credito ?? 0) > 0 && <> · credito {Number(scheda.cliente.credito).toFixed(2).replace(".", ",")} €</>}{scheda.cliente.card && <> · card {scheda.cliente.card}</>}
+            {(scheda.cliente.tag ?? []).length > 0 && <span style={{ display: "block" }}>{(scheda.cliente.tag ?? []).map((t) => <span key={t} style={{ display: "inline-block", margin: "2px 4px 0 0", padding: "1px 6px", borderRadius: 10, background: "#eceae4", fontSize: 12 }}>{t}</span>)}</span>}
+          </p>
           {scheda.cliente.note && (
             <p style={{ marginTop: 8, padding: 8, borderRadius: 8, border: "1px solid var(--accento)" }}>
               <strong>Note fisse:</strong> {scheda.cliente.note}

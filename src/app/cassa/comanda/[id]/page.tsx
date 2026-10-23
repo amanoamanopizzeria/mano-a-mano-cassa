@@ -20,7 +20,7 @@ interface Comanda {
   id: string; numero: number; canale: string; tipo: string; stato: string;
   creato_il: string; ora_consegna: string | null; totale: number; note: string | null;
   pagamento: "contanti" | "pos" | null; costo_consegna: number; cliente: string | null; telefono: string | null;
-  cliente_note?: string | null; paga_con?: number | null; pagato_online?: boolean;
+  cliente_note?: string | null; paga_con?: number | null; pagato_online?: boolean; sconto?: number; codice_coupon?: string | null;
   tavolo: number | null; indirizzo: { via: string; civico: string | null; cap: string | null; citta: string | null; zona: string | null } | null;
   righe: RigaComanda[];
 }
@@ -128,7 +128,7 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
 
         <footer>
           <div>{pezzi} {pezzi === 1 ? "pezzo" : "pezzi"} in cucina</div>
-          <div className="totale">{c.costo_consegna > 0 && <>consegna {c.costo_consegna.toFixed(2).replace(".", ",")} € · </>}Totale {c.totale.toFixed(2).replace(".", ",")} €{c.pagato_online ? " · GIÀ PAGATO" : c.pagamento && ` · ${c.pagamento === "pos" ? "POS" : "CONTANTI"}`}{!c.pagato_online && c.paga_con != null && Number(c.paga_con) > c.totale && ` · PAGA CON ${Number(c.paga_con).toFixed(2).replace(".", ",")} → RESTO ${(Number(c.paga_con) - c.totale).toFixed(2).replace(".", ",")}`}</div>
+          <div className="totale">{c.costo_consegna > 0 && <>consegna {c.costo_consegna.toFixed(2).replace(".", ",")} € · </>}{Number(c.sconto ?? 0) > 0 && <>sconto {c.codice_coupon ?? ""} −{Number(c.sconto).toFixed(2).replace(".", ",")} € · </>}Totale {c.totale.toFixed(2).replace(".", ",")} €{c.pagato_online ? " · GIÀ PAGATO" : c.pagamento && ` · ${c.pagamento === "pos" ? "POS" : "CONTANTI"}`}{!c.pagato_online && c.paga_con != null && Number(c.paga_con) > c.totale && ` · PAGA CON ${Number(c.paga_con).toFixed(2).replace(".", ",")} → RESTO ${(Number(c.paga_con) - c.totale).toFixed(2).replace(".", ",")}`}</div>
         </footer>
       </article>
     </div>

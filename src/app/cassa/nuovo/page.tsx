@@ -60,6 +60,10 @@ function Cassa() {
   // Come paga (mig. 0024): contanti con «paga con» (il rider porta il resto), POS, o già pagato online.
   const [pagamento, setPagamento] = useState<"contanti" | "pos" | "online" | null>(null);
   const [pagaCon, setPagaCon] = useState("");
+  // Il coupon (mig. 0026): si batte il codice, si verifica sul carrello, lo sconto si vede nel totale e si applica all'ordine accettato.
+  const [codiceCoupon, setCodiceCoupon] = useState("");
+  const [coupon, setCoupon] = useState<{ codice: string; nome: string; sconto: number } | null>(null);
+  const [erroreCoupon, setErroreCoupon] = useState<string | null>(null);
   const [esito, setEsito] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [invio, setInvio] = useState(false);
@@ -269,7 +273,27 @@ function Cassa() {
     setDigitato((d) => (d + k).replace(/^0+(?=\d)/, "").slice(0, 3));
   }
 
-  function svuota() { setRighe([]); setSelezionata(null); setModoVarianti(false); setDigitato(""); setNote(""); setEsito(null); setErrore(null); setMenuAperto(null); setFigliaSel(null); }
+  async function verificaCoupon() {
+    setErroreCoupon(null); setCoupon(null);
+    if (!codiceCoupon.trim()) return;
+    const pOra = giorno && ora ? new Date(`${giorno}T${ora}:00`).toISOString() : null;
+    const { data, error } = await supabaseBrowser().rpc("coupon_verifica", { p_codice: codiceCoupon, p_id_cliente: cliente?.id || null, p_tipo: tipo, p_righe: righePerInvio(righe), p_ora: pOra });
+    if (error) { setErroreCoupon(error.message); return; }
+    const r = data as { esito: string; codice?: string; nome?: string; sconto?: number; minimo?: number; dalle?: string; alle?: string; tipi?: string[]; servono?: number; hai?: number };
+    const msg: Record<string, string> = {
+      non_trovato: "Codice non trovato.", gia_usato: "Coupon già usato.", scaduto: "Coupon scaduto.", non_ancora_valido: "Coupon non ancora valido.",
+      non_attivo: "Coupon spento.", esaurito: "Coupon esaurito.", black_list: "Cliente in black list.", solo_primo_ordine: "Vale solo per il primo ordine.",
+      serve_cliente: "Serve il cliente: aprilo da Dati cliente.",
+    };
+    if (r.esito === "ok") setCoupon({ codice: r.codice!, nome: r.nome!, sconto: Number(r.sconto) });
+    else if (r.esito === "minimo") setErroreCoupon(`Vale da ${euro(Number(r.minimo))} in su.`);
+    else if (r.esito === "fuori_fascia") setErroreCoupon(`Vale dalle ${r.dalle?.slice(0, 5)} alle ${r.alle?.slice(0, 5)}.`);
+    else if (r.esito === "solo_tipi") setErroreCoupon(`Vale solo per ${(r.tipi ?? []).join(" e ")}.`);
+    else if (r.esito === "punti") setErroreCoupon(`Servono ${r.servono} punti, ne ha ${r.hai}.`);
+    else setErroreCoupon(msg[r.esito] ?? `Coupon non applicabile (${r.esito}).`);
+  }
+
+  function svuota() { setRighe([]); setSelezionata(null); setModoVarianti(false); setDigitato(""); setNote(""); setEsito(null); setErrore(null); setMenuAperto(null); setFigliaSel(null); setCoupon(null); setCodiceCoupon(""); setErroreCoupon(null); }
 
   async function invia() {
     setErrore(null); setInvio(true);
@@ -283,6 +307,11 @@ function Cassa() {
     if (error) { setErrore("Non sono riuscito a inviare l'ordine: " + error.message); return; }
     const r = data as { esito: string; id?: string; numero?: number; libere?: number; motivo?: string; minimo?: number; zona?: string; costo_consegna?: number; dalle?: string; alle?: string; slot?: string };
     const quando = pOra ? ` per ${giorniScelta.find((g) => g.v === giorno)?.t.toLowerCase() ?? giorno} alle ${ora}` : "";
+    if (r.esito === "accettato" && r.id && coupon) {
+      const { data: ca } = await supabaseBrowser().rpc("coupon_applica", { p_id_ordine: r.id, p_codice: coupon.codice });
+      const x = ca as { esito: string } | null;
+      if (x?.esito !== "applicato") setErroreCoupon(`Ordine inviato ma coupon NON applicato (${x?.esito ?? "errore"}).`);
+    }
     if (r.esito === "accettato" && r.id && (pagamento || pagaCon)) {
       const pc = Number(pagaCon.replace(",", "."));
       await supabaseBrowser().rpc("ordine_pagamento", { p_id: r.id, p_pagamento: pagamento === "online" ? null : pagamento, p_paga_con: pc > 0 ? pc : null, p_pagato_online: pagamento === "online" });
@@ -530,6 +559,12 @@ function Cassa() {
             )}
           </div>
         )}
+        <div style={{ display: "flex", gap: 4, margin: "0 6px 6px", alignItems: "center" }}>
+          <input placeholder="Coupon" value={codiceCoupon} onChange={(e) => { setCodiceCoupon(e.target.value.toUpperCase()); setCoupon(null); setErroreCoupon(null); }} onKeyDown={(e) => { if (e.key === "Enter") verificaCoupon(); }} style={{ flex: 1, minWidth: 0, padding: 6, fontSize: 14, textTransform: "uppercase" }} />
+          <button onClick={verificaCoupon} disabled={!codiceCoupon.trim() || righe.length === 0} style={{ padding: "6px 10px", fontSize: 13 }}>Applica</button>
+          {coupon && <span style={{ fontSize: 12, color: "var(--ok)", fontWeight: 700, whiteSpace: "nowrap" }}>−{euro(coupon.sconto)}</span>}
+        </div>
+        {erroreCoupon && <div style={{ margin: "-2px 6px 6px", fontSize: 13, color: "var(--accento)", fontWeight: 700 }}>{erroreCoupon}</div>}
         <input placeholder="Note (es. ben cotta)" value={note} onChange={(e) => setNote(e.target.value)} style={{ margin: "0 6px 6px", padding: 8, fontSize: 14 }} />
         {errore && (
           <div role="alert" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 10, background: "#fff3f4", border: "2px solid var(--accento)", color: "var(--accento)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
@@ -540,7 +575,8 @@ function Cassa() {
           <button onClick={svuota} disabled={righe.length === 0}>Svuota</button>
           <span style={{ flex: 1, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
             {costoConsegna > 0 && <span className="muto" style={{ display: "block", fontSize: 12 }}>+ consegna {euro(costoConsegna)}</span>}
-            <span style={{ fontSize: 26, fontWeight: 800 }}>{euro(totale + costoConsegna)}</span>
+            {coupon && <span className="muto" style={{ display: "block", fontSize: 12 }}>− {coupon.nome} {euro(coupon.sconto)}</span>}
+            <span style={{ fontSize: 26, fontWeight: 800 }}>{euro(Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0)))}</span>
           </span>
         </div>
         <button onClick={invia} className="primario" disabled={invio || righe.length === 0 || (tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)} style={{ margin: 6, padding: 16, fontSize: 18, fontWeight: 800, borderRadius: 10 }}>
