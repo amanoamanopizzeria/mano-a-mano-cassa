@@ -85,7 +85,7 @@ function Riepilogo() {
         {ordini.map((o) => (
           <article key={o.id} className="carta">
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <strong style={{ fontSize: 20, fontFamily: "Oswald, sans-serif", fontWeight: 600 }}>#{o.numero}</strong>
+              <strong style={{ fontSize: 20, fontFamily: "Oswald, sans-serif", fontWeight: 600 }}>{o.numero_visibile ?? `#${o.numero}`}</strong>
               <span className={`badge ${o.stato}`}>{o.stato.replace("_", " ")}</span>
             </div>
             <div className="muto">
