@@ -105,3 +105,49 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .rider .azioni button.primario { flex: 2 1 100%; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .06em; font-size: 22px; min-height: 64px; box-shadow: 0 8px 22px rgba(138,21,56,.28); }
 .rider .azioni a:has(button.primario) { flex: 2 1 100%; }
 .rider .badge { font-size: 14px; }
+
+/* ===== giro 2 del grafico (23/10/2026): borsello, riepilogo, sala, menù, accesso ===== */
+/* Il borsello: i quattro tasti sono quattro cose diverse e si vedono. */
+.borsello .b-voci { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 14px; color: var(--muto); }
+.borsello .b-voci b { color: var(--testo); font-variant-numeric: tabular-nums; }
+.borsello .b-tasti { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 8px; }
+.borsello .b-tasti button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px; padding: 8px 12px; border-radius: 14px; font-size: 16px; line-height: 1.15; }
+.borsello .b-tasti button small { font-size: 13px; font-weight: 400; opacity: .85; text-align: center; }
+.borsello .b-fondo { background: var(--oro); border-color: var(--oro); color: var(--testo); }
+.borsello .b-prelievo { background: #fff; border: 2px solid var(--vino); color: var(--vino); }
+.borsello .b-deposito { background: #fff; border: 2px solid var(--ok); color: var(--ok); }
+.borsello .b-chiudi { background: var(--sfondo); color: var(--muto); }
+.borsello .b-salda { grid-column: 1 / -1; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .06em; font-size: 19px; }
+.borsello .b-apri { grid-column: 1 / -1; }
+
+/* Il riepilogo: numeri grandi in Oswald. */
+.riepilogo .carta.numero { padding: 12px 16px; }
+.riepilogo .carta.numero .eti { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 13px; color: var(--muto); }
+.riepilogo .carta.numero strong { display: block; font-family: "Oswald", sans-serif; font-size: 34px; line-height: 1.1; font-weight: 600; font-variant-numeric: tabular-nums; }
+.riepilogo .carta.numero strong small { font-family: "Figtree", sans-serif; font-size: 14px; font-weight: 400; color: var(--muto); }
+.riepilogo .carta.numero.vino strong { color: var(--vino); }
+
+/* La sala: libero grigio, occupato oro, al conto vino; da troppo tempo il bordo vino. */
+.sala .tavolo .num { font-family: "Oswald", sans-serif; font-size: 24px; font-weight: 600; }
+.sala .badge.stato-libero { background: var(--bordo); color: var(--muto); }
+.sala .badge.stato-occupato { background: var(--oro); color: var(--testo); }
+.sala .badge.stato-conto { background: var(--vino); }
+.sala .tavolo.occupato { background: var(--oro-velo); }
+.sala .tavolo.conto { background: var(--vino-chiaro); }
+.sala .tavolo.allarme { border-color: var(--vino); box-shadow: 0 0 0 2px var(--vino), var(--ombra); }
+
+/* Il menù in sola lettura: una riga per prodotto, il prezzo a destra in colonna. */
+.menu-lettura .cat { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 17px; font-weight: 600; color: var(--vino); }
+.menu-lettura .prodotti { list-style: none; margin: 8px 0 0; padding: 0; }
+.menu-lettura .prodotti li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; padding: 5px 0; border-bottom: 1px dashed var(--bordo); font-size: 15px; }
+.menu-lettura .prodotti li .nome { flex: 1; min-width: 160px; }
+.menu-lettura .prodotti li .prezzo { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.menu-lettura .prodotti li .muto { flex-basis: 100%; }
+.menu-lettura .prodotti li.spento { color: var(--muto); }
+.menu-lettura .prodotti li.spento .nome { text-decoration: line-through; }
+.menu-lettura .prodotti li.spento .prezzo { font-weight: 400; }
+
+/* L'accesso: il bollino sopra, il modulo in una scheda. */
+.accesso { padding-top: 40px; text-align: center; }
+.accesso .bollino { width: 120px; margin: 0 auto 12px; display: block; }
+.accesso .carta { text-align: left; }

@@ -61,23 +61,23 @@ function Menu() {
   const nomeCategoria = (id: string) => categorie.find((c) => c.id === id)?.nome ?? "?";
 
   return (
-    <main>
+    <main className="menu-lettura">
       <h1>Menù</h1>
       <p className="muto">Sola lettura: il menù si cambia dal back office e dal database.</p>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
       {gruppi.map((g) => (
         <section key={g.id} style={{ marginTop: 16 }}>
-          <h2 style={{ fontSize: 16 }}>{g.nome}</h2>
+          <h2>{g.nome}</h2>
           {categorie.filter((c) => c.id_gruppo === g.id).map((c) => (
             <div key={c.id} className="carta" style={{ marginBottom: 10 }}>
-              <strong>{c.nome}</strong>
-              <ul style={{ marginTop: 6 }}>
+              <strong className="cat">{c.nome}</strong>
+              <ul className="prodotti">
                 {prodotti.filter((p) => p.id_categoria === c.id).map((p) => {
                   const pacchetto = componenti.filter((k) => k.id_pacchetto === p.id);
                   return (
-                    <li key={p.id} style={{ opacity: p.attivo ? 1 : 0.4 }}>
-                      {p.nome} · {Number(p.prezzo).toFixed(2)} €
+                    <li key={p.id} className={p.attivo ? undefined : "spento"}>
+                      <span className="nome">{p.nome}</span><span className="prezzo">{Number(p.prezzo).toFixed(2).replace(".", ",")} €</span>
                       {pacchetto.length > 0 && (
                         <div className="muto">
                           Pacchetto: {pacchetto.map((k) => `${k.quantita}× ${k.etichetta} (${nomeCategoria(k.id_categoria)})`).join(" + ")}
