@@ -97,7 +97,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .home .testa h1 { margin: 0; font-size: 24px; }
 .home .testa .muto { margin: 2px 0 0; font-size: 14px; }
 .home .griglia { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.home .carta { text-decoration: none; display: flex; flex-direction: column; justify-content: center; min-height: 96px;
+.home .carta { text-decoration: none; display: flex; flex-direction: column; justify-content: center; min-height: 108px;
   padding: 14px 18px; border-bottom: 4px solid var(--oro); }
 .home .carta strong { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 22px; font-weight: 600;
   line-height: 1.15; color: var(--vino); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -113,8 +113,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
   .home .testa .logo { height: 40px; }
   .home .testa h1 { font-size: 20px; }
   .home .griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .home .carta { min-height: 80px; padding: 12px 14px; }
-  .home .carta strong { font-size: 18px; white-space: normal; }
+  .home .carta { min-height: 80px; padding: 12px 10px; }
+  .home .carta strong { font-size: 18px; letter-spacing: .01em; white-space: nowrap; }
   .home .carta:not(.principale) p { display: none; }
   .home .carta.principale { min-height: 112px; padding: 16px 18px; gap: 14px; }
   .home .carta.principale strong { font-size: 30px; }
