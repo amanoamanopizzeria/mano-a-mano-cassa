@@ -12,7 +12,7 @@ import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine } from "@/lib/types";
 // window.print(). Col Chrome della cassa avviato con --kiosk-printing esce senza chiedere.
 const STAMPA_LS = "cassa:stampa-automatica";
 type OrdineCassa = Ordine & {
-  nome_cliente?: string | null; pagamento?: "contanti" | "pos" | null;
+  nome_cliente?: string | null; pagamento?: "contanti" | "pos" | null; paga_con?: number | null;
   cliente?: { nome: string | null; telefono: string | null; note: string | null } | null;
   indirizzo?: { via: string; civico: string | null } | null;
 };
@@ -151,7 +151,7 @@ function Cassa() {
             </div>
             {(o.cliente?.nome || o.nome_cliente || o.cliente?.telefono || o.pagamento) && (
               <div style={{ marginTop: 6, fontWeight: 600 }}>
-                {o.cliente?.nome ?? o.nome_cliente}{o.cliente?.telefono && <span className="muto" style={{ fontWeight: 400 }}> · {o.cliente.telefono}</span>}{o.pagamento && ` · ${o.pagamento === "pos" ? "POS" : "contanti"}`}
+                {o.cliente?.nome ?? o.nome_cliente}{o.cliente?.telefono && <span className="muto" style={{ fontWeight: 400 }}> · {o.cliente.telefono}</span>}{o.pagamento && ` · ${o.pagamento === "pos" ? "POS" : "contanti"}`}{o.pagamento === "contanti" && o.paga_con && Number(o.paga_con) > Number(o.totale) && <span style={{ color: "var(--vino)" }}> · paga con {euro(Number(o.paga_con))}, resto {euro(Number(o.paga_con) - Number(o.totale))}</span>}
               </div>
             )}
             {o.indirizzo && <div>{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}

@@ -402,21 +402,35 @@ function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, chiudi, 
           <div className="prezzo">{p.prezzo > 0 ? euro(p.prezzo) : "prezzo alla cassa"}</div>
           {p.incluso && <p className="descr" style={{ fontWeight: 700 }}>Inclusi nel menu: {p.incluso}</p>}
 
-          {gruppiMenu.map((g, i) => (
-            <div key={g.id} style={{ maxWidth: 560, margin: "0 auto" }}>
-              <h3 style={{ marginTop: 28 }}>{g.etichetta} <small style={{ fontWeight: 400, color: "var(--grigio)" }}>{scelteMenu[i].length}/{g.quantita}</small></h3>
-              {prodotti.filter((x) => g.scelte.includes(x.id)).map((x) => {
-                const n = scelteMenu[i].filter((y) => y.id === x.id).length;
-                return (
-                  <button key={x.id} onClick={() => scegli(i, x)} className={"t-opz" + (n > 0 ? " on" : "")}>
-                    <span className="spunta">{n > 0 ? (g.quantita > 1 ? `×${n}` : "✓") : ""}</span>
-                    <span>{x.nome}</span>
-                    <span className="extra"></span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+          {gruppiMenu.map((g, i) => {
+            const fatto = scelteMenu[i].length >= g.quantita;
+            const voci = prodotti.filter((x) => g.scelte.includes(x.id));
+            // 45 pizze e pucce in una lista sola non si leggono (critico giro 5): una testata per categoria
+            const cats = categorie.filter((c) => voci.some((x) => x.id_categoria === c.id));
+            return (
+              <div key={g.id} id={`passo-${i}`} style={{ maxWidth: 560, margin: "0 auto", scrollMarginTop: 16 }}>
+                <h3 style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 10 }}>
+                  <span className="spunta" style={{ width: 30, height: 30, borderRadius: 999, display: "inline-flex", alignItems: "center", justifyContent: "center", background: fatto ? "var(--oro)" : "var(--vino)", color: "#fff", fontSize: 16, flexShrink: 0 }}>{fatto ? "✓" : i + 1}</span>
+                  {g.etichetta} <small style={{ fontWeight: 400, color: "var(--grigio)" }}>{scelteMenu[i].length}/{g.quantita}</small>
+                </h3>
+                {(cats.length > 1 ? cats : [null]).map((c) => (
+                  <div key={c?.id ?? "tutte"}>
+                    {c && <div className="lapide" style={{ marginTop: 14, marginBottom: 2 }}>{c.nome}</div>}
+                    {voci.filter((x) => !c || x.id_categoria === c.id).map((x) => {
+                      const n = scelteMenu[i].filter((y) => y.id === x.id).length;
+                      return (
+                        <button key={x.id} onClick={() => scegli(i, x)} className={"t-opz" + (n > 0 ? " on" : "")}>
+                          <span className="spunta">{n > 0 ? (g.quantita > 1 ? `×${n}` : "✓") : ""}</span>
+                          <span>{x.nome}</span>
+                          <span className="extra"></span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
 
           <h3 style={{ marginTop: gruppiMenu.length > 0 ? 28 : undefined }}>Quantità</h3>
           <div style={{ display: "flex", justifyContent: "center" }}>
@@ -443,10 +457,14 @@ function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, chiudi, 
         <div className="piede">
           <button onClick={chiudi} className="t-b-linea">Annulla</button>
           <button
-            disabled={!completo}
-            onClick={() => aggiungi(q, scelte.map((v) => ({ nome: v.nome, prezzo: v.prezzo, tipo: "aggiunta" as const })), gruppiMenu.length > 0 ? figlieDaScelte(gruppiMenu, scelteMenu, categorie) : undefined)}
-            className="t-b-vino" style={{ flex: 1, fontSize: 22 }}>
-            {completo ? `Aggiungi · ${euro((p.prezzo + extra) * q)}` : "Completa le scelte"}
+            onClick={() => {
+              if (completo) return aggiungi(q, scelte.map((v) => ({ nome: v.nome, prezzo: v.prezzo, tipo: "aggiunta" as const })), gruppiMenu.length > 0 ? figlieDaScelte(gruppiMenu, scelteMenu, categorie) : undefined);
+              // manca una scelta: il tasto dice quale e ci porta (prima restava spento e muto)
+              const i = gruppiMenu.findIndex((g, j) => scelteMenu[j].length < g.quantita);
+              document.getElementById(`passo-${i}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            className={completo ? "t-b-vino" : "t-b-linea"} style={{ flex: 1, fontSize: 22 }}>
+            {completo ? `Aggiungi · ${euro((p.prezzo + extra) * q)}` : (() => { const g = gruppiMenu.find((g, j) => scelteMenu[j].length < g.quantita); return g ? `Manca: ${g.etichetta.toLowerCase()} ↓` : "Completa le scelte"; })()}
           </button>
         </div>
       </div>

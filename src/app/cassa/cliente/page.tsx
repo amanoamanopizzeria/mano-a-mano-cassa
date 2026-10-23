@@ -191,6 +191,9 @@ function Cliente() {
             <strong style={{ fontSize: 22, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".02em" }}>{scheda.cliente.nome ?? "Senza nome"}</strong>
             <span className="muto" style={{ fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{scheda.cliente.telefono}</span>
           </div>
+          {!chiamata && (
+            <a href={"/cassa/nuovo?telefono=" + encodeURIComponent(scheda.cliente.telefono)} className="primario" style={{ display: "inline-block", marginTop: 10, padding: "10px 18px", borderRadius: 999, background: "var(--vino)", color: "#fff", textDecoration: "none", fontWeight: 600 }}>Prendi l&apos;ordine</a>
+          )}
           {scheda.cliente.black_list && (
             <p style={{ marginTop: 8, padding: 8, borderRadius: 8, background: "var(--vino)", color: "#fff", fontWeight: 800 }}>BLACK LIST: non si prende l&apos;ordine senza Edoardo.</p>
           )}

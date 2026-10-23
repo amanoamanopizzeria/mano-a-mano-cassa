@@ -76,6 +76,21 @@ function Cassa() {
   const [ora, setOra] = useState<string>("");                // "HH:MM"
   const [orari, setOrari] = useState<Orario[]>([]);
 
+  // La comanda battuta resta anche se si va a Dati cliente e si torna (critico giro 5: «cancella la comanda»).
+  const BOZZA = "cassa:bozza";
+  useEffect(() => {
+    try {
+      const b = JSON.parse(sessionStorage.getItem(BOZZA) ?? "null") as { righe: RigaOrdine[]; tipo: Tipo; note: string; quando: number } | null;
+      if (b && b.righe.length > 0 && Date.now() - b.quando < 30 * 60_000) { setRighe(b.righe); setTipo(b.tipo); setNote(b.note); }
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try {
+      if (righe.length === 0) sessionStorage.removeItem(BOZZA);
+      else sessionStorage.setItem(BOZZA, JSON.stringify({ righe, tipo, note, quando: Date.now() }));
+    } catch {}
+  }, [righe, tipo, note]);
+
   useEffect(() => {
     const tel = new URLSearchParams(window.location.search).get("telefono");
     if (!tel) return;
@@ -557,9 +572,11 @@ function Cassa() {
             {pagamento === "contanti" && tipo === "domicilio" && (
               <input inputMode="decimal" placeholder="paga con…" value={pagaCon} onChange={(e) => setPagaCon(e.target.value)} style={{ flex: 1, minWidth: 0, padding: 6, fontSize: 14 }} />
             )}
-            {pagamento === "contanti" && tipo === "domicilio" && Number(pagaCon.replace(",", ".")) > totale + costoConsegna && (
-              <span style={{ fontSize: 13, whiteSpace: "nowrap" }}>resto {euro(Number(pagaCon.replace(",", ".")) - totale - costoConsegna)}</span>
-            )}
+          </div>
+        )}
+        {pagamento === "contanti" && tipo === "domicilio" && Number(pagaCon.replace(",", ".")) > totale + costoConsegna && (
+          <div style={{ margin: "-2px 6px 6px", fontSize: 14, fontWeight: 700 }}>
+            Resto da portare: {euro(Number(pagaCon.replace(",", ".")) - totale - costoConsegna)}
           </div>
         )}
         <div style={{ display: "flex", gap: 4, margin: "0 6px 6px", alignItems: "center" }}>
