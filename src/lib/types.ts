@@ -62,6 +62,11 @@ export interface Ordine {
   id_esterno?: string | null;
   creato_il: string;
   aggiornato_il: string;
+  // mig. 0027: il numero col prefisso del canale (C-12, APP-12), confermato e stampato
+  numero_visibile?: string;
+  confermato_il?: string | null;
+  stampato_il?: string | null;
+  stampe?: number;
 }
 
 export interface NuovoOrdine {

@@ -17,7 +17,7 @@ interface RigaComanda {
   figlie?: RigaComanda[];
 }
 interface Comanda {
-  id: string; numero: number; canale: string; tipo: string; stato: string;
+  id: string; numero: number; numero_visibile?: string; canale: string; tipo: string; stato: string;
   creato_il: string; ora_consegna: string | null; totale: number; note: string | null;
   pagamento: "contanti" | "pos" | null; costo_consegna: number; cliente: string | null; telefono: string | null;
   cliente_note?: string | null; paga_con?: number | null; pagato_online?: boolean; sconto?: number; codice_coupon?: string | null;
@@ -47,10 +47,16 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
     });
   }, [id]);
 
+  // Si segna «stampata» (mig. 0027) quando la stampa parte: da sola o col tasto.
+  function stampa() {
+    window.print();
+    supabaseBrowser().rpc("ordine_stampato", { p_id: id }).then(() => {});
+  }
   useEffect(() => {
     if (!c || !stampaSubito) return;
-    const t = setTimeout(() => window.print(), 300);
+    const t = setTimeout(stampa, 300);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [c, stampaSubito]);
 
   if (errore) return <main><p style={{ color: "var(--accento)" }}>{errore}</p></main>;
@@ -71,13 +77,13 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
   return (
     <div className="comanda-pagina">
       <div className="comanda-strumenti">
-        <button className="primario" onClick={() => window.print()}>Stampa</button>
+        <button className="primario" onClick={stampa}>Stampa</button>
         <a href="/cassa"><button>Torna alla cassa</button></a>
       </div>
 
       <article className="comanda">
         <header>
-          <div className="numero">#{c.numero}</div>
+          <div className="numero">{c.numero_visibile ?? `#${c.numero}`}</div>
           <div className="tipo">{TIPO[c.tipo] ?? c.tipo}{c.tavolo != null && ` ${c.tavolo}`}</div>
           <div className="quando">
             {c.ora_consegna ? <>per le <b>{ora(c.ora_consegna)}</b></> : <>subito</>} · ricevuto {ora(c.creato_il)} · {CANALE[c.canale] ?? c.canale}

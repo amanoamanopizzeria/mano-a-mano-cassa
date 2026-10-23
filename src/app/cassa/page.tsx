@@ -118,7 +118,7 @@ function Cassa() {
         {ordini.map((o) => (
           <article className="carta" key={o.id}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <strong>#{o.numero}</strong>
+              <strong>{o.numero_visibile ?? `#${o.numero}`}</strong>
               <span className={`badge ${o.stato}`}>{ETICHETTE[o.stato]}</span>
             </div>
             <div className="muto">
@@ -146,8 +146,14 @@ function Cassa() {
               {o.totale.toFixed(2)} €
             </div>
             {o.note && <div className="muto">Note: {o.note}</div>}
+            <div className="muto" style={{ fontSize: 12 }}>
+              {o.stampato_il
+                ? <>stampata {new Date(o.stampato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{(o.stampe ?? 0) > 1 && ` (×${o.stampe})`}</>
+                : <span style={{ color: "var(--accento)", fontWeight: 700 }}>non stampata</span>}
+            </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
               <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
+              <button onClick={() => stampa(o.id)} disabled={inStampa.includes(o.id)}>{inStampa.includes(o.id) ? "Stampo…" : "Stampa"}</button>
               {TRANSIZIONI_ORDINE[o.stato].map((s) => (
                 <button
                   key={s}
