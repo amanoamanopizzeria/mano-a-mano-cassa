@@ -28,6 +28,13 @@ interface Comanda {
 const TIPO: Record<string, string> = { banco: "AL BANCO", ritiro: "RITIRO", domicilio: "DOMICILIO", tavolo: "TAVOLO" };
 const CANALE: Record<string, string> = { app: "App", web: "Sito", totem: "Totem", telefono: "Telefono", cassa: "Cassa", glovo: "Glovo", deliveroo: "Deliveroo", justeat: "Just Eat" };
 const ora = (s: string) => new Date(s).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+const giornoRoma = (d: Date) => d.toLocaleDateString("it-IT", { timeZone: "Europe/Rome" });
+function quando(iso: string) {
+  const d = new Date(iso), oggi = new Date(), domani = new Date(); domani.setDate(oggi.getDate() + 1);
+  if (giornoRoma(d) === giornoRoma(oggi)) return <>per le <b>{ora(iso)}</b></>;
+  if (giornoRoma(d) === giornoRoma(domani)) return <b>DOMANI alle {ora(iso)}</b>;
+  return <b>{d.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Rome" })} alle {ora(iso)}</b>;
+}
 
 export default function ComandaPagina({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ stampa?: string }> }) {
   const { id } = use(params);
@@ -86,7 +93,7 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
           <div className="numero">{c.numero_visibile ?? `#${c.numero}`}</div>
           <div className="tipo">{TIPO[c.tipo] ?? c.tipo}{c.tavolo != null && ` ${c.tavolo}`}</div>
           <div className="quando">
-            {c.ora_consegna ? <>per le <b>{ora(c.ora_consegna)}</b></> : <>subito</>} · ricevuto {ora(c.creato_il)} · {CANALE[c.canale] ?? c.canale}
+            {c.ora_consegna ? quando(c.ora_consegna) : <>subito</>} · ricevuto {ora(c.creato_il)} · {CANALE[c.canale] ?? c.canale}
           </div>
         </header>
 

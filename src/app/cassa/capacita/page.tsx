@@ -24,6 +24,7 @@ function Capacita() {
   const [giorno, setGiorno] = useState<string>(oggi());
   const [fasce, setFasce] = useState<CapacitaFascia[]>([]);
   const [pizzaioli, setPizzaioli] = useState(0);
+  const [ereditato, setEreditato] = useState<string | null>(null);   // giorno da cui viene lo standard, se oggi non è impostato
   const [rider, setRider] = useState(0);
   const [idNegozio, setIdNegozio] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
@@ -39,8 +40,13 @@ function Capacita() {
     const { data: t } = await supabase
       .from("turno_giorno").select("pizzaioli, rider")
       .eq("id_negozio", negozio).eq("giorno", giorno).maybeSingle();
-    setPizzaioli(t?.pizzaioli ?? 0);
-    setRider(t?.rider ?? 0);
+    if (t) { setPizzaioli(t.pizzaioli); setRider(t.rider); setEreditato(null); }
+    else {
+      // come fa capacita_giorno (mig. 0028): senza turno del giorno vale l'ultimo impostato prima
+      const { data: u } = await supabase.from("turno_giorno").select("giorno, pizzaioli, rider")
+        .eq("id_negozio", negozio).lt("giorno", giorno).order("giorno", { ascending: false }).limit(1).maybeSingle();
+      setPizzaioli(u?.pizzaioli ?? 0); setRider(u?.rider ?? 0); setEreditato(u?.giorno ?? null);
+    }
 
     const { data, error } = await supabase.rpc("capacita_giorno", { p_negozio: negozio, p_giorno: giorno });
     if (error) setErrore(error.message);
@@ -103,6 +109,7 @@ function Capacita() {
           </button>
         </div>
         <p className="muto" style={{ marginTop: 8 }}>
+          {ereditato && <>Turno non impostato per questo giorno: vale quello del {new Date(ereditato + "T12:00").toLocaleDateString("it-IT", { day: "numeric", month: "long" })} finché non salvi. </>}
           Ogni quarto d&apos;ora: fino a {fasce[0]?.pizze_max ?? 0} pizze e {rider} consegne (un rider per consegna).
         </p>
       </div>

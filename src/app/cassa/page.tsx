@@ -17,6 +17,16 @@ type OrdineCassa = Ordine & {
   indirizzo?: { via: string; civico: string | null } | null;
 };
 const euro = (n: number) => Number(n).toFixed(2).replace(".", ",") + " €";
+const oraDi = (s: string) => new Date(s).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+/** «per le 20:30» se è oggi, «domani alle 20:30» o «sab 25 alle 20:30» se no (critico giro 4: la cucina faceva oggi il preordine di domani). */
+function quando(iso: string) {
+  const d = new Date(iso), oggi = new Date();
+  const g = (x: Date) => x.toLocaleDateString("it-IT", { timeZone: "Europe/Rome" });
+  if (g(d) === g(oggi)) return `per le ${oraDi(iso)}`;
+  const domani = new Date(oggi); domani.setDate(domani.getDate() + 1);
+  if (g(d) === g(domani)) return `DOMANI alle ${oraDi(iso)}`;
+  return `${d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", timeZone: "Europe/Rome" })} alle ${oraDi(iso)}`;
+}
 
 const ETICHETTE: Record<StatoOrdine, string> = {
   ricevuto: "Ricevuto",
@@ -137,15 +147,7 @@ function Cassa() {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
-              {o.ora_consegna && (
-                <>
-                  {" "}· per le{" "}
-                  {new Date(o.ora_consegna).toLocaleTimeString("it-IT", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </>
-              )}
+              {o.ora_consegna && <> · <b style={quando(o.ora_consegna).startsWith("per") ? undefined : { color: "var(--accento)" }}>{quando(o.ora_consegna)}</b></>}
             </div>
             {(o.cliente?.nome || o.nome_cliente || o.cliente?.telefono || o.pagamento) && (
               <div style={{ marginTop: 6, fontWeight: 600 }}>
@@ -161,7 +163,9 @@ function Cassa() {
             <div className="muto" style={{ fontSize: 12 }}>
               {o.stampato_il
                 ? <>stampata {new Date(o.stampato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{(o.stampe ?? 0) > 1 && ` (×${o.stampe})`}</>
-                : <span style={{ color: "var(--accento)", fontWeight: 700 }}>non stampata</span>}
+                : o.stato === "ricevuto" || o.stato === "in_preparazione"
+                  ? <span style={{ color: "var(--accento)", fontWeight: 700 }}>non stampata</span>
+                  : <span>non stampata</span>}
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
               <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>

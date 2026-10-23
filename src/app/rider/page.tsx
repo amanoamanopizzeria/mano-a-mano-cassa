@@ -29,7 +29,8 @@ function Rider() {
 
   const carica = useCallback(async () => {
     const supabase = supabaseRef.current!;
-    const [{ data, error }, b] = await Promise.all([supabase.rpc("consegne_rider2"), supabase.rpc("rider_borsello")]);
+    const [{ data, error }, b, me] = await Promise.all([supabase.rpc("consegne_rider2"), supabase.rpc("rider_borsello"), supabase.from("profilo").select("ruolo").maybeSingle()]);
+    if (me.data && me.data.ruolo !== "rider") { setErrore(`Questa utenza è «${me.data.ruolo}», non un rider: le consegne si vedono solo entrando come rider. Da cassa: /cassa/rider e /cassa/mappa.`); return; }
     if (error) setErrore(error.message);
     else setConsegne((data ?? []) as ConsegnaRider[]);
     const mio = ((b.data ?? []) as RiderBorsello[])[0];
