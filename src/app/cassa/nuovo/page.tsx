@@ -570,7 +570,7 @@ function Cassa() {
         {erroreCoupon && <div style={{ margin: "-2px 6px 6px", fontSize: 13, color: "var(--accento)", fontWeight: 700 }}>{erroreCoupon}</div>}
         <input placeholder="Note (es. ben cotta)" value={note} onChange={(e) => setNote(e.target.value)} style={{ margin: "0 6px 6px", padding: 8, fontSize: 14 }} />
         {errore && (
-          <div role="alert" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 12, background: "var(--vino-chiaro)", border: "2px solid var(--vino)", color: "var(--vino)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
+          <div role="alert" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 12, background: "var(--errore-chiaro)", border: "2px solid var(--errore)", color: "var(--errore)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
             {errore}
           </div>
         )}
@@ -581,7 +581,7 @@ function Cassa() {
         )}
         {/* n. 10 del giro 3: gli errori stanno in UN posto, vicino al bottone */}
         {!errore && tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo) && righe.length > 0 && (
-          <div style={{ margin: "0 6px 6px", padding: "8px 12px", borderRadius: 12, background: "var(--vino-chiaro)", border: "2px solid var(--vino)", color: "var(--vino)", fontWeight: 700, fontSize: 14 }}>
+          <div style={{ margin: "0 6px 6px", padding: "8px 12px", borderRadius: 12, background: "var(--errore-chiaro)", border: "2px solid var(--errore)", color: "var(--errore)", fontWeight: 700, fontSize: 14 }}>
             {!idIndirizzo ? "Serve l'indirizzo di consegna: aprilo da Dati cliente." : fuoriZona ? "Fuori dalle zone di consegna: non consegniamo lì." : `Minimo d'ordine ${euro(zonaSel!.minimo_ordine)}: mancano ${euro(zonaSel!.minimo_ordine - totale)}.`}
           </div>
         )}

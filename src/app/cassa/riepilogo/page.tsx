@@ -16,6 +16,7 @@ export default function RiepilogoPagina() {
   );
 }
 
+const giornoRoma = (iso: string) => new Date(iso).toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
 function inizioGiorno(): string {
   // mezzanotte di oggi a Roma, in UTC
   const oggi = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
@@ -33,10 +34,12 @@ function Riepilogo() {
       const { data, error } = await supabase
         .from("ordine")
         .select("*, ordine_riga(*)")
-        .gte("creato_il", inizioGiorno())
+        .or(`creato_il.gte.${inizioGiorno()},ora_consegna.gte.${inizioGiorno()}`)
         .order("creato_il", { ascending: false });
       if (error) setErrore(error.message);
-      else setOrdini((data ?? []) as OrdineConRighe[]);
+      // «di oggi» = per la sera di oggi: un preordine di domani non conta (critico giro 4b);
+      // un ordine fatto oggi senza ora è di oggi.
+      else setOrdini(((data ?? []) as OrdineConRighe[]).filter((o) => giornoRoma(o.ora_consegna ?? o.creato_il) === giornoRoma(new Date().toISOString())));
     }
     carica();
     const canale = supabase

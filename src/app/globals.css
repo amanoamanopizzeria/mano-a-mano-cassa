@@ -12,6 +12,8 @@
   --bordo: #ece6da;
   --accento: var(--vino);
   --ok: #2e7d32;
+  --errore: #c8102e;        /* solo per gli errori: il vino è delle azioni (critico giro 4b) */
+  --errore-chiaro: #fff3f4;
   --attesa: var(--oro);
   --ombra: 0 1px 2px rgba(26,23,21,.05), 0 10px 26px rgba(26,23,21,.07);
 }
