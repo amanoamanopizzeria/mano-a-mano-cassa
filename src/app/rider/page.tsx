@@ -82,26 +82,13 @@ function Rider() {
     else carica();
   }
 
-  // L'avviso al cliente «è partito, seguilo qui» nasce quando il rider la ritira (mig. 0032).
-  // Finché non c'è un fornitore WhatsApp/SMS collegato, parte dal telefono del rider con un tocco.
-  const [avvisi, setAvvisi] = useState<Record<string, { id: string; telefono: string | null; testo: string; stato: string }>>({});
+  // L'avviso al cliente «è partito, seguilo qui» nasce quando il rider la ritira (mig. 0032) e resta
+  // in notifica_cliente in attesa della push nell'app: Edoardo (24/10) non vuole WhatsApp («a pagamento;
+  // chi ha l'app ha già le autorizzazioni»). Come mandarla lo dice il REA.
   async function aggiorna(id: string, stato: "ritirata" | "consegnata") {
     const { error } = await supabaseRef.current!.rpc("aggiorna_consegna", { p_id: id, p_stato: stato });
-    if (error) { setErrore(error.message); return; }
-    if (stato === "ritirata") {
-      const { data } = await supabaseRef.current!.rpc("avviso_da_mandare", { p_id_consegna: id });
-      if (data) setAvvisi((a) => ({ ...a, [id]: data }));
-    }
-    carica();
-  }
-  async function avvisa(idConsegna: string) {
-    const a = avvisi[idConsegna] ?? (await supabaseRef.current!.rpc("avviso_da_mandare", { p_id_consegna: idConsegna })).data;
-    if (!a) return;
-    const tel = (a.telefono ?? "").replace(/\D/g, "");
-    const numero = tel.startsWith("39") ? tel : "39" + tel;
-    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(a.testo)}`, "_blank");
-    await supabaseRef.current!.rpc("avviso_inviato", { p_id: a.id });
-    setAvvisi((x) => ({ ...x, [idConsegna]: { ...a, stato: "inviata" } }));
+    if (error) setErrore(error.message);
+    else carica();
   }
 
   const libere = consegne.filter((c) => c.stato === "da_assegnare");
@@ -123,14 +110,7 @@ function Rider() {
               <button className="primario" onClick={() => aggiorna(c.id, "ritirata")}>Ritirata</button>
             )}
             {c.stato === "ritirata" && (
-              <>
-                <button className="primario" onClick={() => aggiorna(c.id, "consegnata")}>Consegnata</button>
-                {c.cliente_telefono && (
-                  <button onClick={() => avvisa(c.id)} style={avvisi[c.id]?.stato === "inviata" ? undefined : { borderColor: "var(--ok)", color: "var(--ok)", fontWeight: 700 }}>
-                    {avvisi[c.id]?.stato === "inviata" ? "Avviso mandato ✓" : "Avvisa il cliente: sto arrivando"}
-                  </button>
-                )}
-              </>
+              <button className="primario" onClick={() => aggiorna(c.id, "consegnata")}>Consegnata</button>
             )}
           </SchedaConsegna>
         ))}
