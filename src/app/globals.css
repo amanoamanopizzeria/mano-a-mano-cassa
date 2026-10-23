@@ -174,3 +174,17 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .menu-lettura details.spenti { margin-top: 8px; }
 .menu-lettura details.spenti summary { cursor: pointer; font-size: 14px; color: var(--muto); font-weight: 600; }
 .menu-lettura details.spenti summary::marker { color: var(--oro); }
+
+/* ===== giro 4 del grafico (23/10/2026) ===== */
+/* La lista degli ordini: lo stato è la pillola (l'unica cosa in vino pieno), l'azione è bianca col bordo vino, il prezzo nero in Oswald. */
+.lista-ordini button.azione { background: #fff; color: var(--vino); border: 2px solid var(--vino); font-weight: 700; }
+.lista-ordini button.azione:active { background: var(--vino-chiaro); }
+/* Le fasce: la legenda in cima con le pillole vere, il totale della sera leggibile. */
+.f-totale { font-size: 15px; color: var(--muto); }
+.f-totale b { color: var(--testo); font-variant-numeric: tabular-nums; }
+.f-legenda { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; margin-top: 10px; font-size: 14px; }
+.f-legenda > span { display: inline-flex; align-items: center; gap: 6px; }
+.f-pill { display: inline-block; border-radius: 999px; padding: 2px 10px; font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; background: var(--bordo); color: var(--testo); }
+.f-pill.quasi { background: var(--oro); }
+.f-pill.piena { background: var(--vino); color: #fff; }
+.f-pill.lente { background: var(--vino-chiaro); color: var(--vino); }

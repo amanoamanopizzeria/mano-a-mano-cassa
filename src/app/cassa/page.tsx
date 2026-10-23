@@ -123,7 +123,7 @@ function Cassa() {
   }
 
   return (
-    <main>
+    <main className="lista-ordini">
       <h1>Cassa — ordini</h1>
       <label className="muto" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <input type="checkbox" checked={stampaAuto} onChange={(e) => cambiaStampaAuto(e.target.checked)} />
@@ -156,7 +156,7 @@ function Cassa() {
             )}
             {o.indirizzo && <div>{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
             {o.cliente?.note && <div style={{ fontSize: 13, padding: "3px 8px", borderRadius: 8, background: "var(--oro-velo)", borderLeft: "3px solid var(--oro)" }}>⚠ {o.cliente.note}</div>}
-            <div style={{ margin: "8px 0", fontSize: 20, fontWeight: 800, color: "var(--vino)" }}>
+            <div style={{ margin: "8px 0", fontSize: 22, fontFamily: "Oswald, sans-serif", fontWeight: 600, color: "var(--testo)", fontVariantNumeric: "tabular-nums" }}>
               {euro(o.totale)}
             </div>
             {o.note && <div className="muto">Note: {o.note}</div>}
@@ -173,7 +173,7 @@ function Cassa() {
               {TRANSIZIONI_ORDINE[o.stato].map((s) => (
                 <button
                   key={s}
-                  className={s === "annullato" ? "" : "primario"}
+                  className={s === "annullato" ? "" : "azione"}
                   onClick={() => cambiaStato(o.id, s)}
                 >
                   {ETICHETTE[s]}
