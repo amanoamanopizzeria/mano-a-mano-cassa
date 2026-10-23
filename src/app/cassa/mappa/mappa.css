@@ -35,3 +35,16 @@
 .leaflet-popup-content-wrapper { border-radius: 14px; font-family: "Figtree", sans-serif; font-size: 14px; }
 .leaflet-popup-content b { font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 16px; }
 .leaflet-div-icon { background: transparent; border: none; }
+
+/* giro 3: il popup al marchio (era quello di Leaflet) */
+.leaflet-popup-content-wrapper { border-radius: 16px; border: 2px solid var(--oro); box-shadow: 0 10px 26px rgba(26,23,21,.18); padding: 2px 4px; color: var(--testo); }
+.leaflet-popup-content { margin: 10px 12px; line-height: 1.35; font-size: 14px; min-width: 160px; }
+.leaflet-popup-content > b { display: block; color: var(--vino); font-size: 18px; margin-bottom: 4px; }
+.leaflet-popup-content .p-stato { display: inline-block; margin-bottom: 6px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .06em; font-size: 13px; padding: 2px 9px; border-radius: 999px; background: var(--oro); color: var(--testo); }
+.leaflet-popup-content .p-stato.assegnata, .leaflet-popup-content .p-stato.in_giro { background: var(--vino); color: #fff; }
+.leaflet-popup-content .p-stato.ritirata { background: #fff; color: var(--vino); border: 2px solid var(--vino); }
+.leaflet-popup-content .p-stato.fermo { background: var(--bordo); color: var(--muto); }
+.leaflet-popup-content .p-riga { color: var(--muto); }
+.leaflet-popup-content .p-riga b { color: var(--testo); }
+.leaflet-popup-tip { border-top: 2px solid var(--oro); }
+.leaflet-container a.leaflet-popup-close-button { color: var(--vino); font-size: 20px; top: 6px; right: 6px; }

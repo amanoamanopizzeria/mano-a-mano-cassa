@@ -16,10 +16,11 @@ const CENTRO: [number, number] = [41.9176, 12.5037];
 /** Una consegna in corso con il suo punto sulla mappa (letta da `consegna`, che lo staff può leggere). */
 interface ConsegnaInMappa {
   id: string; stato: "da_assegnare" | "assegnata" | "ritirata"; id_rider: string | null;
-  ordine: { numero: number; ora_consegna: string | null; indirizzo: { via: string; civico: string | null; lat: number | null; lng: number | null } | null } | null;
+  ordine: { numero: number; numero_visibile: string | null; ora_consegna: string | null; indirizzo: { via: string; civico: string | null; lat: number | null; lng: number | null } | null } | null;
 }
 const STATO_CONSEGNA: Record<ConsegnaInMappa["stato"], string> = { da_assegnare: "da assegnare", assegnata: "assegnata", ritirata: "in viaggio" };
 const oraDi = (s: string) => new Date(s).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+const nomeOrdine = (o: ConsegnaInMappa["ordine"]) => o?.numero_visibile ?? `#${o?.numero ?? ""}`;
 const iniziali = (nome: string) => nome.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("");
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -71,7 +72,7 @@ function Mappa() {
     async function carica(L: any) {
       const [{ data, error }, c] = await Promise.all([
         supabase.rpc("rider_in_mappa"),
-        supabase.from("consegna").select("id, stato, id_rider, ordine(numero, ora_consegna, indirizzo(via, civico, lat, lng))").in("stato", ["da_assegnare", "assegnata", "ritirata"]),
+        supabase.from("consegna").select("id, stato, id_rider, ordine(numero, numero_visibile, ora_consegna, indirizzo(via, civico, lat, lng))").in("stato", ["da_assegnare", "assegnata", "ritirata"]),
       ]);
       if (error) { setErrore(error.message); return; }
       const lista = (data ?? []) as RiderInMappa[];
@@ -86,7 +87,7 @@ function Mappa() {
         const pos: [number, number] = [r.lat, r.lng];
         const fermo = !r.aggiornata_il || Date.now() - new Date(r.aggiornata_il).getTime() > 10 * 60_000;
         const icona = L.divIcon({ className: "", html: `<div class="m-rider${fermo ? " fermo" : ""}" title="${r.nome}">${iniziali(r.nome)}</div>`, iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -22] });
-        const testo = `<b>${r.nome}</b><br/>${r.consegne_in_corso} consegne in corso${r.aggiornata_il ? `<br/>posizione delle ${oraDi(r.aggiornata_il)}` : ""}`;
+        const testo = `<b>${r.nome}</b><span class="p-stato ${fermo ? "fermo" : "in_giro"}">${fermo ? "fermo" : "in giro"}</span><div class="p-riga">${r.consegne_in_corso} consegne in corso</div>${r.aggiornata_il ? `<div class="p-riga">posizione delle <b>${oraDi(r.aggiornata_il)}</b></div>` : ""}`;
         const m = segnapostiRef.current.get(r.id);
         if (m) m.setLatLng(pos).setIcon(icona).bindPopup(testo);
         else segnapostiRef.current.set(r.id, L.marker(pos, { icon: icona }).addTo(mappa).bindPopup(testo));
@@ -100,7 +101,7 @@ function Mappa() {
         const pos: [number, number] = [i.lat, i.lng];
         const icona = L.divIcon({ className: "", html: `<div class="m-goccia ${k.stato}"><span>${k.ordine?.numero ?? ""}</span></div>`, iconSize: [34, 34], iconAnchor: [17, 34], popupAnchor: [0, -30] });
         const chi = k.id_rider ? lista.find((r) => r.id === k.id_rider)?.nome : null;
-        const testo = `<b>#${k.ordine?.numero}</b> · ${STATO_CONSEGNA[k.stato]}${chi ? ` · ${chi}` : ""}<br/>${i.via} ${i.civico ?? ""}${k.ordine?.ora_consegna ? `<br/>per le ${oraDi(k.ordine.ora_consegna)}` : ""}`;
+        const testo = `<b>${nomeOrdine(k.ordine)}</b><span class="p-stato ${k.stato}">${STATO_CONSEGNA[k.stato]}</span>${chi ? `<div class="p-riga">rider: <b>${chi}</b></div>` : ""}<div class="p-riga">${i.via} ${i.civico ?? ""}</div>${k.ordine?.ora_consegna ? `<div class="p-riga">per le <b>${oraDi(k.ordine.ora_consegna)}</b></div>` : ""}`;
         const m = consegneRef.current.get(k.id);
         if (m) m.setLatLng(pos).setIcon(icona).bindPopup(testo);
         else consegneRef.current.set(k.id, L.marker(pos, { icon: icona }).addTo(mappa).bindPopup(testo));
@@ -127,7 +128,7 @@ function Mappa() {
         }).addTo(mappaRef.current);
         // la pizzeria: il bollino in un disco bianco col bordo oro, sempre al centro della storia
         L.marker(CENTRO, { icon: L.divIcon({ className: "", html: `<div class="m-pizzeria" title="A Mano a Mano"><img src="/brand/bollino.png" alt=""/></div>`, iconSize: [46, 46], iconAnchor: [23, 23], popupAnchor: [0, -26] }), zIndexOffset: 1000 })
-          .addTo(mappaRef.current).bindPopup("<b>A Mano a Mano</b><br/>Via Novara 5/7");
+          .addTo(mappaRef.current).bindPopup(`<b>A Mano a Mano</b><div class="p-riga">Via Novara 5/7</div>`);
         carica(L);
         // ogni posizione nuova o cambio consegna aggiorna la mappa
         canale = supabase
@@ -193,9 +194,9 @@ function Mappa() {
           <div className="carta" key={k.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span className={"m-goccia " + k.stato}><span>{k.ordine?.numero ?? ""}</span></span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <strong style={{ fontSize: 17 }}>#{k.ordine?.numero}</strong>
+              <strong style={{ fontSize: 17 }}>{nomeOrdine(k.ordine)}</strong>
               {k.ordine?.ora_consegna && <span className="muto"> · per le {oraDi(k.ordine.ora_consegna)}</span>}
-              <div className="muto">{k.ordine?.indirizzo ? `${k.ordine.indirizzo.via} ${k.ordine.indirizzo.civico ?? ""}` : "senza indirizzo"}{nomeRider(k.id_rider) ? ` · ${nomeRider(k.id_rider)}` : ""}{k.ordine?.indirizzo && k.ordine.indirizzo.lat == null ? " · non sulla mappa" : ""}</div>
+              <div className="muto">{k.ordine?.indirizzo ? `${k.ordine.indirizzo.via} ${k.ordine.indirizzo.civico ?? ""}` : <b style={{ color: "var(--vino)" }}>senza indirizzo: da sistemare</b>}{nomeRider(k.id_rider) ? ` · ${nomeRider(k.id_rider)}` : ""}{k.ordine?.indirizzo && k.ordine.indirizzo.lat == null ? " · non sulla mappa" : ""}</div>
             </div>
             <span className={"m-stato " + k.stato}>{STATO_CONSEGNA[k.stato]}</span>
           </div>
