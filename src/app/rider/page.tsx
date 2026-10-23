@@ -29,8 +29,9 @@ function Rider() {
 
   const carica = useCallback(async () => {
     const supabase = supabaseRef.current!;
-    const [{ data, error }, b, me] = await Promise.all([supabase.rpc("consegne_rider2"), supabase.rpc("rider_borsello"), supabase.from("profilo").select("ruolo").maybeSingle()]);
-    if (me.data && me.data.ruolo !== "rider") { setErrore(`Questa utenza è «${me.data.ruolo}», non un rider: le consegne si vedono solo entrando come rider. Da cassa: /cassa/rider e /cassa/mappa.`); return; }
+    const [{ data, error }, b, me] = await Promise.all([supabase.rpc("consegne_rider2"), supabase.rpc("rider_borsello"), supabase.from("profilo").select("ruolo, id_rider").maybeSingle()]);
+    // È rider chi ha un rider collegato (mig. 0032): l'utenza della cassa fa anche da «Rider di prova».
+    if (me.data && !me.data.id_rider) { setErrore(`Questa utenza è «${me.data.ruolo}» e non ha un rider collegato: le consegne si vedono entrando come rider. Da cassa: /cassa/rider e /cassa/mappa.`); return; }
     if (error) setErrore(error.message);
     else setConsegne((data ?? []) as ConsegnaRider[]);
     const mio = ((b.data ?? []) as RiderBorsello[])[0];
@@ -81,10 +82,26 @@ function Rider() {
     else carica();
   }
 
+  // L'avviso al cliente «è partito, seguilo qui» nasce quando il rider la ritira (mig. 0032).
+  // Finché non c'è un fornitore WhatsApp/SMS collegato, parte dal telefono del rider con un tocco.
+  const [avvisi, setAvvisi] = useState<Record<string, { id: string; telefono: string | null; testo: string; stato: string }>>({});
   async function aggiorna(id: string, stato: "ritirata" | "consegnata") {
     const { error } = await supabaseRef.current!.rpc("aggiorna_consegna", { p_id: id, p_stato: stato });
-    if (error) setErrore(error.message);
-    else carica();
+    if (error) { setErrore(error.message); return; }
+    if (stato === "ritirata") {
+      const { data } = await supabaseRef.current!.rpc("avviso_da_mandare", { p_id_consegna: id });
+      if (data) setAvvisi((a) => ({ ...a, [id]: data }));
+    }
+    carica();
+  }
+  async function avvisa(idConsegna: string) {
+    const a = avvisi[idConsegna] ?? (await supabaseRef.current!.rpc("avviso_da_mandare", { p_id_consegna: idConsegna })).data;
+    if (!a) return;
+    const tel = (a.telefono ?? "").replace(/\D/g, "");
+    const numero = tel.startsWith("39") ? tel : "39" + tel;
+    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(a.testo)}`, "_blank");
+    await supabaseRef.current!.rpc("avviso_inviato", { p_id: a.id });
+    setAvvisi((x) => ({ ...x, [idConsegna]: { ...a, stato: "inviata" } }));
   }
 
   const libere = consegne.filter((c) => c.stato === "da_assegnare");
@@ -106,7 +123,14 @@ function Rider() {
               <button className="primario" onClick={() => aggiorna(c.id, "ritirata")}>Ritirata</button>
             )}
             {c.stato === "ritirata" && (
-              <button className="primario" onClick={() => aggiorna(c.id, "consegnata")}>Consegnata</button>
+              <>
+                <button className="primario" onClick={() => aggiorna(c.id, "consegnata")}>Consegnata</button>
+                {c.cliente_telefono && (
+                  <button onClick={() => avvisa(c.id)} style={avvisi[c.id]?.stato === "inviata" ? undefined : { borderColor: "var(--ok)", color: "var(--ok)", fontWeight: 700 }}>
+                    {avvisi[c.id]?.stato === "inviata" ? "Avviso mandato ✓" : "Avvisa il cliente: sto arrivando"}
+                  </button>
+                )}
+              </>
             )}
           </SchedaConsegna>
         ))}

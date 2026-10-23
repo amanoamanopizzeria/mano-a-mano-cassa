@@ -18,6 +18,12 @@ interface OrdineFascia {
 }
 type Reparto = "produzione" | "consegne";
 interface Modifica { ora: string; tipo: Reparto; massimo: number; reali: number }
+/** Le prossime consegne con chi le porta (Edoardo 24/10: «le fasce delle prossime consegne, di quanti rider»). */
+interface Prossima {
+  id: string; stato: "da_assegnare" | "assegnata" | "ritirata";
+  rider: { nome: string } | null;
+  ordine: { numero: number; numero_visibile: string | null; ora_consegna: string | null; creato_il: string; indirizzo: { via: string; civico: string | null } | null } | null;
+}
 
 const TIPO: Record<string, string> = { domicilio: "Domicilio", ritiro: "Ritiro", tavolo: "Tavolo", banco: "Banco" };
 const STATO: Record<string, string> = {
@@ -46,6 +52,8 @@ function Fasce() {
   const [modifica, setModifica] = useState<Modifica | null>(null);
   const [adesso, setAdesso] = useState(adessoRoma());
   const [errore, setErrore] = useState<string | null>(null);
+  const [prossime, setProssime] = useState<Prossima[]>([]);
+  const [turno, setTurno] = useState<{ pizzaioli: number; rider: number } | null>(null);
 
   const carica = useCallback(async () => {
     const supabase = supabaseBrowser();
@@ -53,10 +61,18 @@ function Fasce() {
     const negozio = prof?.id_negozio as string | undefined;
     if (!negozio) { setErrore("Nessun negozio collegato al tuo profilo."); return; }
     setIdNegozio(negozio);
-    const [c, o] = await Promise.all([
+    const [c, o, p, t] = await Promise.all([
       supabase.rpc("capacita_giorno", { p_negozio: negozio, p_giorno: giorno }),
       supabase.rpc("ordini_per_fascia", { p_negozio: negozio, p_giorno: giorno }),
+      supabase.from("consegna").select("id, stato, rider(nome), ordine(numero, numero_visibile, ora_consegna, creato_il, indirizzo(via, civico))")
+        .in("stato", ["da_assegnare", "assegnata", "ritirata"]),
+      supabase.from("turno_giorno").select("pizzaioli, rider").eq("id_negozio", negozio).lte("giorno", giorno).order("giorno", { ascending: false }).limit(1).maybeSingle(),
     ]);
+    const quando = (x: Prossima) => x.ordine?.ora_consegna ?? x.ordine?.creato_il ?? "";
+    setProssime(((p.data ?? []) as unknown as Prossima[])
+      .filter((x) => quando(x).length > 0 && new Date(quando(x)).toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }) === giorno)
+      .sort((a, b) => quando(a).localeCompare(quando(b))));
+    setTurno(t.data ?? null);
     if (c.error) setErrore(c.error.message); else if (o.error) setErrore(o.error.message);
     else { setErrore(null); setFasce((c.data ?? []) as CapacitaFascia[]); setOrdini((o.data ?? []) as OrdineFascia[]); }
   }, [giorno]);
@@ -70,6 +86,7 @@ function Fasce() {
       .on("postgres_changes", { event: "*", schema: "public", table: "turno_giorno" }, () => carica())
       .on("postgres_changes", { event: "*", schema: "public", table: "fascia_bloccata" }, () => carica())
       .on("postgres_changes", { event: "*", schema: "public", table: "fascia_capacita" }, () => carica())
+      .on("postgres_changes", { event: "*", schema: "public", table: "consegna" }, () => carica())
       .subscribe();
     const orologio = setInterval(() => setAdesso(adessoRoma()), 30_000);
     return () => { supabase.removeChannel(canale); clearInterval(orologio); };
@@ -98,6 +115,12 @@ function Fasce() {
     setModifica(null);
     carica();
   }
+  // −/+ direttamente sulla riga: un tocco cambia il massimo di QUEL quarto d'ora (Edoardo 24/10)
+  async function passo(f: CapacitaFascia, tipo: Reparto, d: number) {
+    const attuale = tipo === "produzione" ? f.pizze_max : f.consegne_max;
+    const reali = tipo === "produzione" ? f.pizze_occupate : f.consegne_occupate;
+    await salvaMassimo({ ora: f.ora, tipo, massimo: Math.max(0, attuale + d), reali });
+  }
 
   const eOggi = giorno === oggi();
 
@@ -106,7 +129,9 @@ function Fasce() {
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <h1 style={{ margin: 0 }}>Planner — fasce</h1>
         <input type="date" value={giorno} onChange={(e) => setGiorno(e.target.value)} />
-        <Link href="/cassa/capacita" className="muto">Pizzaioli e rider del giorno →</Link>
+        <Link href="/cassa/capacita" className="f-turno">
+          {turno ? <><b>{turno.pizzaioli}</b> pizzaioli · <b>{turno.rider}</b> rider</> : "Imposta pizzaioli e rider"} →
+        </Link>
         <span className="f-totale" style={{ marginLeft: "auto" }}>
           <b>{totali.ordini}</b> ordini · <b>{totali.pizze}</b> pizze · <b>{totali.consegne}</b> consegne · <b>{totali.euro.toFixed(2).replace(".", ",")} €</b>
         </span>
@@ -116,9 +141,23 @@ function Fasce() {
         <span><span className="f-pill quasi">14/20</span> quasi piena</span>
         <span><span className="f-pill piena">20/20</span> sold out</span>
         <span><span className="f-pill lente">🔍 2</span> gli ordini della fascia: tocca per vederli</span>
-        <span className="muto">Tocca una cella per cambiare il massimo solo di quella fascia.</span>
+        <span className="muto">Con − e + cambi il massimo di quel quarto d&apos;ora; tocca il numero per scriverlo.</span>
       </div>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
+
+      {prossime.length > 0 && (
+        <div className="carta f-prossime">
+          <h2>Prossime consegne <small>{prossime.length}</small></h2>
+          {prossime.map((x) => (
+            <div key={x.id} className={"f-cons " + x.stato}>
+              <b className="f-ora">{oraRoma(x.ordine?.ora_consegna ?? x.ordine?.creato_il ?? "")}</b>
+              <b>{x.ordine?.numero_visibile ?? `#${x.ordine?.numero ?? ""}`}</b>
+              <span className="f-via">{x.ordine?.indirizzo ? `${x.ordine.indirizzo.via} ${x.ordine.indirizzo.civico ?? ""}` : "senza indirizzo"}</span>
+              <span className="f-chi">{x.stato === "da_assegnare" ? "da assegnare" : `${x.rider?.nome ?? "rider"} · ${x.stato === "ritirata" ? "in viaggio" : "assegnata"}`}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="carta" style={{ marginTop: 12, padding: 0, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
@@ -126,7 +165,7 @@ function Fasce() {
             <tr style={{ background: "var(--sfondo)", color: "var(--muto)", fontSize: 13, fontFamily: "Oswald, sans-serif", fontWeight: 500, textTransform: "uppercase", letterSpacing: ".1em" }}>
               <th style={{ textAlign: "left", padding: "8px 12px", width: 70 }}>Ora</th>
               <th style={{ padding: 8 }}>Pizze</th>
-              <th style={{ padding: 8 }}>Rider</th>
+              <th style={{ padding: 8 }}>Consegne</th>
               <th style={{ padding: 8, width: 70 }}>Ordini</th>
             </tr>
           </thead>
@@ -141,13 +180,17 @@ function Fasce() {
                   <td style={{ padding: "6px 12px", fontWeight: 700, fontVariantNumeric: "tabular-nums", fontSize: 15, color: corrente ? "var(--vino)" : undefined }}>
                     {corrente && <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 999, background: "var(--vino)", marginRight: 6 }} />}{ora}
                   </td>
-                  <td style={{ textAlign: "center", padding: 4 }}>
+                  <td style={{ textAlign: "center", padding: 4, whiteSpace: "nowrap" }}>
+                    <button className="f-passo" onClick={() => passo(f, "produzione", -1)} aria-label={`Una pizza in meno alle ${ora}`}>−</button>
                     <Pillola n={f.pizze_occupate} max={f.pizze_max} bloccata={f.bloccata_produzione}
                       onClick={() => setModifica({ ora: f.ora, tipo: "produzione", massimo: f.pizze_max, reali: f.pizze_occupate })} />
+                    <button className="f-passo" onClick={() => passo(f, "produzione", 1)} aria-label={`Una pizza in più alle ${ora}`}>+</button>
                   </td>
-                  <td style={{ textAlign: "center", padding: 4 }}>
+                  <td style={{ textAlign: "center", padding: 4, whiteSpace: "nowrap" }}>
+                    <button className="f-passo" onClick={() => passo(f, "consegne", -1)} aria-label={`Una consegna in meno alle ${ora}`}>−</button>
                     <Pillola n={f.consegne_occupate} max={f.consegne_max} bloccata={f.bloccata_consegne}
                       onClick={() => setModifica({ ora: f.ora, tipo: "consegne", massimo: f.consegne_max, reali: f.consegne_occupate })} />
+                    <button className="f-passo" onClick={() => passo(f, "consegne", 1)} aria-label={`Una consegna in più alle ${ora}`}>+</button>
                   </td>
                   <td style={{ textAlign: "center", padding: 4 }}>
                     <button onClick={() => setAperta(aperta === ora ? null : ora)} title={lista.length === 1 ? "1 ordine in questa fascia: tocca per vederlo" : `${lista.length} ordini in questa fascia: tocca per vederli`}

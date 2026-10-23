@@ -38,7 +38,7 @@ function Tavoli() {
 
   const carica = useCallback(async () => {
     const { data, error } = await supabaseBrowser()
-      .from("tavolo").select("*").order("numero");
+      .from("tavolo").select("*").eq("attivo", true).order("numero");   // 10 dentro e 5 fuori (mig. 0031)
     if (error) setErrore(error.message);
     else setTavoli((data ?? []) as Tavolo[]);
   }, []);

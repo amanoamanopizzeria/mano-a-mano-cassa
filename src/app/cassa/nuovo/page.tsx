@@ -112,7 +112,7 @@ function Cassa() {
     (async () => {
       const [m, t, z] = await Promise.all([
         leggiMenu(),
-        supabaseBrowser().from("tavolo").select("id, numero, stato").order("numero"),
+        supabaseBrowser().from("tavolo").select("id, numero, stato").eq("attivo", true).order("numero"),
         supabaseBrowser().from("zona").select("id, nome, costo_consegna, minimo_ordine").eq("attiva", true),
       ]);
       if (m.errore) setErrore(m.errore);

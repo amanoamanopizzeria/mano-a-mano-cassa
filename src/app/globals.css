@@ -188,3 +188,17 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .f-pill.quasi { background: var(--oro); }
 .f-pill.piena { background: var(--vino); color: #fff; }
 .f-pill.lente { background: var(--vino-chiaro); color: var(--vino); }
+
+/* Fasce (24/10/2026): −/+ sulla riga, il turno in testa, le prossime consegne con chi le porta */
+.f-passo { width: 36px; height: 36px; padding: 0; border-radius: 999px; font-size: 20px; font-weight: 700; line-height: 1; margin: 0 4px; vertical-align: middle; }
+.f-turno { font-size: 15px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--oro); color: var(--testo); text-decoration: none; }
+.f-turno b { color: var(--vino); }
+.f-prossime { margin-top: 12px; }
+.f-prossime h2 { margin: 0 0 6px; font-size: 18px; }
+.f-prossime h2 small { color: var(--muto); font-weight: 400; }
+.f-cons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--bordo); font-size: 15px; }
+.f-cons .f-ora { font-variant-numeric: tabular-nums; min-width: 48px; }
+.f-cons .f-via { flex: 1; min-width: 140px; }
+.f-cons .f-chi { padding: 2px 10px; border-radius: 999px; font-size: 14px; background: var(--bordo); }
+.f-cons.da_assegnare .f-chi { background: var(--oro); color: var(--testo); }
+.f-cons.ritirata .f-chi { background: var(--vino); color: #fff; }
