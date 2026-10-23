@@ -6,12 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 import type { RiderInMappa } from "@/lib/types";
-import { PIZZERIA } from "@/lib/indirizzi";
 import "./mappa.css";
 
 const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
 const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-const CENTRO: [number, number] = [PIZZERIA.lat, PIZZERIA.lng];
+// Via Novara 5/7, 00198 Roma: le stesse coordinate di PIZZERIA in src/lib/indirizzi.ts (che è server-only).
+const CENTRO: [number, number] = [41.9176, 12.5037];
 
 /** Una consegna in corso con il suo punto sulla mappa (letta da `consegna`, che lo staff può leggere). */
 interface ConsegnaInMappa {
