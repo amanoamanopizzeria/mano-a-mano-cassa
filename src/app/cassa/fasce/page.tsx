@@ -120,7 +120,7 @@ function Fasce() {
               <th style={{ textAlign: "left", padding: "8px 12px", width: 70 }}>Ora</th>
               <th style={{ padding: 8 }}>Pizze</th>
               <th style={{ padding: 8 }}>Rider</th>
-              <th style={{ padding: 8, width: 60 }}></th>
+              <th style={{ padding: 8, width: 70 }}>Ordini</th>
             </tr>
           </thead>
           <tbody>
@@ -143,9 +143,9 @@ function Fasce() {
                       onClick={() => setModifica({ ora: f.ora, tipo: "consegne", massimo: f.consegne_max, reali: f.consegne_occupate })} />
                   </td>
                   <td style={{ textAlign: "center", padding: 4 }}>
-                    <button onClick={() => setAperta(aperta === ora ? null : ora)} title="Gli ordini di questa fascia"
+                    <button onClick={() => setAperta(aperta === ora ? null : ora)} title={lista.length === 1 ? "1 ordine in questa fascia: tocca per vederlo" : `${lista.length} ordini in questa fascia: tocca per vederli`}
                       style={{ border: "none", background: lista.length ? "var(--vino-chiaro)" : "transparent", borderRadius: 999, padding: "4px 10px", fontWeight: 700, color: lista.length ? "var(--vino)" : "var(--muto)" }}>
-                      🔍{lista.length > 0 && " " + lista.length}
+                      🔍{lista.length > 0 && <> {lista.length}<span className="sr">{lista.length === 1 ? " ordine" : " ordini"}</span></>}
                     </button>
                   </td>
                 </tr>,
