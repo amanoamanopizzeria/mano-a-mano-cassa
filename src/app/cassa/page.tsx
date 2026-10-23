@@ -160,7 +160,7 @@ function Cassa() {
               {euro(o.totale)}
             </div>
             {o.note && <div className="muto">Note: {o.note}</div>}
-            <div className="muto" style={{ fontSize: 12 }}>
+            <div className="muto">
               {o.stampato_il
                 ? <>stampata {new Date(o.stampato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{(o.stampe ?? 0) > 1 && ` (×${o.stampe})`}</>
                 : o.stato === "ricevuto" || o.stato === "in_preparazione"
