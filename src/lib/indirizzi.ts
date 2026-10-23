@@ -38,7 +38,8 @@ async function cercaGoogle(q: string, chiave: string): Promise<IndirizzoTrovato[
     body: JSON.stringify({
       input: q, languageCode: "it", regionCode: "IT", includedRegionCodes: ["it"],
       includedPrimaryTypes: ["street_address", "route", "premise", "subpremise"],
-      locationBias: { circle: { center: { latitude: PIZZERIA.lat, longitude: PIZZERIA.lng }, radius: RAGGIO_M } },
+      // restriction e non bias: Monterotondo, Corato e Gela non devono comparire (critico giro 1, lavoro 2)
+      locationRestriction: { circle: { center: { latitude: PIZZERIA.lat, longitude: PIZZERIA.lng }, radius: RAGGIO_M } },
     }),
     cache: "no-store",
   });
@@ -92,6 +93,7 @@ async function cercaPhoton(q: string): Promise<IndirizzoTrovato[]> {
   const j = (await r.json()) as { features?: PhotonFeature[] };
   return (j.features ?? [])
     .filter((f) => ["highway", "place", "building", "amenity"].includes(f.properties.osm_key ?? "") || f.properties.housenumber)
+    .filter((f) => kmDallaPizzeria(f.geometry.coordinates[1], f.geometry.coordinates[0]) <= RAGGIO_M / 1000)
     .slice(0, 6)
     .map((f) => {
       const p = f.properties;

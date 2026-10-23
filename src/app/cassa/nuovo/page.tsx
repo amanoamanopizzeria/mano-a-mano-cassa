@@ -55,6 +55,14 @@ function Cassa() {
   const [esito, setEsito] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [invio, setInvio] = useState(false);
+  // Quando: «adesso» oppure giorno + quarto d'ora, dentro l'orario del tipo (mig. 0022: domicilio 19:00–22:30,
+  // ritiro 19:00–22:45, 7 giorni avanti come online). Un ordine telefonico «per domani alle 20» si prende qui.
+  type Orario = { tipo: string; dalle: string; alle: string };
+  const [idNegozio, setIdNegozio] = useState<string | null>(null);
+  const [preordiniGiorni, setPreordiniGiorni] = useState(7);
+  const [giorno, setGiorno] = useState<string>("");          // "" = adesso
+  const [ora, setOra] = useState<string>("");                // "HH:MM"
+  const [orari, setOrari] = useState<Orario[]>([]);
 
   useEffect(() => {
     const tel = new URLSearchParams(window.location.search).get("telefono");
@@ -82,11 +90,52 @@ function Cassa() {
       ]);
       if (m.errore) setErrore(m.errore);
       setCategorie(m.categorie); setProdotti(m.prodotti); setVarianti(m.varianti); setGruppiCat(m.gruppi);
-      setTavoli((t.data ?? []) as Tavolo[]);
+      setTavoli(((t.data ?? []) as Tavolo[]).sort((a, b) => a.numero.localeCompare(b.numero, "it", { numeric: true })));
+      const { data: prof } = await supabaseBrowser().from("profilo").select("id_negozio").single();
+      const idNeg = (prof as { id_negozio: string | null } | null)?.id_negozio ?? null;
+      if (idNeg) {
+        setIdNegozio(idNeg);
+        const { data: neg } = await supabaseBrowser().from("negozio").select("preordini_giorni").eq("id", idNeg).maybeSingle();
+        const n = (neg as { preordini_giorni: number } | null)?.preordini_giorni;
+        if (n) setPreordiniGiorni(n);
+      }
       setZone(((z.data ?? []) as Zona[]).map((x) => ({ ...x, costo_consegna: Number(x.costo_consegna), minimo_ordine: Number(x.minimo_ordine) })));
       setCategoria(m.categorie[0]?.id ?? null);
     })();
   }, []);
+
+  // Gli orari del giorno scelto (o di oggi), per i quarti d'ora offerti.
+  useEffect(() => {
+    if (!idNegozio) return;
+    const g = giorno || oggiISO();
+    supabaseBrowser().rpc("orari_giorno", { p_negozio: idNegozio, p_giorno: g }).then(({ data }) => setOrari((data ?? []) as Orario[]));
+  }, [idNegozio, giorno]);
+
+  const giorniScelta = useMemo(() => {
+    const out: { v: string; t: string }[] = [];
+    for (let i = 0; i < preordiniGiorni; i++) {
+      const d = new Date(); d.setDate(d.getDate() + i);
+      const v = isoLocale(d);
+      out.push({ v, t: i === 0 ? "Oggi" : i === 1 ? "Domani" : d.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" }) });
+    }
+    return out;
+  }, [preordiniGiorni]);
+
+  const orarioTipo = orari.find((o) => o.tipo === (tipo === "domicilio" || tipo === "ritiro" ? tipo : "apertura")) ?? null;
+  const quartiScelta = useMemo(() => {
+    if (!orarioTipo) return [] as string[];
+    const out: string[] = [];
+    const [h1, m1] = orarioTipo.dalle.split(":").map(Number);
+    const [h2, m2] = orarioTipo.alle.split(":").map(Number);
+    const adesso = new Date();
+    const g = giorno || oggiISO();
+    for (let t = h1 * 60 + m1; t <= h2 * 60 + m2; t += 15) {
+      const hh = String(Math.floor(t / 60)).padStart(2, "0"), mm = String(t % 60).padStart(2, "0");
+      if (g === oggiISO() && t < adesso.getHours() * 60 + adesso.getMinutes() + 15) continue;   // attesa minima 15 min
+      out.push(`${hh}:${mm}`);
+    }
+    return out;
+  }, [orarioTipo, giorno]);
 
   const listino = tipo === "tavolo" ? "tavolo" : "asporto";
   const catCorrente = categorie.find((c) => c.id === categoria);
@@ -168,20 +217,25 @@ function Cassa() {
 
   async function invia() {
     setErrore(null); setInvio(true);
-    const { data, error } = await supabaseBrowser().rpc("ordine_da_cassa2", {
+    const pOra = giorno && ora ? new Date(`${giorno}T${ora}:00`).toISOString() : null;
+    const { data, error } = await supabaseBrowser().rpc("ordine_da_cassa3", {
       p_tipo: tipo, p_righe: righePerInvio(righe),
       p_id_tavolo: tipo === "tavolo" ? idTavolo : null, p_id_cliente: cliente?.id || null, p_note: note || null,
-      p_id_indirizzo: tipo === "domicilio" ? idIndirizzo : null,
+      p_id_indirizzo: tipo === "domicilio" ? idIndirizzo : null, p_ora: pOra,
     });
     setInvio(false);
-    if (error) { setErrore(error.message); return; }
-    const r = data as { esito: string; numero?: number; libere?: number; motivo?: string; minimo?: number; zona?: string; costo_consegna?: number };
-    if (r.esito === "accettato") { svuota(); setEsito(`Ordine n. ${r.numero} inviato in cucina${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
-    else if (r.esito === "pieno") setErrore(`Quarto d'ora al completo${r.motivo ? ` (${r.motivo})` : ""}${r.libere !== undefined ? `: ne restano ${r.libere}` : ""}.`);
-    else if (r.esito === "minimo") setErrore(`Minimo d'ordine a domicilio ${euro(Number(r.minimo))}.`);
-    else if (r.esito === "fuori_zona") setErrore("Indirizzo fuori dalle zone di consegna.");
-    else if (r.esito === "manca_indirizzo") setErrore("Scegli l'indirizzo di consegna (Dati cliente).");
-    else setErrore("Ordine non inserito: " + r.esito);
+    if (error) { setErrore("Non sono riuscito a inviare l'ordine: " + error.message); return; }
+    const r = data as { esito: string; numero?: number; libere?: number; motivo?: string; minimo?: number; zona?: string; costo_consegna?: number; dalle?: string; alle?: string; slot?: string };
+    const quando = pOra ? ` per ${giorniScelta.find((g) => g.v === giorno)?.t.toLowerCase() ?? giorno} alle ${ora}` : "";
+    if (r.esito === "accettato") { svuota(); setGiorno(""); setOra(""); setEsito(`Ordine n. ${r.numero} inviato in cucina${quando}${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
+    else if (r.esito === "pieno" && r.motivo === "consegne") setErrore(`Quarto d'ora pieno per le consegne${pOra ? ` alle ${ora}` : ""}: scegli un altro orario o un rider in più.`);
+    else if (r.esito === "pieno") setErrore(`Quarto d'ora pieno in cucina${pOra ? ` alle ${ora}` : ""}${r.libere !== undefined ? `: ci stanno ancora ${r.libere} pizze` : ""}. Scegli un altro orario.`);
+    else if (r.esito === "minimo") setErrore(`Sotto il minimo a domicilio (${euro(Number(r.minimo))}): mancano ${euro(Number(r.minimo) - totale)}.`);
+    else if (r.esito === "fuori_zona") setErrore("Indirizzo fuori dalle zone di consegna: non consegniamo lì.");
+    else if (r.esito === "manca_indirizzo") setErrore("Serve l'indirizzo di consegna: aprilo da Dati cliente.");
+    else if (r.esito === "fuori_orario") setErrore(`A quest'ora ${tipo === "domicilio" ? "non si consegna" : tipo === "ritiro" ? "non si ritira" : "la cucina è chiusa"}${r.dalle ? ` (${tipo === "domicilio" ? "consegna" : tipo === "ritiro" ? "ritiro" : "apertura"} ${r.dalle.slice(0, 5)}–${r.alle?.slice(0, 5)})` : ""}: scegli giorno e ora qui sotto.`);
+    else if (r.esito === "ora_passata") setErrore("L'orario scelto è già passato.");
+    else setErrore("Ordine non inserito (" + r.esito + "). Chiedi a Edoardo.");
   }
 
   const scheda = { display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "#fff", borderBottom: "1px solid var(--bordo)" } as const;
@@ -200,7 +254,6 @@ function Cassa() {
           </span>
           <span style={{ flex: 1 }} />
           {esito && <span style={{ color: "var(--ok)", fontWeight: 600 }}>{esito}</span>}
-          {errore && <span style={{ color: "var(--accento)", fontWeight: 600 }}>{errore}</span>}
         </div>
 
         {!modoVarianti ? (
@@ -334,7 +387,25 @@ function Cassa() {
           </div>
         </div>
 
+        {tipo !== "tavolo" && (
+          <div style={{ display: "flex", gap: 4, margin: "0 6px 6px" }}>
+            <button onClick={() => { setGiorno(""); setOra(""); }} className={!giorno ? "primario" : ""} style={{ padding: "6px 10px", fontSize: 13 }}>Adesso</button>
+            <select value={giorno} onChange={(e) => { setGiorno(e.target.value); setOra(""); }} style={{ flex: 1, padding: 6, fontSize: 14 }}>
+              <option value="">Giorno…</option>
+              {giorniScelta.map((g) => <option key={g.v} value={g.v}>{g.t}</option>)}
+            </select>
+            <select value={ora} onChange={(e) => setOra(e.target.value)} disabled={!giorno} style={{ flex: 1, padding: 6, fontSize: 14 }}>
+              <option value="">Ora…</option>
+              {quartiScelta.map((q) => <option key={q} value={q}>{q}</option>)}
+            </select>
+          </div>
+        )}
         <input placeholder="Note (es. ben cotta)" value={note} onChange={(e) => setNote(e.target.value)} style={{ margin: "0 6px 6px", padding: 8, fontSize: 14 }} />
+        {errore && (
+          <div role="alert" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 10, background: "#fff3f4", border: "2px solid var(--accento)", color: "var(--accento)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
+            {errore}
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 6px 6px" }}>
           <button onClick={svuota} disabled={righe.length === 0}>Svuota</button>
           <span style={{ flex: 1, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
@@ -342,13 +413,18 @@ function Cassa() {
             <span style={{ fontSize: 26, fontWeight: 800 }}>{euro(totale + costoConsegna)}</span>
           </span>
         </div>
-        <button onClick={invia} className="primario" disabled={invio || righe.length === 0 || (tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo))} style={{ margin: 6, padding: 16, fontSize: 18, fontWeight: 800, borderRadius: 10 }}>
+        <button onClick={invia} className="primario" disabled={invio || righe.length === 0 || (tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)} style={{ margin: 6, padding: 16, fontSize: 18, fontWeight: 800, borderRadius: 10 }}>
           {invio ? "Invio…" : "Invia in cucina"}
         </button>
       </aside>
     </div>
   );
 }
+
+function isoLocale(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function oggiISO() { return isoLocale(new Date()); }
 
 /** Il colore della categoria, schiarito per le tessere dei prodotti. */
 function chiaro(hex: string | null | undefined) {

@@ -95,6 +95,32 @@ function Cliente() {
     return () => clearTimeout(t);
   }, [cercaVia, scelto]);
 
+  // Scelta una via senza civico (Google dà la via intera, 6 km di Nomentana), scrivendo il civico
+  // si rifà la ricerca «via civico, città» così zona, km e mappa sono del portone, non della via.
+  useEffect(() => {
+    const n = civico.trim();
+    if (!scelto || !n || scelto.civico === n || !scelto.via) return;
+    const mio = ++ultimaRicerca.current;
+    const t = setTimeout(async () => {
+      const q = `${scelto.via} ${n}, ${scelto.citta ?? "Roma"}`;
+      const r = await fetch("/api/indirizzi/cerca?q=" + encodeURIComponent(q));
+      const j = (await r.json()) as { risultati: Suggerimento[] };
+      if (mio !== ultimaRicerca.current) return;
+      const primo = (j.risultati ?? [])[0];
+      if (!primo) return;
+      let pieno = primo;
+      if (primo.fonte === "google" && primo.place_id && primo.lat == null) {
+        const d = await fetch("/api/indirizzi/dettaglio?id=" + encodeURIComponent(primo.place_id));
+        if (d.ok) pieno = { ...primo, ...(await d.json()) };
+      }
+      if (mio !== ultimaRicerca.current) return;
+      if (!pieno.civico) pieno = { ...pieno, civico: n };   // Google non ha quel numero: teniamo quello scritto
+      setScelto(pieno);
+      setCercaVia(pieno.testo);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [civico, scelto]);
+
   async function scegli(s: Suggerimento) {
     let pieno = s;
     if (s.fonte === "google" && s.place_id && s.lat == null) {

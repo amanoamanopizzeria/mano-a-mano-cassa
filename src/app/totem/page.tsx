@@ -146,8 +146,9 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
     setCarrello((prev) => prev.map((r) => (r.chiave === chiave ? { ...r, quantita: r.quantita + delta } : r)).filter((r) => r.quantita > 0));
   }
 
-  async function conferma(pag: Pagamento) {
-    setPagamento(pag);
+  async function conferma() {
+    const pag = pagamento;
+    if (!pag) return;
     setInvio(true);
     const { data, error } = await supabaseBrowser().rpc("ordine_da_totem_api", {
       p_chiave: chiave, p_righe: righePerInvio(carrello), p_nome: nome, p_pagamento: pag,
@@ -259,14 +260,27 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
           <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Come vuoi pagare?</h1>
           <p style={{ color: "var(--grigio)", fontSize: 19, margin: "0 0 26px" }}>Si paga alla cassa, quando ritiri. Totale <b style={{ color: "var(--vino)" }}>{euro(totale)}</b>.</p>
           <div className="t-paga">
-            <button onClick={() => conferma("contanti")} disabled={invio} className={pagamento === "contanti" ? "on" : ""}>
+            <button onClick={() => setPagamento("contanti")} disabled={invio} className={pagamento === "contanti" ? "on" : ""}>
               <span className="icona"><IconaContanti /></span><span>Contanti</span><small>paghi alla cassa</small>
             </button>
-            <button onClick={() => conferma("pos")} disabled={invio} className={pagamento === "pos" ? "on" : ""}>
+            <button onClick={() => setPagamento("pos")} disabled={invio} className={pagamento === "pos" ? "on" : ""}>
               <span className="icona"><IconaCarta /></span><span>Carta · POS</span><small>paghi alla cassa</small>
             </button>
           </div>
-          {invio && <p style={{ color: "var(--grigio)", fontSize: 18, marginTop: 20 }}>Invio l&apos;ordine…</p>}
+          {/* Il riepilogo e la conferma: come «Ordina» online, niente parte al primo tocco (critico giro 1, lavoro 6). */}
+          <div style={{ margin: "26px auto 0", maxWidth: 560, textAlign: "left" }}>
+            <div className="t-gruppo">Il tuo ordine · {nome}</div>
+            {carrello.map((r) => (
+              <div key={r.chiave} style={{ display: "flex", gap: 10, padding: "6px 0", borderBottom: "1px solid #eee", fontSize: 18 }}>
+                <b style={{ minWidth: 34 }}>{r.quantita}×</b>
+                <span style={{ flex: 1 }}>{r.descrizione}{r.variazioni.length > 0 && <small style={{ display: "block", color: "var(--grigio)" }}>{r.variazioni.map((v) => v.nome).join(" · ")}</small>}</span>
+                <span>{euro(prezzoRiga(r))}</span>
+              </div>
+            ))}
+          </div>
+          <button onClick={conferma} disabled={invio || !pagamento} className="t-b-vino" style={{ marginTop: 26, fontSize: 24, minWidth: 320 }}>
+            {invio ? "Invio l'ordine…" : pagamento ? `Conferma · ${euro(totale)}` : "Scegli come paghi"}
+          </button>
         </div>
       </div>
     );
