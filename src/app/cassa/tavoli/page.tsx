@@ -82,32 +82,28 @@ function Tavoli() {
   ];
 
   return (
-    <main>
+    <main className="sala">
       <h1>Sala</h1>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
       {sezioni.map((s) => (
         <section key={s.zona} style={{ marginTop: 14 }}>
-          <h2 style={{ fontSize: 16 }}>{s.titolo}</h2>
+          <h2>{s.titolo}</h2>
           <div className="griglia">
-            {tavoli.filter((t) => t.zona === s.zona).map((t) => {
+            {tavoli.filter((t) => t.zona === s.zona).sort((a, b) => a.numero.localeCompare(b.numero, "it", { numeric: true })).map((t) => {
               const min = minutiDa(t.aperto_il);
               const allarme = t.stato !== "libero" && min >= ALERT_MINUTI;
               return (
                 <div
                   key={t.id}
-                  className="carta"
-                  style={{
-                    borderColor: allarme ? "var(--accento)" : undefined,
-                    background: t.stato === "conto" ? "var(--sfondo-tenue, #f4ead8)" : undefined,
-                  }}
+                  className={"carta tavolo " + t.stato + (allarme ? " allarme" : "")}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <strong>{t.numero}</strong>
-                    <span className={`badge ${t.stato === "libero" ? "ricevuto" : "in_preparazione"}`}>{t.stato}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <strong className="num">{t.numero}</strong>
+                    <span className={`badge stato-${t.stato}`}>{t.stato}</span>
                   </div>
                   {t.stato !== "libero" && (
                     <div className="muto">
-                      {t.coperti} coperti · {min} min{allarme ? " · alert" : ""}
+                      {t.coperti} coperti · <b style={allarme ? { color: "var(--vino)" } : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
                     </div>
                   )}
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
