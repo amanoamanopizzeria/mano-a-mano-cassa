@@ -148,7 +148,9 @@ const CSS = `
 .sg-sotto { margin-top: 4px; font-size: 17px; color: #6f6a63; }
 .sg-mappa { margin-top: 14px; height: 52vh; min-height: 300px; border-radius: 18px; overflow: hidden; box-shadow: 0 6px 24px rgba(26,23,21,.12); }
 .sg-pin { display: flex; align-items: center; justify-content: center; border-radius: 999px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.25); font-size: 22px; width: 100%; height: 100%; }
-.sg-pizzeria { border: 3px solid #c9973f; } .sg-pizzeria img { width: 80%; }
+.sg-pizzeria { border: 3px solid #c9973f; }
+/* Leaflet mette width:auto sulle immagini dei marker e vinceva: il bollino copriva mezza mappa (critico giro 7) */
+.leaflet-marker-pane .sg-pizzeria img { width: 32px !important; height: 32px !important; max-width: none; }
 .sg-rider { background: #8a1538; border: 3px solid #fff; font-size: 26px; }
 .sg-casa { border: 3px solid #8a1538; }
 .sg-google { display: block; margin-top: 12px; text-align: center; padding: 14px; border-radius: 999px; background: #fff; border: 2px solid #8a1538; color: #8a1538; font-weight: 700; text-decoration: none; font-size: 17px; }
