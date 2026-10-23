@@ -112,6 +112,18 @@ export interface ConsegnaRider {
   lng?: number | null;
   zona?: string | null;
   righe: { descrizione: string; quantita: number; variazioni: Variazione[] }[];
+  // mig. 0024: le note fisse del cliente, come paga, lo storico da saldare
+  cliente_note?: string | null;
+  pagamento?: "contanti" | "pos" | null;
+  pagato_online?: boolean;
+  paga_con?: number | null;
+  consegnata_il?: string | null;
+}
+
+/** Il borsello di un rider visto dalla cassa (funzione rider_borsello, mig. 0024). */
+export interface RiderBorsello {
+  id: string; nome: string; telefono: string | null; attivo: boolean;
+  prelievi: number; depositi: number; da_saldare: number; n_da_saldare: number; in_corso: number; in_mano: number;
 }
 
 /** Rider con ultima posizione, per la mappa della cassa (funzione rider_in_mappa). */

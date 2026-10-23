@@ -50,6 +50,10 @@ export default function Home() {
           <strong>Mappa rider</strong>
           <p className="muto">Dove sono i rider, in tempo reale.</p>
         </Link>
+        <Link href="/cassa/rider" className="carta">
+          <strong>Rider e borsello</strong>
+          <p className="muto">Quanto ha in mano ciascuno, il fondo, il dare-avere di fine serata.</p>
+        </Link>
       </div>
     </main>
   );

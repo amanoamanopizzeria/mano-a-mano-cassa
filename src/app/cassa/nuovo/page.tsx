@@ -57,6 +57,9 @@ function Cassa() {
   const [indirizzi, setIndirizzi] = useState<Indirizzo[]>([]);
   const [idIndirizzo, setIdIndirizzo] = useState<string | null>(null);
   const [zone, setZone] = useState<Zona[]>([]);
+  // Come paga (mig. 0024): contanti con «paga con» (il rider porta il resto), POS, o già pagato online.
+  const [pagamento, setPagamento] = useState<"contanti" | "pos" | "online" | null>(null);
+  const [pagaCon, setPagaCon] = useState("");
   const [esito, setEsito] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [invio, setInvio] = useState(false);
@@ -278,9 +281,13 @@ function Cassa() {
     });
     setInvio(false);
     if (error) { setErrore("Non sono riuscito a inviare l'ordine: " + error.message); return; }
-    const r = data as { esito: string; numero?: number; libere?: number; motivo?: string; minimo?: number; zona?: string; costo_consegna?: number; dalle?: string; alle?: string; slot?: string };
+    const r = data as { esito: string; id?: string; numero?: number; libere?: number; motivo?: string; minimo?: number; zona?: string; costo_consegna?: number; dalle?: string; alle?: string; slot?: string };
     const quando = pOra ? ` per ${giorniScelta.find((g) => g.v === giorno)?.t.toLowerCase() ?? giorno} alle ${ora}` : "";
-    if (r.esito === "accettato") { svuota(); setGiorno(""); setOra(""); setEsito(`Ordine n. ${r.numero} inviato in cucina${quando}${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
+    if (r.esito === "accettato" && r.id && (pagamento || pagaCon)) {
+      const pc = Number(pagaCon.replace(",", "."));
+      await supabaseBrowser().rpc("ordine_pagamento", { p_id: r.id, p_pagamento: pagamento === "online" ? null : pagamento, p_paga_con: pc > 0 ? pc : null, p_pagato_online: pagamento === "online" });
+    }
+    if (r.esito === "accettato") { svuota(); setGiorno(""); setOra(""); setPagamento(null); setPagaCon(""); setEsito(`Ordine n. ${r.numero} inviato in cucina${quando}${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
     else if (r.esito === "pieno" && r.motivo === "consegne") setErrore(`Quarto d'ora pieno per le consegne${pOra ? ` alle ${ora}` : ""}: scegli un altro orario o un rider in più.`);
     else if (r.esito === "pieno") setErrore(`Quarto d'ora pieno in cucina${pOra ? ` alle ${ora}` : ""}${r.libere !== undefined ? `: ci stanno ancora ${r.libere} pizze` : ""}. Scegli un altro orario.`);
     else if (r.esito === "minimo") setErrore(`Sotto il minimo a domicilio (${euro(Number(r.minimo))}): mancano ${euro(Number(r.minimo) - totale)}.`);
@@ -508,6 +515,19 @@ function Cassa() {
               <option value="">Ora…</option>
               {quartiScelta.map((q) => <option key={q} value={q}>{q}</option>)}
             </select>
+          </div>
+        )}
+        {(tipo === "domicilio" || tipo === "ritiro") && (
+          <div style={{ display: "flex", gap: 4, margin: "0 6px 6px", alignItems: "center" }}>
+            {([["contanti", "Contanti"], ["pos", "POS"], ["online", "Già pagato"]] as const).map(([v, t]) => (
+              <button key={v} onClick={() => setPagamento(pagamento === v ? null : v)} className={pagamento === v ? "primario" : ""} style={{ padding: "6px 8px", fontSize: 13 }}>{t}</button>
+            ))}
+            {pagamento === "contanti" && tipo === "domicilio" && (
+              <input inputMode="decimal" placeholder="paga con…" value={pagaCon} onChange={(e) => setPagaCon(e.target.value)} style={{ flex: 1, minWidth: 0, padding: 6, fontSize: 14 }} />
+            )}
+            {pagamento === "contanti" && tipo === "domicilio" && Number(pagaCon.replace(",", ".")) > totale + costoConsegna && (
+              <span style={{ fontSize: 12, whiteSpace: "nowrap" }}>resto {euro(Number(pagaCon.replace(",", ".")) - totale - costoConsegna)}</span>
+            )}
           </div>
         )}
         <input placeholder="Note (es. ben cotta)" value={note} onChange={(e) => setNote(e.target.value)} style={{ margin: "0 6px 6px", padding: 8, fontSize: 14 }} />

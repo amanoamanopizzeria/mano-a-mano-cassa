@@ -2,10 +2,15 @@
 
 // App Rider: consegne libere e mie, prendi/ritirata/consegnata, naviga e chiama,
 // posizione inviata in automatico al cloud (per la mappa live della cassa).
+// Come l'app Velocissimo RIDER (REA, docs/rea/04_RIDER.md): il rider si prende da solo la prima
+// comanda, vede le note fisse del cliente e come paga («paga con 50 → resto 26,50»), e in fondo lo
+// storico delle consegne fatte e non ancora saldate alla cassa: dopo il dare-avere spariscono.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
-import type { ConsegnaRider } from "@/lib/types";
+import type { ConsegnaRider, RiderBorsello } from "@/lib/types";
+
+const euro = (n: number) => n.toFixed(2).replace(".", ",") + " €";
 
 export default function RiderPagina() {
   return (
@@ -19,13 +24,16 @@ function Rider() {
   const [consegne, setConsegne] = useState<ConsegnaRider[]>([]);
   const [errore, setErrore] = useState<string | null>(null);
   const [gps, setGps] = useState<string>("GPS spento");
+  const [borsello, setBorsello] = useState<RiderBorsello | null>(null);
   const supabaseRef = useRef<ReturnType<typeof supabaseBrowser> | null>(null);
 
   const carica = useCallback(async () => {
     const supabase = supabaseRef.current!;
-    const { data, error } = await supabase.rpc("consegne_rider");
+    const [{ data, error }, b] = await Promise.all([supabase.rpc("consegne_rider2"), supabase.rpc("rider_borsello")]);
     if (error) setErrore(error.message);
     else setConsegne((data ?? []) as ConsegnaRider[]);
+    const mio = ((b.data ?? []) as RiderBorsello[])[0];
+    if (mio) setBorsello({ ...mio, in_mano: Number(mio.in_mano), da_saldare: Number(mio.da_saldare) });
   }, []);
 
   useEffect(() => {
@@ -79,7 +87,8 @@ function Rider() {
   }
 
   const libere = consegne.filter((c) => c.stato === "da_assegnare");
-  const mie = consegne.filter((c) => c.stato !== "da_assegnare");
+  const mie = consegne.filter((c) => c.stato === "assegnata" || c.stato === "ritirata");
+  const daSaldare = consegne.filter((c) => c.stato === "consegnata");
 
   return (
     <main>
@@ -105,10 +114,28 @@ function Rider() {
       <h2 style={{ fontSize: 16, marginTop: 20 }}>Disponibili ({libere.length})</h2>
       {libere.length === 0 && <p className="muto">Nessuna consegna libera. Quando arriva, compare qui.</p>}
       <div className="griglia">
-        {libere.map((c) => (
+        {libere.map((c, i) => (
           <SchedaConsegna key={c.id} c={c}>
-            <button className="primario" onClick={() => prendi(c.id)}>Prendi</button>
+            <button className="primario" onClick={() => prendi(c.id)}>{i === 0 ? "La prendo io" : "Prendi"}</button>
           </SchedaConsegna>
+        ))}
+      </div>
+
+      <h2 style={{ fontSize: 16, marginTop: 20 }}>Da saldare alla cassa ({daSaldare.length})</h2>
+      {borsello && (
+        <p className="muto">
+          Hai in mano <b style={{ color: "var(--testo)" }}>{euro(borsello.in_mano)}</b>
+          {borsello.da_saldare > 0 && <> · di cui {euro(borsello.da_saldare)} delle consegne fatte</>}
+          . A fine serata si fa il dare-avere in cassa e queste spariscono.
+        </p>
+      )}
+      {daSaldare.length === 0 && <p className="muto">Niente da saldare.</p>}
+      <div className="griglia">
+        {daSaldare.map((c) => (
+          <article key={c.id} className="carta" style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <span><strong>#{c.numero}</strong> <span className="muto">{c.consegnata_il ? new Date(c.consegnata_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : ""} · {[c.via, c.civico].filter(Boolean).join(" ")}</span></span>
+            <span style={{ fontWeight: 700 }}>{euro(Number(c.contanti_da_incassare))}</span>
+          </article>
         ))}
       </div>
     </main>
@@ -136,8 +163,16 @@ function SchedaConsegna({ c, children }: { c: ConsegnaRider; children: React.Rea
       </div>
       {indirizzo && <div style={{ marginTop: 6 }}>{indirizzo}</div>}
       {c.cliente_nome && <div className="muto">{c.cliente_nome}</div>}
+      {c.cliente_note && <div style={{ marginTop: 4, padding: "4px 8px", borderRadius: 6, background: "#fff3c4", fontSize: 14 }}>⚠ {c.cliente_note}</div>}
       <div style={{ margin: "8px 0", fontSize: 18 }}>
-        {Number(c.contanti_da_incassare).toFixed(2)} € <span className="muto" style={{ fontSize: 13 }}>da incassare</span>
+        {c.pagato_online || Number(c.contanti_da_incassare) === 0
+          ? <>Già pagato <span className="muto" style={{ fontSize: 13 }}>niente da incassare</span></>
+          : c.pagamento === "pos"
+            ? <>{euro(Number(c.contanti_da_incassare))} <span className="muto" style={{ fontSize: 13 }}>col POS</span></>
+            : <>{euro(Number(c.contanti_da_incassare))} <span className="muto" style={{ fontSize: 13 }}>in contanti</span>
+                {c.paga_con != null && Number(c.paga_con) > Number(c.contanti_da_incassare) && (
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>paga con {euro(Number(c.paga_con))} → resto {euro(Number(c.paga_con) - Number(c.contanti_da_incassare))}</div>
+                )}</>}
       </div>
       <ul className="muto" style={{ margin: "4px 0 8px", paddingLeft: 18 }}>
         {c.righe.map((r, i) => (
