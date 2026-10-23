@@ -2,7 +2,7 @@
 
 *Letti da `admin.velocissimo.app/product/{id}/edit` (campo «Prezzo», componente a tre listini) il 23/10/2026. Prezzi in euro, IVA inclusa (10%).*
 
-**Quale listino usa chi.** L'app e il sito mostrano **L1** (Margherita 7,20, Aglio olio e baccalà 12,90: verificato sull'app il 23/10). **L2** è il listino più alto, con Deliverect/piattaforme (Margherita 8,50, Supplì 2,50, Coca 3,50). **L3** sta in mezzo (Margherita 7,90, Chinotto 2,50, Menù classico X1 12): dal video Velocissimo i listini si cambiano dalla cassa per canale «Negozio / Just Eat / Altre piattaforme», quindi L3 è con ogni probabilità Just Eat e L2 le altre piattaforme (Glovo, Deliveroo). *Da confermare con Edoardo prima di usarli per Deliverect.*
+**Quale listino usa chi.** L'app e il sito mostrano **L1** (Margherita 7,20, Aglio olio e baccalà 12,90: verificato sull'app il 23/10). **L2** è il listino della **sala** (Margherita 8,50, Supplì 2,50, Coca 3,50: Edoardo l'ha controllato sul menù del QR in sala il 22/10, ed è `prezzo_tavolo` nella cassa nuova). **L3** sta in mezzo (Margherita 7,90, Chinotto 2,50, Menù classico X1 12) ed è quello delle **piattaforme/Deliverect** (`prezzo_piattaforme`); dal video Velocissimo i listini si cambiano dalla cassa per canale «Negozio / Just Eat / Altre piattaforme». *Da confermare con Edoardo che L3 valga anche per Just Eat, prima di Deliverect.*
 
 **Food cost.** Compilato solo su 12 pizze classiche (Marinara 0,67 · Margherita 1,20 · Funghi 1,80 · Napoli 1,52 · Diavola 1,56 · Wurstel 1,58 · Fiori e alici 2,12 · Patate con wurstel 1,78 · Capricciosa 2,20 · Margherita con bufala 2,60 · Bufala e pachino 2,81 · Provola e speck 2,30) e su Tonno e cipolla 1,78 e Amatriciana 1,50. Il resto è vuoto: il food cost vero lo tiene `mano-a-mano-os`.
 

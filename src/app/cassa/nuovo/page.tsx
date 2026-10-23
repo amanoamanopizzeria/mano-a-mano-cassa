@@ -10,7 +10,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 import {
   aggiungiRiga, chiaveRiga, euro, gruppiDi, leggiMenu, nuovaRiga, prezzoDi, prezzoRiga, righePerInvio, riprezzaRighe, totaleRighe, variantiPer,
-  type CategoriaMenu, type ProdottoMenu, type RigaOrdine, type VarianteMenu,
+  type CategoriaMenu, type GruppoCategoria, type ProdottoMenu, type RigaOrdine, type VarianteMenu,
 } from "@/lib/menu";
 import type { Variazione } from "@/lib/types";
 
@@ -32,6 +32,7 @@ function Cassa() {
   const [categorie, setCategorie] = useState<CategoriaMenu[]>([]);
   const [prodotti, setProdotti] = useState<ProdottoMenu[]>([]);
   const [varianti, setVarianti] = useState<VarianteMenu[]>([]);
+  const [gruppiCat, setGruppiCat] = useState<GruppoCategoria[]>([]);
   const [tavoli, setTavoli] = useState<Tavolo[]>([]);
   const [categoria, setCategoria] = useState<string | null>(null);
   const [righe, setRighe] = useState<RigaOrdine[]>([]);
@@ -80,7 +81,7 @@ function Cassa() {
         supabaseBrowser().from("zona").select("id, nome, costo_consegna, minimo_ordine").eq("attiva", true),
       ]);
       if (m.errore) setErrore(m.errore);
-      setCategorie(m.categorie); setProdotti(m.prodotti); setVarianti(m.varianti);
+      setCategorie(m.categorie); setProdotti(m.prodotti); setVarianti(m.varianti); setGruppiCat(m.gruppi);
       setTavoli((t.data ?? []) as Tavolo[]);
       setZone(((z.data ?? []) as Zona[]).map((x) => ({ ...x, costo_consegna: Number(x.costo_consegna), minimo_ordine: Number(x.minimo_ordine) })));
       setCategoria(m.categorie[0]?.id ?? null);
@@ -91,7 +92,7 @@ function Cassa() {
   const catCorrente = categorie.find((c) => c.id === categoria);
   const rigaSel = righe.find((r) => r.chiave === selezionata) ?? null;
   const prodottoSel = rigaSel ? prodotti.find((p) => p.id === rigaSel.id_prodotto) : undefined;
-  const variantiSel = useMemo(() => variantiPer(varianti, prodottoSel?.id_categoria ?? null), [varianti, prodottoSel]);
+  const variantiSel = useMemo(() => variantiPer(varianti, prodottoSel?.id_categoria ?? null, gruppiCat), [varianti, prodottoSel, gruppiCat]);
   const gruppi = gruppiDi(variantiSel);
   const gruppoAttivo = gruppo && gruppi.includes(gruppo) ? gruppo : gruppi[0] ?? null;
   const totale = totaleRighe(righe);

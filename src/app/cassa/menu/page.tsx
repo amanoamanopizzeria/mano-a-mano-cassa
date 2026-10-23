@@ -15,6 +15,7 @@ interface Prodotto {
 interface Categoria { id: string; nome: string; id_gruppo: string | null; ordine: number }
 interface Gruppo { id: string; nome: string; ordine: number }
 interface Variazione { id: string; nome: string; prezzo: number; tipo: string; gruppo: string; id_categoria: string | null }
+interface GruppoVar { id_categoria: string; gruppo: string; ordine: number }
 interface Componente { id_pacchetto: string; etichetta: string; id_categoria: string; quantita: number; ordine: number }
 
 export default function MenuPagina() {
@@ -30,6 +31,7 @@ function Menu() {
   const [categorie, setCategorie] = useState<Categoria[]>([]);
   const [prodotti, setProdotti] = useState<Prodotto[]>([]);
   const [variazioni, setVariazioni] = useState<Variazione[]>([]);
+  const [gruppiVar, setGruppiVar] = useState<GruppoVar[]>([]);
   const [componenti, setComponenti] = useState<Componente[]>([]);
   const [errore, setErrore] = useState<string | null>(null);
 
@@ -37,14 +39,16 @@ function Menu() {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) { setErrore("Supabase non configurato."); return; }
     const supabase = supabaseBrowser();
     (async () => {
-      const [g, c, p, v, k] = await Promise.all([
+      const [g, c, p, v, gv, k] = await Promise.all([
         supabase.from("gruppo_categoria").select("id, nome, ordine").order("ordine"),
         supabase.from("categoria").select("id, nome, id_gruppo, ordine").order("ordine"),
         supabase.from("prodotto").select("id, id_categoria, nome, prezzo, attivo").order("ordine"),
         supabase.from("variazione").select("id, nome, prezzo, tipo, gruppo, id_categoria"),
+        supabase.from("categoria_gruppo_variazione").select("id_categoria, gruppo, ordine").order("ordine"),
         supabase.from("pacchetto_componente").select("id_pacchetto, etichetta, id_categoria, quantita, ordine").order("ordine"),
       ]);
-      const primo = [g, c, p, v, k].find((r) => r.error)?.error;
+      const primo = [g, c, p, v, gv, k].find((r) => r.error)?.error;
+      setGruppiVar((gv.data ?? []) as GruppoVar[]);
       if (primo) { setErrore(primo.message); return; }
       setGruppi((g.data ?? []) as Gruppo[]);
       setCategorie((c.data ?? []) as Categoria[]);
@@ -83,10 +87,10 @@ function Menu() {
                   );
                 })}
               </ul>
-              {variazioni.filter((v) => v.id_categoria === c.id).length > 0 && (
+              {gruppiVar.some((g) => g.id_categoria === c.id) && (
                 <div className="muto" style={{ marginTop: 6 }}>
-                  Varianti: {variazioni.filter((v) => v.id_categoria === c.id).map((v) =>
-                    `${v.gruppo}: ${v.nome}${Number(v.prezzo) ? ` +${Number(v.prezzo).toFixed(2)}€` : ""}`
+                  Varianti: {gruppiVar.filter((g) => g.id_categoria === c.id).map((g) =>
+                    `${g.gruppo} (${variazioni.filter((v) => v.gruppo === g.gruppo && (v.id_categoria === null || v.id_categoria === c.id)).length})`
                   ).join(" · ")}
                 </div>
               )}

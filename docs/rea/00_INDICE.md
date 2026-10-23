@@ -26,7 +26,7 @@
 
 ## Le dieci cose da sapere a memoria
 
-1. **Tre listini**: L1 app/sito/negozio, L2 piattaforme (il più alto), L3 intermedio (Just Eat?). Il canale decide il listino.
+1. **Tre listini**: L1 app/sito/banco/asporto (Margherita 7,20), L2 sala/tavoli (8,50: Edoardo l'ha controllato sul menù del QR il 22/10), L3 piattaforme/Deliverect (7,90). Il tipo d'ordine e il canale decidono il listino.
 2. **Le variazioni stanno sulla categoria**, con min/max/max gratis: 5 gruppi sulle pizze, 4 sulle pucce, 4 + salse sui burger, nulla su fritti/bevande/dolci; i menu hanno gruppi di scelta obbligatori a 0 €. Un extra una volta per riga; «senza» gratis solo sugli ingredienti della ricetta.
 3. **Orari per tipo di carrello**: apertura 18:30–22:45, consegna 19:00–22:30 (finestre di 30 min ogni 15), ritiro 19:00–22:45 (orari puntuali), 7/7, attesa minima 15 min, preordini fino a 7 giorni, max 50 piatti.
 4. **Domicilio**: 16 zone a poligono, consegna 1,00/1,50/2,00 €, minimo 10 € sul subtotale, fuori poligono non si consegna; l'indirizzo si chiede prima del menù.

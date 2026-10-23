@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   aggiungiRiga, euro, gruppiDi, nuovaRiga, prezzoRiga, righePerInvio, totaleRighe, variantiPer,
-  type CategoriaMenu, type ProdottoMenu, type RigaOrdine, type VarianteMenu,
+  type CategoriaMenu, type GruppoCategoria, type ProdottoMenu, type RigaOrdine, type VarianteMenu,
 } from "@/lib/menu";
 import type { Variazione } from "@/lib/types";
 import "@fontsource/oswald/500.css";
@@ -87,6 +87,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
   const [categorie, setCategorie] = useState<CategoriaMenu[]>([]);
   const [prodotti, setProdotti] = useState<ProdottoMenu[]>([]);
   const [varianti, setVarianti] = useState<VarianteMenu[]>([]);
+  const [gruppiCat, setGruppiCat] = useState<GruppoCategoria[]>([]);
   const [passo, setPasso] = useState<Passo>("avvio");
   const [categoria, setCategoria] = useState<string | null>(null);
   const [aperto, setAperto] = useState<ProdottoMenu | null>(null);
@@ -101,11 +102,12 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
   useEffect(() => {
     supabaseBrowser().rpc("totem_menu", { p_chiave: chiave }).then(({ data, error }) => {
       if (error) { if (error.code === "42501") disattiva(); return; }
-      const m = data as { categorie: CategoriaMenu[]; prodotti: ProdottoMenu[]; varianti: VarianteMenu[] };
+      const m = data as { categorie: CategoriaMenu[]; prodotti: ProdottoMenu[]; varianti: VarianteMenu[]; gruppi?: GruppoCategoria[] };
       const prodotti = m.prodotti.map((x) => ({ ...x, prezzo: Number(x.prezzo), prezzo_tavolo: x.prezzo_tavolo == null ? null : Number(x.prezzo_tavolo) }));
       setCategorie(m.categorie.filter((c) => prodotti.some((p) => p.id_categoria === c.id)));
       setProdotti(prodotti);
       setVarianti(m.varianti.map((x) => ({ ...x, prezzo: Number(x.prezzo) })));
+      setGruppiCat(m.gruppi ?? []);
     });
   }, [chiave, disattiva]);
 
@@ -320,7 +322,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
       {aperto && (
         <SchedaProdotto
           p={aperto}
-          varianti={variantiPer(varianti, aperto.id_categoria)}
+          varianti={variantiPer(varianti, aperto.id_categoria, gruppiCat)}
           chiudi={() => setAperto(null)}
           aggiungi={(q, v) => aggiungi(aperto, q, v)}
         />

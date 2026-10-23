@@ -11,7 +11,7 @@ C'è: ordini con righe e variazioni, tavoli, capacità per fasce di 15 min (pizz
 | # | Cosa manca | Dove sta in Velocissimo | Lavoro | Mig. |
 |---|---|---|---|---|
 | 1 | **Variazioni con i prezzi veri** (141 in 14 gruppi) e **gruppi per categoria** (pizze 5, pucce 4, burger 4 + salse, menu con scelte obbligatorie); il prezzo sul bottone e nella riga («CON Bufala 2,50») | `01_BACKOFFICE` §1.5, `06_DATI` §6.3 | tabella `categoria_gruppo_variazione`, le 141 righe, prezzo nel jsonb della riga e nel totale; totem e cassa mostrano i gruppi della categoria e basta | **0021** |
-| 2 | **Pulizia del catalogo**: 57 prodotti senza `id_velocissimo` (seed), 34 a prezzo 0, 45 nomi doppi; categorie allineate a quelle online (NOVITA', SPECIALI, CLASSICHE, VETRINA NAPOLI, PUCCE, MENU, FRITTI, DOLCI, CANTINA, BIRRE, BEVANDE) | `dati/prodotti_nomi_ricette.md`, critico giro 1 n. 7 | disattivare il seed, L3 come colonna, `food_cost`, ricetta per il «senza» | 0021 |
+| 2 | **Pulizia del catalogo**: 57 prodotti senza `id_velocissimo` (seed), 34 a prezzo 0, 45 nomi doppi; categorie allineate a quelle online (NOVITA', SPECIALI, CLASSICHE, VETRINA NAPOLI, PUCCE, MENU, FRITTI, DOLCI, CANTINA, BIRRE, BEVANDE) | `dati/prodotti_nomi_ricette.md`, critico giro 1 n. 7 | cancellare il seed, `food_cost`, ricetta per il «senza» | 0021 |
 | 3 | **Orari per tipo di carrello e attese minime** (apertura 18:30–22:45, consegna 19:00–22:30, ritiro 19:00–22:45, 15 min di attesa, +30 di ampiezza), periodi di chiusura con messaggio; fasce che partono dall'apertura (critico n. 10) | §1.1 | tabella `orario` + `chiusura`; `ordini_per_fascia` e il planner leggono da lì; preordini fino a 7 giorni (critico n. 3) | 0022 |
 | 4 | **Domicilio in cassa come online**: cliente obbligatorio, civico che ri-geocodifica, «Zona X · consegna 1 € · minimo 10 €» detto prima, giorno + quarto d'ora, errori in italiano vicino al bottone (critico n. 2, 3, 4) | `02_APP_CLIENTE` §4.2, §9.10–13; `05_API` `/coverage` | motivi del rifiuto (`fuori_zona`, `manca_civico`, `indirizzo_incerto`), ricerca via + civico, messaggi | — |
 | 5 | **Menu combo** (7: Puccia 7,90; Classico 13/24/33; Speciale 15/28/39) con gruppi obbligatori, fritti in omaggio **stampati in comanda** (il difetto n. 10 dell'app) | §1.5, `02_APP_CLIENTE` §2.2 | righe figlie con `id_riga_padre`, scelte per gruppo, prezzo fisso | 0021/0023 |
@@ -23,7 +23,7 @@ C'è: ordini con righe e variazioni, tavoli, capacità per fasce di 15 min (pizz
 | 11 | **Vendite per l'OS**: vista `v_vendite_giornata` con le colonne di `RigaVendita` (tipo, origine, pagamento, IVA, rider, variazioni come righe, giornata lavorativa che resta la sera prima dopo mezzanotte) | `05_API` §5.2, `06_DATI` §6.7 | così mano-a-mano-os legge dalla cassa nuova come leggerebbe dall'API | 0026 |
 | 12 | **Totem**: riepilogo con «Conferma» prima di inviare (critico n. 6), varianti solo per le categorie giuste (n. 5), euro ovunque (n. 8 del grafico) | critico giro 1 | | — |
 | 13 | **Cassa a 640/768/1024 px**: barra categorie raggiungibile, tavoli ordinati per numero (critico n. 8, 9) | | | — |
-| 14 | **Deliverect** (Glovo, Deliveroo, Just Eat): webhook → `accetta_ordine_esterno` con listino L2, cliente «piattaforma», nota con id e orario di ritiro, riga «CONSEGNA PIATTAFORMA 0» | `05_API` §5.3 | servono le credenziali Deliverect in Vercel (Edoardo) | — |
+| 14 | **Deliverect** (Glovo, Deliveroo, Just Eat): webhook → `accetta_ordine_esterno` con listino L3, cliente «piattaforma», nota con id e orario di ritiro, riga «CONSEGNA PIATTAFORMA 0» | `05_API` §5.3 | servono le credenziali Deliverect in Vercel (Edoardo) | — |
 | 15 | **Centralino**: chi manda il numero quando squilla (foto del modemino in arrivo) | `05_API` §5.4 | | — |
 | 16 | **Stampa**: agente di stampa ESC/POS per cucina e cassa; scontrino Epson RT scegliendo POS/contanti | `03_CASSA_2BIT` | passo successivo | — |
 | 17 | **App cliente nostra** (poi): tutto il §9 di `02_APP_CLIENTE` più le 22 cose che fanno male (prezzo extra visibile, consegna e minimo detti prima, «prima possibile», allergeni, nota per prodotto, quantità dal carrello, fattura, ordine al tavolo col QR) | `02_APP_CLIENTE` §10 | Ordering API come contratto del nostro `/api/ordini` | — |
@@ -38,7 +38,7 @@ C'è: ordini con righe e variazioni, tavoli, capacità per fasce di 15 min (pizz
 
 ## 7.4 Cosa si chiede a Edoardo (una volta sola, quando serve)
 
-1. Il listino **L3** è Just Eat? (serve prima di Deliverect).
+1. Il listino **L3** (7,90) vale per tutte le piattaforme, anche Just Eat? (serve prima di Deliverect).
 2. I **punti per euro** e il **costo in punti** dei tre premi (si leggono nell'app nativa o nel back-office: li cerco io, lo chiedo solo se non li trovo).
 3. Credenziali **Deliverect** e `SUPABASE_SERVICE_ROLE_KEY` su Vercel.
 4. Le foto del **centralino**.

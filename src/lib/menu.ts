@@ -17,6 +17,8 @@ export function prezzoDi(p: ProdottoMenu, listino: Listino) {
   return listino === "tavolo" && p.prezzo_tavolo != null ? p.prezzo_tavolo : p.prezzo;
 }
 export interface VarianteMenu { id: string; nome: string; prezzo: number; gruppo: string; id_categoria: string | null }
+/** Quali gruppi di varianti vede una categoria (mig. 0021, come il back-office Velocissimo: pizze 5, pucce 4, burger 4 + salse, fritti e bevande nessuno). */
+export interface GruppoCategoria { id_categoria: string; gruppo: string; ordine: number; min_n: number; max_n: number; max_gratis: number }
 
 export interface RigaOrdine {
   chiave: string;            // prodotto + varianti: due righe uguali si sommano
@@ -29,20 +31,35 @@ export async function leggiMenu(soloTotem = false) {
   let qc = supabase.from("categoria").select("id, nome, ordine, colore, destinazione, visibile_totem").order("ordine");
   let qp = supabase.from("prodotto").select("id, id_categoria, nome, descrizione, prezzo, prezzo_tavolo, foto_url, visibile_totem").eq("attivo", true).order("ordine");
   if (soloTotem) { qc = qc.eq("visibile_totem", true); qp = qp.eq("visibile_totem", true); }
-  const [c, p, v] = await Promise.all([qc, qp, supabase.from("variazione").select("id, nome, prezzo, gruppo, id_categoria").order("gruppo").order("nome")]);
+  const [c, p, v, g] = await Promise.all([
+    qc, qp,
+    supabase.from("variazione").select("id, nome, prezzo, gruppo, id_categoria").order("gruppo").order("nome"),
+    supabase.from("categoria_gruppo_variazione").select("id_categoria, gruppo, ordine, min_n, max_n, max_gratis").order("ordine"),
+  ]);
   return {
     categorie: (c.data ?? []) as CategoriaMenu[],
     prodotti: ((p.data ?? []) as ProdottoMenu[]).map((x) => ({ ...x, prezzo: Number(x.prezzo), prezzo_tavolo: x.prezzo_tavolo == null ? null : Number(x.prezzo_tavolo) })),
     varianti: ((v.data ?? []) as VarianteMenu[]).map((x) => ({ ...x, prezzo: Number(x.prezzo) })),
-    errore: c.error?.message ?? p.error?.message ?? v.error?.message ?? null,
+    gruppi: (g.data ?? []) as GruppoCategoria[],
+    errore: c.error?.message ?? p.error?.message ?? v.error?.message ?? g.error?.message ?? null,
   };
 }
 
-/** Le varianti che valgono per una categoria: le sue più quelle senza categoria (tutte le pizze). */
-export function variantiPer(varianti: VarianteMenu[], idCategoria: string | null) {
-  return varianti.filter((v) => v.id_categoria === null || v.id_categoria === idCategoria);
+/** I gruppi di varianti di una categoria, nell'ordine del back-office. Una categoria senza righe non ha varianti (Supplì, Coca cola). */
+export function gruppiPerCategoria(gruppi: GruppoCategoria[], idCategoria: string | null): string[] {
+  if (!idCategoria) return [];
+  return gruppi.filter((g) => g.id_categoria === idCategoria).sort((a, b) => a.ordine - b.ordine).map((g) => g.gruppo);
 }
 
+/** Le varianti che valgono per una categoria: quelle dei suoi gruppi (più quelle attaccate proprio a lei). */
+export function variantiPer(varianti: VarianteMenu[], idCategoria: string | null, gruppi: GruppoCategoria[]) {
+  const ammessi = gruppiPerCategoria(gruppi, idCategoria);
+  return varianti
+    .filter((v) => v.id_categoria === idCategoria || (v.id_categoria === null && ammessi.includes(v.gruppo)))
+    .sort((a, b) => (ammessi.indexOf(a.gruppo) - ammessi.indexOf(b.gruppo)) || a.nome.localeCompare(b.nome));
+}
+
+/** I gruppi presenti fra le varianti, nell'ordine in cui arrivano (variantiPer li ha già messi in fila). */
 export function gruppiDi(varianti: VarianteMenu[]): string[] {
   return Array.from(new Set(varianti.map((v) => v.gruppo)));
 }
