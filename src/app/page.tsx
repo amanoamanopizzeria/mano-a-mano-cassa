@@ -2,9 +2,10 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main>
+    <main className="home">
+      <img src="/brand/logo-amanoamano.png" alt="A Mano a Mano" className="logo" />
       <h1>Mano a Mano Cassa</h1>
-      <p className="muto">Il sistema ordini della pizzeria. Scegli la postazione.</p>
+      <p className="muto" style={{ marginTop: -6, marginBottom: 16 }}>Il sistema ordini della pizzeria. Scegli la postazione.</p>
       <div className="griglia">
         <Link href="/cassa" className="carta">
           <strong>Cassa</strong>

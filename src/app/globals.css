@@ -86,3 +86,22 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .cassa-comanda { width: 340px; flex: none; }
 @media (max-width: 1024px) { .cassa-nuovo { --colonne: 4; } .cassa-comanda { width: 300px; } }
 @media (max-width: 760px) { .cassa-nuovo { --colonne: 3; } .cassa-comanda { width: 250px; } .cassa-nuovo .tessera { font-size: 13px; min-height: 56px; padding: 6px 4px; } }
+
+/* ===== la home: il logo e le schede-porta ===== */
+.home .logo { display: block; height: 56px; margin: 8px 0 14px; }
+.home .carta { text-decoration: none; display: block; border-bottom: 3px solid var(--oro); }
+.home .carta strong { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 18px; font-weight: 600; color: var(--vino); display: block; }
+.home .carta p { margin: 4px 0 0; }
+.home .carta:active { transform: scale(.985); }
+
+/* ===== il rider: in strada col sole. Contrasto alto, pulsanti enormi, niente grigio chiaro. ===== */
+.rider { font-size: 17px; }
+.rider .muto { color: #4a463f; font-size: 15px; }
+.rider .carta { padding: 16px 18px; }
+.rider button { min-height: 56px; font-size: 19px; padding: 12px 20px; }
+.rider .azioni > * { flex: 1 1 auto; min-width: 120px; }
+.rider .azioni a { text-decoration: none; display: flex; }
+.rider .azioni button { width: 100%; white-space: nowrap; }
+.rider .azioni button.primario { flex: 2 1 100%; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .06em; font-size: 22px; min-height: 64px; box-shadow: 0 8px 22px rgba(138,21,56,.28); }
+.rider .azioni a:has(button.primario) { flex: 2 1 100%; }
+.rider .badge { font-size: 14px; }

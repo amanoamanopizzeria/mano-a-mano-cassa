@@ -138,7 +138,7 @@ function Cassa() {
         {ordini.map((o) => (
           <article className="carta" key={o.id}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <strong>{o.numero_visibile ?? `#${o.numero}`}</strong>
+              <strong style={{ fontSize: 20, fontFamily: "Oswald, sans-serif", fontWeight: 600 }}>{o.numero_visibile ?? `#${o.numero}`}</strong>
               <span className={`badge ${o.stato}`}>{ETICHETTE[o.stato]}</span>
             </div>
             <div className="muto">
@@ -147,7 +147,7 @@ function Cassa() {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
-              {o.ora_consegna && <> · <b style={quando(o.ora_consegna).startsWith("per") ? undefined : { color: "var(--accento)" }}>{quando(o.ora_consegna)}</b></>}
+              {o.ora_consegna && <> · <b style={quando(o.ora_consegna).startsWith("per") ? undefined : { color: "var(--vino)" }}>{quando(o.ora_consegna)}</b></>}
             </div>
             {(o.cliente?.nome || o.nome_cliente || o.cliente?.telefono || o.pagamento) && (
               <div style={{ marginTop: 6, fontWeight: 600 }}>
@@ -155,8 +155,8 @@ function Cassa() {
               </div>
             )}
             {o.indirizzo && <div>{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
-            {o.cliente?.note && <div style={{ fontSize: 13, padding: "2px 6px", borderRadius: 6, background: "#fff3c4" }}>⚠ {o.cliente.note}</div>}
-            <div style={{ margin: "8px 0", fontSize: 18 }}>
+            {o.cliente?.note && <div style={{ fontSize: 13, padding: "3px 8px", borderRadius: 8, background: "var(--oro-velo)", borderLeft: "3px solid var(--oro)" }}>⚠ {o.cliente.note}</div>}
+            <div style={{ margin: "8px 0", fontSize: 20, fontWeight: 800, color: "var(--vino)" }}>
               {euro(o.totale)}
             </div>
             {o.note && <div className="muto">Note: {o.note}</div>}
@@ -164,7 +164,7 @@ function Cassa() {
               {o.stampato_il
                 ? <>stampata {new Date(o.stampato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{(o.stampe ?? 0) > 1 && ` (×${o.stampe})`}</>
                 : o.stato === "ricevuto" || o.stato === "in_preparazione"
-                  ? <span style={{ color: "var(--accento)", fontWeight: 700 }}>non stampata</span>
+                  ? <span style={{ fontWeight: 700 }}>non stampata</span>
                   : <span>non stampata</span>}
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
