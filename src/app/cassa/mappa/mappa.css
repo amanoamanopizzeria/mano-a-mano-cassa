@@ -1,0 +1,37 @@
+/* La mappa della cassa (grafico, giro 2): la pizzeria, i rider e le consegne si distinguono a colpo
+   d'occhio. Pizzeria = bollino in un disco bianco col bordo oro; rider = disco vino con l'iniziale;
+   consegna = goccia: oro se è da assegnare, vino se un rider la sta portando, vino tratteggiato se è
+   già ritirata. La legenda sotto la mappa dice le stesse cose con le stesse forme. */
+.mappa-pagina .leaflet-container { font-family: "Figtree", sans-serif; }
+.mappa-mappa { height: 60vh; min-height: 320px; border-radius: 18px; border: 1px solid var(--bordo); box-shadow: var(--ombra); overflow: hidden; }
+
+.m-pizzeria { width: 46px; height: 46px; border-radius: 999px; background: #fff; border: 3px solid var(--oro); box-shadow: 0 6px 16px rgba(26,23,21,.25); display: flex; align-items: center; justify-content: center; }
+.m-pizzeria img { width: 80%; height: 80%; object-fit: contain; }
+
+.m-rider { width: 40px; height: 40px; border-radius: 999px; background: var(--vino); color: #fff; border: 3px solid #fff; box-shadow: 0 6px 16px rgba(138,21,56,.4); display: flex; align-items: center; justify-content: center; font-family: "Oswald", sans-serif; font-weight: 600; font-size: 18px; text-transform: uppercase; }
+.m-rider.fermo { background: var(--muto); box-shadow: 0 6px 16px rgba(26,23,21,.25); }
+
+.m-goccia { width: 34px; height: 34px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--oro); border: 3px solid #fff; box-shadow: 0 6px 14px rgba(26,23,21,.3); display: flex; align-items: center; justify-content: center; }
+.m-goccia span { transform: rotate(45deg); font-family: "Figtree", sans-serif; font-weight: 800; font-size: 13px; color: var(--testo); }
+.m-goccia.assegnata { background: var(--vino); }
+.m-goccia.assegnata span { color: #fff; }
+.m-goccia.ritirata { background: #fff; border: 3px solid var(--vino); }
+.m-goccia.ritirata span { color: var(--vino); }
+
+.m-legenda { display: flex; gap: 16px 22px; flex-wrap: wrap; align-items: center; margin-top: 12px; padding: 10px 14px; font-size: 14px; }
+.m-legenda .voce { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.m-legenda .m-pizzeria { width: 28px; height: 28px; border-width: 2px; box-shadow: none; }
+.m-legenda .m-rider { width: 26px; height: 26px; border-width: 2px; font-size: 13px; box-shadow: none; }
+.m-legenda .m-goccia { width: 22px; height: 22px; border-width: 2px; box-shadow: none; margin: 0 4px 4px 0; }
+.m-legenda .m-goccia span { display: none; }
+
+.m-stato { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .06em; font-size: 13px; font-weight: 500; padding: 3px 10px; border-radius: 999px; background: var(--oro); color: var(--testo); white-space: nowrap; }
+.m-stato.assegnata { background: var(--vino); color: #fff; }
+.m-stato.ritirata { background: #fff; color: var(--vino); border: 2px solid var(--vino); }
+.m-stato.da_assegnare { background: var(--oro); }
+.m-stato.fermo { background: var(--bordo); color: var(--muto); }
+.m-stato.in_giro { background: var(--vino); color: #fff; }
+
+.leaflet-popup-content-wrapper { border-radius: 14px; font-family: "Figtree", sans-serif; font-size: 14px; }
+.leaflet-popup-content b { font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 16px; }
+.leaflet-div-icon { background: transparent; border: none; }

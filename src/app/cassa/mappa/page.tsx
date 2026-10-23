@@ -6,10 +6,21 @@ import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 import type { RiderInMappa } from "@/lib/types";
+import { PIZZERIA } from "@/lib/indirizzi";
+import "./mappa.css";
 
 const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
 const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-const CENTRO_ROMA: [number, number] = [41.9028, 12.4964];
+const CENTRO: [number, number] = [PIZZERIA.lat, PIZZERIA.lng];
+
+/** Una consegna in corso con il suo punto sulla mappa (letta da `consegna`, che lo staff può leggere). */
+interface ConsegnaInMappa {
+  id: string; stato: "da_assegnare" | "assegnata" | "ritirata"; id_rider: string | null;
+  ordine: { numero: number; ora_consegna: string | null; indirizzo: { via: string; civico: string | null; lat: number | null; lng: number | null } | null } | null;
+}
+const STATO_CONSEGNA: Record<ConsegnaInMappa["stato"], string> = { da_assegnare: "da assegnare", assegnata: "assegnata", ritirata: "in viaggio" };
+const oraDi = (s: string) => new Date(s).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+const iniziali = (nome: string) => nome.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("");
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare global { interface Window { L?: any } }
@@ -43,7 +54,10 @@ function Mappa() {
   const divRef = useRef<HTMLDivElement>(null);
   const mappaRef = useRef<any>(null);
   const segnapostiRef = useRef<Map<string, any>>(new Map());
+  const consegneRef = useRef<Map<string, any>>(new Map());
+  const lineeRef = useRef<any[]>([]);
   const [riders, setRiders] = useState<RiderInMappa[]>([]);
+  const [consegne, setConsegne] = useState<ConsegnaInMappa[]>([]);
   const [errore, setErrore] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,18 +69,51 @@ function Mappa() {
     let vivo = true;
 
     async function carica(L: any) {
-      const { data, error } = await supabase.rpc("rider_in_mappa");
+      const [{ data, error }, c] = await Promise.all([
+        supabase.rpc("rider_in_mappa"),
+        supabase.from("consegna").select("id, stato, id_rider, ordine(numero, ora_consegna, indirizzo(via, civico, lat, lng))").in("stato", ["da_assegnare", "assegnata", "ritirata"]),
+      ]);
       if (error) { setErrore(error.message); return; }
       const lista = (data ?? []) as RiderInMappa[];
+      const listaC = ((c.data ?? []) as unknown as ConsegnaInMappa[]);
       if (!vivo) return;
       setRiders(lista);
+      setConsegne(listaC);
+      const mappa = mappaRef.current;
+      // i rider: disco vino con le iniziali (grigio se non manda la posizione da più di 10 minuti)
       for (const r of lista) {
         if (r.lat == null || r.lng == null) continue;
         const pos: [number, number] = [r.lat, r.lng];
-        const testo = `<b>${r.nome}</b><br/>${r.consegne_in_corso} consegne in corso`;
+        const fermo = !r.aggiornata_il || Date.now() - new Date(r.aggiornata_il).getTime() > 10 * 60_000;
+        const icona = L.divIcon({ className: "", html: `<div class="m-rider${fermo ? " fermo" : ""}" title="${r.nome}">${iniziali(r.nome)}</div>`, iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -22] });
+        const testo = `<b>${r.nome}</b><br/>${r.consegne_in_corso} consegne in corso${r.aggiornata_il ? `<br/>posizione delle ${oraDi(r.aggiornata_il)}` : ""}`;
         const m = segnapostiRef.current.get(r.id);
-        if (m) m.setLatLng(pos).bindPopup(testo);
-        else segnapostiRef.current.set(r.id, L.marker(pos).addTo(mappaRef.current).bindPopup(testo));
+        if (m) m.setLatLng(pos).setIcon(icona).bindPopup(testo);
+        else segnapostiRef.current.set(r.id, L.marker(pos, { icon: icona }).addTo(mappa).bindPopup(testo));
+      }
+      // le consegne: goccia oro (da assegnare), vino (assegnata), bianca col bordo vino (in viaggio)
+      const vive = new Set<string>();
+      for (const k of listaC) {
+        const i = k.ordine?.indirizzo;
+        if (!i || i.lat == null || i.lng == null) continue;
+        vive.add(k.id);
+        const pos: [number, number] = [i.lat, i.lng];
+        const icona = L.divIcon({ className: "", html: `<div class="m-goccia ${k.stato}"><span>${k.ordine?.numero ?? ""}</span></div>`, iconSize: [34, 34], iconAnchor: [17, 34], popupAnchor: [0, -30] });
+        const chi = k.id_rider ? lista.find((r) => r.id === k.id_rider)?.nome : null;
+        const testo = `<b>#${k.ordine?.numero}</b> · ${STATO_CONSEGNA[k.stato]}${chi ? ` · ${chi}` : ""}<br/>${i.via} ${i.civico ?? ""}${k.ordine?.ora_consegna ? `<br/>per le ${oraDi(k.ordine.ora_consegna)}` : ""}`;
+        const m = consegneRef.current.get(k.id);
+        if (m) m.setLatLng(pos).setIcon(icona).bindPopup(testo);
+        else consegneRef.current.set(k.id, L.marker(pos, { icon: icona }).addTo(mappa).bindPopup(testo));
+      }
+      for (const [id, m] of consegneRef.current) if (!vive.has(id)) { m.remove(); consegneRef.current.delete(id); }
+      // una linea tratteggiata dal rider alla consegna che sta portando
+      for (const l of lineeRef.current) l.remove();
+      lineeRef.current = [];
+      for (const k of listaC) {
+        const r = k.id_rider ? lista.find((x) => x.id === k.id_rider) : null;
+        const i = k.ordine?.indirizzo;
+        if (!r || r.lat == null || r.lng == null || !i || i.lat == null || i.lng == null) continue;
+        lineeRef.current.push(L.polyline([[r.lat, r.lng], [i.lat, i.lng]], { color: "#8a1538", weight: 3, dashArray: "6 8", opacity: .7 }).addTo(mappa));
       }
     }
 
@@ -74,10 +121,13 @@ function Mappa() {
     caricaLeaflet()
       .then((L) => {
         if (!vivo || !divRef.current) return;
-        mappaRef.current = L.map(divRef.current).setView(CENTRO_ROMA, 12);
+        mappaRef.current = L.map(divRef.current).setView(CENTRO, 13);
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: "&copy; OpenStreetMap",
         }).addTo(mappaRef.current);
+        // la pizzeria: il bollino in un disco bianco col bordo oro, sempre al centro della storia
+        L.marker(CENTRO, { icon: L.divIcon({ className: "", html: `<div class="m-pizzeria" title="A Mano a Mano"><img src="/brand/bollino.png" alt=""/></div>`, iconSize: [46, 46], iconAnchor: [23, 23], popupAnchor: [0, -26] }), zIndexOffset: 1000 })
+          .addTo(mappaRef.current).bindPopup("<b>A Mano a Mano</b><br/>Via Novara 5/7");
         carica(L);
         // ogni posizione nuova o cambio consegna aggiorna la mappa
         canale = supabase
@@ -94,27 +144,63 @@ function Mappa() {
       mappaRef.current?.remove();
       mappaRef.current = null;
       segnapostiRef.current.clear();
+      consegneRef.current.clear();
+      lineeRef.current = [];
     };
   }, []);
 
+  const fermo = (r: RiderInMappa) => !r.aggiornata_il || Date.now() - new Date(r.aggiornata_il).getTime() > 10 * 60_000;
+  const nomeRider = (id: string | null) => (id ? riders.find((r) => r.id === id)?.nome ?? null : null);
+
   return (
-    <main>
-      <h1>Cassa — rider in mappa</h1>
+    <main className="mappa-pagina">
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+        <h1 style={{ margin: 0 }}>Cassa — rider in mappa</h1>
+        <span className="muto" style={{ fontSize: 14 }}>{riders.length} rider · {consegne.length} consegne in corso</span>
+      </div>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
-      <div ref={divRef} style={{ height: "60vh", borderRadius: 12, border: "1px solid var(--bordo)" }} />
-      <div className="griglia" style={{ marginTop: 12 }}>
+      <div ref={divRef} className="mappa-mappa" style={{ marginTop: 10 }} />
+      <div className="carta m-legenda">
+        <span className="voce"><span className="m-pizzeria"><img src="/brand/bollino.png" alt="" /></span>la pizzeria</span>
+        <span className="voce"><span className="m-rider">R</span>rider</span>
+        <span className="voce"><span className="m-rider fermo">R</span>rider senza posizione</span>
+        <span className="voce"><span className="m-goccia"><span /></span>consegna da assegnare</span>
+        <span className="voce"><span className="m-goccia assegnata"><span /></span>assegnata</span>
+        <span className="voce"><span className="m-goccia ritirata"><span /></span>in viaggio</span>
+      </div>
+
+      <h2>Rider</h2>
+      <div className="griglia">
         {riders.map((r) => (
-          <div className="carta" key={r.id}>
-            <strong>{r.nome}</strong>
-            <div className="muto">
-              {r.consegne_in_corso} consegne in corso ·{" "}
-              {r.aggiornata_il
-                ? "posizione " + new Date(r.aggiornata_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
-                : "nessuna posizione"}
+          <div className="carta" key={r.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span className={"m-rider" + (fermo(r) ? " fermo" : "")}>{iniziali(r.nome)}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <strong style={{ fontSize: 17 }}>{r.nome}</strong>
+              <div className="muto">
+                {r.consegne_in_corso} {r.consegne_in_corso === 1 ? "consegna" : "consegne"} in corso ·{" "}
+                {r.aggiornata_il ? "posizione delle " + oraDi(r.aggiornata_il) : "nessuna posizione"}
+              </div>
             </div>
+            <span className={"m-stato " + (fermo(r) ? "fermo" : "in_giro")}>{fermo(r) ? "fermo" : "in giro"}</span>
           </div>
         ))}
         {riders.length === 0 && !errore && <p className="muto">Nessun rider attivo.</p>}
+      </div>
+
+      <h2>Consegne in corso</h2>
+      <div className="griglia">
+        {consegne.map((k) => (
+          <div className="carta" key={k.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span className={"m-goccia " + k.stato}><span>{k.ordine?.numero ?? ""}</span></span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <strong style={{ fontSize: 17 }}>#{k.ordine?.numero}</strong>
+              {k.ordine?.ora_consegna && <span className="muto"> · per le {oraDi(k.ordine.ora_consegna)}</span>}
+              <div className="muto">{k.ordine?.indirizzo ? `${k.ordine.indirizzo.via} ${k.ordine.indirizzo.civico ?? ""}` : "senza indirizzo"}{nomeRider(k.id_rider) ? ` · ${nomeRider(k.id_rider)}` : ""}{k.ordine?.indirizzo && k.ordine.indirizzo.lat == null ? " · non sulla mappa" : ""}</div>
+            </div>
+            <span className={"m-stato " + k.stato}>{STATO_CONSEGNA[k.stato]}</span>
+          </div>
+        ))}
+        {consegne.length === 0 && !errore && <p className="muto">Nessuna consegna in corso.</p>}
       </div>
     </main>
   );
