@@ -1,169 +1,186 @@
-/* /ordina: la pagina d'ordine nostra, per il telefono del cliente. La veste dell'app
-   «A Mano A Mano Pugliese»: bianco, vino, oro, il bollino, Oswald per i titoli, Figtree per il resto. */
+/* /ordina: la pagina d'ordine nostra, per il telefono del cliente.
+   Giro 6 del grafico (24/10/2026): la veste è quella dell'app «A Mano A Mano Pugliese»
+   come descritta in docs/grafico/APP_RIFERIMENTO.md: due fasce in testa (sabbia col logo
+   lineare, vino col titolo del passo), fondo bianco, righe separate dal filo, titoli di
+   sezione centrati con la riga sotto, un solo pulsante largo in fondo (articoli · azione ·
+   totale). Il vino dice dove sei, il sabbia serve ad agire. Figtree ovunque: l'app usa il
+   carattere di sistema e il maiuscolo stretto solo nelle pennellate, che qui non ci sono. */
 .ordina {
-  --vino: #8a1538; --vino-scuro: #6e0f2c; --oro: #c9973f; --oro-chiaro: #e8d2a6;
-  --crema: #fbf7f0; --nero: #1a1715; --grigio: #6f6a63; --linea: #ece6da; --ok: #2e7d4f;
-  font-family: "Figtree", -apple-system, sans-serif; color: var(--nero); background: var(--crema);
-  min-height: 100dvh; display: flex; flex-direction: column; max-width: 720px; margin: 0 auto;
+  --vino: #8d0536; --vino-scuro: #6e0f2c; --sabbia: #c9a981; --sabbia-scura: #a88a64; --sabbia-chiara: #f1e8da;
+  --nero: #1a1715; --grigio: #6f6a63; --testo2: #4b4640; --linea: #e6e6e6; --tassello: #ededed; --fascia: #ededed; --ok: #2e7d4f;
+  font-family: "Figtree", -apple-system, sans-serif; color: var(--nero); background: #fff;
+  min-height: 100dvh; display: flex; flex-direction: column;
 }
-.ordina h1, .ordina h2, .ordina h3 { font-family: "Oswald", "Figtree", sans-serif; text-transform: uppercase; letter-spacing: .02em; font-weight: 600; margin: 0; }
+.ordina h1, .ordina h2, .ordina h3 { font-family: inherit; margin: 0; font-weight: 800; letter-spacing: 0; }
 .ordina button { font-family: inherit; touch-action: manipulation; border: none; cursor: pointer; background: none; color: inherit; }
 .ordina button:active { transform: scale(.985); }
 .ordina input, .ordina textarea { font-family: inherit; font-size: 17px; }
-.ordina .lapide { font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 12.5px; letter-spacing: .14em; color: var(--oro); font-weight: 600; }
 
-/* testata vino col logo, sotto la linea oro */
-.o-testata { background: var(--vino); color: #fff; display: flex; align-items: center; justify-content: center; padding: 10px 56px; position: sticky; top: 0; z-index: 5; min-height: 56px; }
-.o-testata img { height: 34px; }
-.o-testata .indietro { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: #fff; font-weight: 600; font-size: 15px; padding: 10px 12px; border-radius: 999px; background: rgba(255,255,255,.14); }
-.o-testata .indietro:active { transform: translateY(-50%) scale(.97); }
-.o-testata .carrello { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: #fff; font-weight: 700; font-size: 15px; padding: 10px 14px; border-radius: 999px; background: var(--oro); color: var(--nero); }
-.o-testata .carrello:active { transform: translateY(-50%) scale(.97); }
-.o-oro-linea { height: 3px; background: linear-gradient(90deg, var(--oro), var(--oro-chiaro), var(--oro)); }
+/* le due fasce in testa: sabbia col logo, vino col titolo del passo */
+.o-testa { position: sticky; top: 0; z-index: 5; }
+.o-sabbia { background: var(--sabbia); height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; }
+.o-sabbia img { height: 26px; }
+.o-sabbia .bollino { height: 34px; width: 34px; border-radius: 999px; background: #fff; padding: 2px; }
+.o-vino { background: var(--vino); color: #fff; min-height: 44px; display: flex; align-items: center; justify-content: center; position: relative; padding: 0 96px; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
+.o-vino .titolo { font-weight: 700; font-size: 17px; text-align: center; }
+.o-vino .indietro { position: absolute; left: 0; top: 0; height: 100%; padding: 0 12px; color: #fff; font-size: 16px; display: flex; align-items: center; gap: 2px; }
+.o-vino .indietro b { font-size: 24px; font-weight: 700; line-height: 1; margin-top: -3px; }
+.o-vino .indietro:active { background: rgba(255,255,255,.12); transform: none; }
+.o-vino .carrello { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: var(--sabbia); color: var(--nero); font-weight: 700; font-size: 14px; padding: 7px 10px; border-radius: 4px; display: flex; gap: 6px; align-items: center; }
+.o-vino .carrello .n { background: var(--sabbia-scura); color: #fff; min-width: 20px; height: 20px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; padding: 0 4px; }
+.o-vino .carrello:active { transform: translateY(-50%) scale(.97); }
 
-/* i passi */
-.o-passi { display: flex; gap: 6px; padding: 12px 16px 0; }
-.o-passi span { flex: 1; height: 4px; border-radius: 999px; background: #e3dccd; }
-.o-passi span.fatto { background: var(--oro); }
-.o-passi span.qui { background: var(--vino); }
+/* il corpo: una colonna, in fondo lo spazio per la barra */
+.o-corpo { flex: 1; padding: 12px 16px 110px; width: 100%; max-width: 760px; margin: 0 auto; box-sizing: border-box; }
+.o-sez { text-align: center; font-weight: 700; font-size: 16px; padding-bottom: 5px; border-bottom: 1.5px solid var(--nero); margin: 18px 0 10px; }
+.o-sez:first-child { margin-top: 4px; }
+.o-sotto { color: var(--testo2); font-size: 15px; margin: 0 0 12px; line-height: 1.35; text-align: center; }
+.o-avviso { background: #fbeef2; color: var(--vino); border-radius: 4px; padding: 12px 14px; font-size: 15px; font-weight: 600; margin-top: 12px; line-height: 1.35; }
+.o-nota { background: var(--tassello); color: var(--testo2); border-radius: 4px; padding: 12px 14px; font-size: 14.5px; margin-top: 12px; line-height: 1.35; }
+.o-link { color: var(--sabbia-scura); font-weight: 600; font-size: 15px; padding: 10px 0; display: inline-block; }
 
-.o-corpo { flex: 1; padding: 16px 16px 120px; }
-.o-titolo { font-size: 26px; margin-bottom: 4px; }
-.o-sotto { color: var(--grigio); font-size: 15px; margin: 0 0 16px; line-height: 1.35; }
+/* avvio: il bollino, il nome, le due scelte sabbia con l'icona */
+.o-avvio { text-align: center; padding-top: 8px; }
+.o-avvio .bollino { width: 150px; }
+.o-avvio .marca { font-weight: 700; font-size: 17px; text-transform: uppercase; margin: 2px 0 14px; }
+.o-scelta { display: flex; flex-direction: column; gap: 10px; }
+.o-scelta button { background: var(--sabbia); color: #fff; border-radius: 4px; min-height: 64px; padding: 10px 16px; display: flex; align-items: center; gap: 14px; text-align: left; border: 2px solid var(--sabbia); }
+.o-scelta button.on { border-color: var(--vino); background: var(--vino); }
+.o-scelta .icona { width: 40px; height: 40px; flex: none; color: #fff; }
+.o-scelta .nome { font-weight: 700; font-size: 19px; display: block; }
+.o-scelta small { font-size: 14px; color: rgba(255,255,255,.92); display: block; }
 
-/* avvio: le due scelte */
-.o-avvio { text-align: center; padding-top: 10px; }
-.o-avvio .bollino { width: 128px; background: #fff; border-radius: 999px; padding: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
-.o-scelta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
-.o-scelta button { background: #fff; border-radius: 18px; padding: 18px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(26,23,21,.04), 0 10px 26px rgba(26,23,21,.07); border: 2px solid transparent; }
-.o-scelta button.on { border-color: var(--oro); background: #fff8ea; }
-.o-scelta .icona { width: 44px; height: 44px; color: var(--vino); }
-.o-scelta .nome { font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 19px; font-weight: 600; }
-.o-scelta small { color: var(--grigio); font-size: 13.5px; }
-
-/* indirizzo */
-.o-cerca { position: relative; margin-top: 16px; }
-.o-cerca input { width: 100%; box-sizing: border-box; padding: 14px 16px; border-radius: 14px; border: 2px solid var(--linea); background: #fff; }
-.o-cerca input:focus { outline: none; border-color: var(--oro); }
-.o-risultati { background: #fff; border-radius: 14px; margin-top: 8px; box-shadow: 0 10px 26px rgba(26,23,21,.1); overflow: hidden; }
-.o-risultati button { width: 100%; text-align: left; padding: 13px 16px; border-bottom: 1px solid var(--linea); font-size: 15.5px; display: flex; flex-direction: column; gap: 2px; }
-.o-risultati button:last-child { border-bottom: none; }
-.o-risultati small { color: var(--grigio); font-size: 13px; }
-.o-risultati small.no { color: var(--vino); font-weight: 600; }
-.o-indirizzo { background: #fff; border-radius: 14px; padding: 14px 16px; margin-top: 12px; display: flex; gap: 12px; align-items: center; border: 2px solid var(--oro); }
+/* indirizzo: il campo grigio dell'app, la lista dei risultati a righe */
+.o-cerca { position: relative; margin-top: 6px; }
+.o-cerca input { width: 100%; box-sizing: border-box; padding: 13px 14px; border-radius: 4px; border: 1.5px solid var(--linea); background: var(--tassello); font-size: 17px; }
+.o-cerca input:focus { outline: none; border-color: var(--sabbia); background: #fff; }
+.o-risultati { margin-top: 6px; border-top: 1px solid var(--linea); }
+.o-risultati button { width: 100%; text-align: left; padding: 12px 4px; border-bottom: 1px solid var(--linea); font-size: 15.5px; display: flex; flex-direction: column; gap: 2px; }
+.o-risultati small { color: var(--sabbia-scura); font-size: 13.5px; font-weight: 600; }
+.o-risultati small.no { color: var(--vino); }
+.o-indirizzo { padding: 12px 4px; display: flex; gap: 12px; align-items: center; border-bottom: 1px solid var(--linea); text-align: left; }
 .o-indirizzo .testo { flex: 1; font-size: 16px; line-height: 1.3; }
-.o-indirizzo .testo small { display: block; color: var(--grigio); font-size: 13.5px; }
-.o-indirizzo .cambia { color: var(--vino); font-weight: 700; font-size: 14px; }
-.o-avviso { background: #fff3f5; color: var(--vino); border-radius: 12px; padding: 12px 14px; font-size: 15px; font-weight: 600; margin-top: 12px; line-height: 1.35; }
-.o-nota { background: #fff8ea; color: var(--nero); border-radius: 12px; padding: 12px 14px; font-size: 14.5px; margin-top: 12px; line-height: 1.35; }
+.o-indirizzo .testo small { display: block; color: var(--testo2); font-size: 13.5px; margin-top: 2px; }
+.o-indirizzo .cambia { color: var(--sabbia-scura); font-weight: 600; font-size: 15px; }
 
-/* categorie e prodotti */
-.o-cat-striscia { display: flex; gap: 2px; padding: 8px 10px; background: #fff; border-bottom: 1px solid var(--linea); overflow-x: auto; scrollbar-width: none; position: sticky; top: 59px; z-index: 4; }
+/* le categorie: una seconda fila nella barra vino, scorrevole */
+.o-cat-striscia { display: flex; gap: 0; padding: 0 4px; background: var(--vino); overflow-x: auto; scrollbar-width: none; border-top: 1px solid rgba(255,255,255,.18); }
 .o-cat-striscia::-webkit-scrollbar { display: none; }
-.o-cat { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 4px; border-radius: 12px; flex-shrink: 0; width: 84px; }
-.o-cat .tondo { width: 54px; height: 54px; border-radius: 999px; object-fit: cover; border: 3px solid transparent; padding: 2px; background: #fff; }
-.o-cat.attiva .tondo { border-color: var(--oro); }
-.o-cat .nome { font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 11.5px; letter-spacing: .03em; line-height: 1.1; text-align: center; color: var(--grigio); font-weight: 500; }
-.o-cat.attiva .nome { color: var(--vino); font-weight: 600; }
-.o-griglia { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-@media (min-width: 560px) { .o-griglia { grid-template-columns: repeat(3, 1fr); } }
-.o-carta { background: #fff; border-radius: 16px; padding: 10px 10px 12px; text-align: left; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 2px 4px rgba(26,23,21,.04), 0 8px 22px rgba(26,23,21,.07); position: relative; }
-.o-carta .foto { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; background: #f1ebe0; }
-.o-carta .nome { font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 15.5px; line-height: 1.12; font-weight: 600; }
-.o-carta .descr { font-size: 12.5px; line-height: 1.3; color: var(--grigio); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.6em; }
-.o-carta .prezzo { margin-top: auto; display: flex; align-items: center; justify-content: space-between; font-size: 17px; font-weight: 800; color: var(--vino); font-variant-numeric: tabular-nums; }
-.o-carta .piu { width: 32px; height: 32px; border-radius: 999px; background: var(--oro); color: #fff; font-size: 22px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-.o-carta .nel { position: absolute; top: 16px; right: 16px; background: var(--vino); color: #fff; font-weight: 800; font-size: 13px; padding: 3px 9px; border-radius: 999px; }
-.o-manca { width: 100%; aspect-ratio: 1; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f6ecd8, #e5c993); }
-.o-manca.tondo { width: 54px; height: 54px; border-radius: 999px; aspect-ratio: auto; }
+.o-cat { flex-shrink: 0; padding: 0 12px; height: 42px; color: rgba(255,255,255,.62); font-weight: 700; font-size: 14.5px; text-transform: uppercase; white-space: nowrap; letter-spacing: .01em; border-bottom: 3px solid transparent; border-radius: 0; }
+.o-cat.attiva { color: #fff; border-bottom-color: #fff; }
 
-/* barra in basso */
-.o-barra { position: fixed; bottom: 0; left: 0; right: 0; background: var(--vino); color: #fff; display: flex; align-items: center; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); box-shadow: 0 -8px 24px rgba(26,23,21,.14); z-index: 6; }
-.o-barra .dentro { max-width: 720px; margin: 0 auto; width: 100%; display: flex; align-items: center; gap: 12px; }
-.o-barra .tot { flex: 1; }
-.o-barra .tot small { display: block; font-size: 13px; opacity: .85; }
-.o-barra .tot b { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.o-b-oro { background: var(--oro); color: var(--nero); font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; font-size: 18px; padding: 14px 24px; border-radius: 999px; white-space: nowrap; }
-.o-b-oro:disabled { opacity: .45; }
-.o-b-vino { background: var(--vino); color: #fff; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; font-size: 18px; padding: 14px 24px; border-radius: 999px; }
-.o-b-vino:disabled { opacity: .45; }
-.o-b-linea { background: #fff; color: var(--vino); border: 2px solid var(--vino); font-size: 15px; padding: 11px 18px; border-radius: 999px; font-weight: 700; }
+/* i prodotti: una colonna di righe, la foto grande a destra su sabbia */
+.o-lista { display: flex; flex-direction: column; }
+.o-carta { display: grid; grid-template-columns: minmax(0, 1fr) 124px; gap: 14px; align-items: stretch; padding: 14px 0; border-bottom: 1px solid var(--linea); text-align: left; min-height: 124px; }
+.o-carta:active { background: var(--sabbia-chiara); transform: none; }
+.o-carta .testo { display: flex; flex-direction: column; min-width: 0; }
+.o-carta .nome { font-weight: 700; font-size: 16.5px; line-height: 1.2; text-transform: uppercase; }
+.o-carta .descr { font-size: 14px; line-height: 1.35; color: var(--testo2); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.o-carta .prezzo { margin-top: auto; padding-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 17px; font-weight: 700; color: var(--nero); font-variant-numeric: tabular-nums; }
+.o-etichetta { background: var(--vino); color: #fff; font-size: 13px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+.o-carta .fotobox { position: relative; width: 124px; height: 124px; border-radius: 6px; overflow: hidden; background: var(--sabbia-chiara); align-self: center; }
+.o-carta .foto { width: 100%; height: 100%; object-fit: cover; display: block; }
+.o-carta .nel { position: absolute; top: 6px; right: 6px; background: var(--sabbia-scura); color: #fff; font-weight: 800; font-size: 14px; min-width: 26px; height: 26px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; padding: 0 6px; }
+.o-manca { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--sabbia-chiara); }
+
+/* la barra in fondo: fascia grigia, un solo pulsante sabbia con articoli · azione · totale */
+.o-barra { position: fixed; bottom: 0; left: 0; right: 0; background: var(--fascia); padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); z-index: 6; }
+.o-barra .dentro { max-width: 760px; margin: 0 auto; width: 100%; }
+.o-vai { width: 100%; min-height: 56px; display: flex; align-items: center; gap: 10px; padding: 0 10px; background: var(--sabbia); color: var(--nero); border-radius: 4px; text-align: left; box-shadow: 0 2px 6px rgba(0,0,0,.12); }
+.o-vai .n { flex: none; min-width: 34px; height: 34px; padding: 0 6px; border-radius: 4px; background: var(--sabbia-scura); color: #fff; font-size: 17px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+.o-vai .azione { flex: 1; text-align: center; font-weight: 700; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.o-vai .tot { flex: none; font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
+.o-vai:disabled { background: #e3d9ca; color: #8a8276; box-shadow: none; }
+.o-vai:disabled .n { background: #cbbfaa; }
+.o-b-sabbia { background: var(--sabbia); color: var(--nero); font-weight: 700; font-size: 17px; min-height: 48px; padding: 0 22px; border-radius: 4px; }
+.o-b-sabbia:disabled { background: #e3d9ca; color: #8a8276; }
+.o-b-vino { background: var(--vino); color: #fff; font-weight: 700; font-size: 17px; min-height: 48px; padding: 0 22px; border-radius: 4px; }
+.o-b-linea { background: #fff; color: var(--vino); border: 2px solid var(--vino); font-size: 15px; min-height: 48px; padding: 0 16px; border-radius: 4px; font-weight: 700; }
 .o-b-largo { width: 100%; box-sizing: border-box; display: block; text-align: center; margin-top: 16px; }
 
-/* scheda prodotto */
-.o-velo { position: fixed; inset: 0; background: rgba(26,23,21,.55); display: flex; align-items: flex-end; justify-content: center; z-index: 10; }
-.o-scheda { height: 92dvh; width: 100%; max-width: 720px; border-radius: 24px 24px 0 0; background: #fff; display: flex; flex-direction: column; overflow: hidden; }
-.o-scheda .corpo { flex: 1; overflow-y: auto; padding: 0 20px 20px; }
-.o-scheda .foto-grande { width: calc(100% + 40px); margin: 0 -20px; height: 32vh; object-fit: cover; display: block; }
-.o-scheda h2 { font-size: 24px; margin: 14px 0 4px; }
-.o-scheda .descr { font-size: 15px; color: var(--grigio); margin: 0 0 8px; line-height: 1.35; }
-.o-scheda .prezzo { font-size: 20px; font-weight: 800; color: var(--vino); }
-.o-scheda h3 { font-size: 17px; margin: 22px 0 6px; display: flex; align-items: center; gap: 8px; }
-.o-scheda .piede { padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--linea); display: flex; gap: 10px; background: #fff; }
-.o-gruppo { font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 12px; letter-spacing: .14em; color: var(--oro); margin: 14px 0 2px; font-weight: 600; }
-.o-opz { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 6px; border-bottom: 1px solid var(--linea); text-align: left; font-size: 16px; border-radius: 0; }
-.o-opz.on { background: #fff8ea; }
-.o-opz .spunta { width: 26px; height: 26px; border-radius: 999px; border: 2px solid #cfc7b8; background: #fff; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; flex-shrink: 0; }
-.o-opz.on .spunta { background: var(--oro); border-color: var(--oro); }
-.o-opz .extra { color: var(--grigio); font-size: 14px; margin-left: auto; font-variant-numeric: tabular-nums; }
-.o-numero { width: 26px; height: 26px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--vino); color: #fff; font-size: 14px; flex-shrink: 0; font-family: "Figtree", sans-serif; }
-.o-numero.fatto { background: var(--oro); }
+/* la scheda del prodotto: una pagina intera, «Dettagli» nella barra vino */
+.o-velo { position: fixed; inset: 0; background: #fff; display: flex; flex-direction: column; z-index: 10; }
+.o-scheda { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.o-scheda .corpo { flex: 1; overflow-y: auto; padding: 12px 16px 24px; }
+.o-scheda .dentro { max-width: 760px; margin: 0 auto; }
+.o-scheda h2 { font-size: 20px; text-align: center; text-transform: uppercase; margin: 2px 0 10px; }
+.o-scheda .fotobox-grande { width: min(100%, 300px); aspect-ratio: 1; margin: 0 auto; border-radius: 8px; overflow: hidden; background: var(--sabbia-chiara); }
+.o-scheda .foto-grande { width: 100%; height: 100%; object-fit: cover; display: block; }
+.o-scheda .descr { font-size: 15.5px; color: var(--testo2); margin: 12px 0 6px; line-height: 1.4; }
+.o-scheda .prezzo { font-size: 18px; font-weight: 700; }
+.o-scheda h3 { font-weight: 700; font-size: 16px; text-transform: uppercase; margin: 16px 0 2px; display: flex; align-items: center; gap: 8px; }
+.o-scheda .piede { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: var(--fascia); display: flex; gap: 10px; }
+.o-scheda .piede .dentro { display: flex; gap: 10px; width: 100%; }
+.o-gruppo { font-weight: 700; font-size: 15.5px; text-transform: uppercase; margin: 14px 0 0; }
+.o-opz { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 6px 2px; border-bottom: 1px solid var(--linea); text-align: left; font-size: 16px; border-radius: 0; }
+.o-opz.on { background: var(--sabbia-chiara); }
+.o-opz .extra { color: var(--testo2); font-size: 14.5px; margin-left: auto; font-variant-numeric: tabular-nums; }
+.o-opz .spunta { order: 3; width: 38px; height: 38px; border-radius: 999px; background: var(--tassello); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; flex-shrink: 0; margin-left: 4px; }
+.o-opz .spunta:empty::before { content: "+"; color: var(--nero); font-size: 24px; font-weight: 600; }
+.o-opz.on .spunta { background: var(--vino); }
+.o-numero { width: 26px; height: 26px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--vino); color: #fff; font-size: 14px; flex-shrink: 0; }
+.o-numero.fatto { background: var(--sabbia-scura); }
 
-/* contatore */
-.o-cont { display: flex; align-items: center; gap: 10px; }
-.o-cont button { width: 40px; height: 40px; border-radius: 999px; font-size: 22px; font-weight: 700; padding: 0; background: #fff; border: 2px solid var(--linea); color: var(--nero); display: inline-flex; align-items: center; justify-content: center; }
-.o-cont button.piu { background: var(--vino); color: #fff; border-color: var(--vino); }
-.o-cont span { min-width: 22px; text-align: center; font-weight: 800; font-size: 18px; }
+/* contatore: i tondi grigi dell'app */
+.o-cont { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.o-cont button { width: 40px; height: 40px; border-radius: 999px; font-size: 22px; font-weight: 700; padding: 0; background: var(--tassello); color: var(--nero); display: inline-flex; align-items: center; justify-content: center; }
+.o-cont button.piu { background: var(--vino); color: #fff; }
+.o-cont span { min-width: 26px; text-align: center; font-weight: 700; font-size: 22px; font-variant-numeric: tabular-nums; }
+.o-scheda .o-cont { margin: 10px 0 4px; }
 
-/* carrello */
-.o-riga { background: #fff; border-radius: 14px; padding: 12px; display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
-.o-riga .foto { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
-.o-riga .nome { font-weight: 700; font-size: 15.5px; }
-.o-riga .var { color: var(--grigio); font-size: 13px; }
-.o-riga .prezzo { color: var(--vino); font-weight: 800; font-variant-numeric: tabular-nums; }
-.o-riga .o-manca { width: 56px; height: 56px; border-radius: 10px; aspect-ratio: auto; flex-shrink: 0; }
-.o-somme { background: #fff; border-radius: 14px; padding: 12px 14px; margin-top: 14px; font-size: 15.5px; }
-.o-somme div { display: flex; justify-content: space-between; padding: 4px 0; }
-.o-somme div.tot { border-top: 1px solid var(--linea); margin-top: 6px; padding-top: 10px; font-weight: 800; font-size: 18px; color: var(--vino); }
+/* carrello: le righe «1x NOME prezzo» con le varianti sotto */
+.o-riga { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; column-gap: 6px; padding: 12px 2px; border-bottom: 1px solid var(--linea); align-items: start; }
+.o-riga .q { font-weight: 600; font-size: 16px; }
+.o-riga .nome { font-weight: 700; font-size: 16px; text-transform: uppercase; }
+.o-riga .var { color: var(--testo2); font-size: 13.5px; line-height: 1.35; }
+.o-riga .prezzo { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 16px; text-align: right; }
+.o-riga .o-cont { grid-column: 2 / 4; justify-content: flex-end; margin-top: 8px; gap: 10px; }
+.o-riga .o-cont button { width: 34px; height: 34px; font-size: 20px; }
+.o-riga .o-cont span { font-size: 17px; min-width: 22px; }
+.o-somme div { display: flex; justify-content: space-between; padding: 9px 2px; border-bottom: 1px solid var(--linea); font-size: 16px; }
+.o-somme div.tot { font-weight: 800; font-size: 18px; border-bottom: none; }
 
-/* quando */
-.o-giorni { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
-.o-giorni button { flex-shrink: 0; background: #fff; border-radius: 14px; padding: 10px 14px; display: flex; flex-direction: column; align-items: center; min-width: 64px; border: 2px solid transparent; }
-.o-giorni button.on { border-color: var(--oro); background: #fff8ea; }
-.o-giorni small { font-size: 12px; color: var(--grigio); text-transform: uppercase; letter-spacing: .06em; font-family: "Oswald", sans-serif; }
-.o-giorni b { font-size: 20px; }
-.o-fasce { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
-.o-fasce button { background: #fff; border-radius: 12px; padding: 12px 0; font-weight: 700; font-size: 16px; border: 2px solid transparent; font-variant-numeric: tabular-nums; }
-.o-fasce button.on { border-color: var(--oro); background: #fff8ea; color: var(--vino); }
-.o-fasce button.piena { color: #b9b2a6; background: #f3eee4; text-decoration: line-through; }
+/* quando: i tasselli grigi, quello scelto vino */
+.o-giorni { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 6px; scrollbar-width: none; }
+.o-giorni button { flex-shrink: 0; background: var(--tassello); border-radius: 4px; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; min-width: 62px; font-weight: 700; }
+.o-giorni button.on { background: var(--vino); color: #fff; }
+.o-giorni button:disabled { opacity: .35; }
+.o-giorni small { font-size: 13px; text-transform: capitalize; font-weight: 600; }
+.o-giorni b { font-size: 19px; }
+.o-fasce { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.o-fasce button { background: var(--tassello); border-radius: 4px; min-height: 46px; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+.o-fasce button.on { background: var(--vino); color: #fff; }
+.o-fasce button.piena { color: #b5b0a8; background: #f6f6f6; text-decoration: line-through; }
 
-/* dati */
-.o-campo { display: block; margin-top: 14px; }
-.o-campo span { display: block; font-size: 13px; color: var(--grigio); margin-bottom: 4px; font-weight: 600; }
-.o-campo input, .o-campo textarea { width: 100%; box-sizing: border-box; padding: 13px 14px; border-radius: 12px; border: 2px solid var(--linea); background: #fff; }
-.o-campo input:focus, .o-campo textarea:focus { outline: none; border-color: var(--oro); }
-.o-paga { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
-.o-paga button { background: #fff; border-radius: 14px; padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; border: 2px solid transparent; }
-.o-paga button.on { border-color: var(--oro); background: #fff8ea; }
-.o-paga .icona { width: 34px; height: 34px; color: var(--vino); }
-.o-paga span { font-family: "Oswald", sans-serif; text-transform: uppercase; font-weight: 600; font-size: 16px; }
-.o-paga small { color: var(--grigio); font-size: 12.5px; }
-.o-riepilogo { background: #fff; border-radius: 14px; padding: 12px 14px; margin-top: 16px; font-size: 15px; }
-.o-riepilogo .r { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--linea); }
+/* dati: campi grigi dell'app, caselle quadrate per il pagamento */
+.o-campo { display: block; margin-top: 12px; }
+.o-campo > span { display: block; font-size: 14px; color: var(--testo2); margin-bottom: 4px; font-weight: 600; }
+.o-campo input, .o-campo textarea { width: 100%; box-sizing: border-box; padding: 12px 13px; border-radius: 4px; border: 1.5px solid var(--linea); background: var(--tassello); }
+.o-campo input:focus, .o-campo textarea:focus { outline: none; border-color: var(--sabbia); background: #fff; }
+.o-paga { display: flex; flex-direction: column; gap: 4px; }
+.o-paga button { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 4px 2px; text-align: left; font-size: 16.5px; }
+.o-paga .casella { width: 30px; height: 30px; border-radius: 3px; background: var(--tassello); flex: none; display: inline-flex; align-items: center; justify-content: center; }
+.o-paga .casella svg { width: 20px; height: 20px; stroke: var(--nero); stroke-width: 7; fill: none; stroke-linecap: round; stroke-linejoin: round; display: none; }
+.o-paga button.on .casella svg { display: block; }
+.o-paga .icona { width: 28px; height: 28px; color: var(--vino); flex: none; }
+.o-paga small { color: var(--testo2); font-size: 14px; margin-left: auto; }
+.o-riepilogo .r { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; column-gap: 6px; padding: 8px 2px; border-bottom: 1px solid var(--linea); font-size: 15.5px; }
 .o-riepilogo .r:last-child { border-bottom: none; }
-.o-riepilogo .r b { min-width: 28px; }
-.o-riepilogo .r span { flex: 1; }
-.o-riepilogo .r small { display: block; color: var(--grigio); font-size: 12.5px; }
+.o-riepilogo .r b { font-weight: 600; }
+.o-riepilogo .r small { display: block; color: var(--testo2); font-size: 13.5px; }
+.o-riepilogo .r .p { font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* fatto */
-.o-fatto { text-align: center; padding-top: 24px; }
-.o-fatto .cerchio { width: 84px; height: 84px; border-radius: 999px; background: var(--ok); color: #fff; display: inline-flex; align-items: center; justify-content: center; margin: 16px 0 10px; }
-.o-fatto .cerchio.no { background: var(--vino); font-size: 40px; font-weight: 800; }
-.o-fatto .cerchio svg { width: 48px; height: 48px; stroke: #fff; stroke-width: 6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.o-fatto h1 { font-size: 30px; }
-.o-fatto .numero { display: inline-flex; flex-direction: column; background: #fff; border-radius: 16px; padding: 12px 28px; margin: 16px 0; }
-.o-fatto .numero small { color: var(--grigio); font-size: 13px; }
-.o-fatto .numero b { font-size: 34px; color: var(--vino); }
-.o-fatto p { color: var(--grigio); font-size: 16px; line-height: 1.4; margin: 6px 0; }
-.o-entra { animation: o-entra .25s ease-out; }
-@keyframes o-entra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.o-fatto { text-align: center; padding-top: 16px; }
+.o-fatto .bollino { width: 120px; }
+.o-fatto .cerchio { width: 72px; height: 72px; border-radius: 999px; background: var(--ok); color: #fff; display: inline-flex; align-items: center; justify-content: center; margin: 8px 0 10px; }
+.o-fatto .cerchio.no { background: var(--vino); font-size: 36px; font-weight: 800; }
+.o-fatto .cerchio svg { width: 40px; height: 40px; stroke: #fff; stroke-width: 6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.o-fatto h1 { font-size: 24px; text-transform: uppercase; }
+.o-fatto .numero { display: inline-flex; flex-direction: column; background: var(--sabbia-chiara); border-radius: 6px; padding: 10px 28px; margin: 14px 0; }
+.o-fatto .numero small { color: var(--testo2); font-size: 13.5px; }
+.o-fatto .numero b { font-size: 34px; }
+.o-fatto p { color: var(--testo2); font-size: 16px; line-height: 1.4; margin: 6px 0; }
+.o-fatto .segui { display: block; margin: 16px auto 0; max-width: 360px; background: var(--sabbia); color: var(--nero); font-weight: 700; font-size: 17px; padding: 14px 20px; border-radius: 4px; text-decoration: none; }
+.o-entra { animation: o-entra .22s ease-out; }
+@keyframes o-entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }

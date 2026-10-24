@@ -25,7 +25,6 @@ import "./ordina.css";
 type Tipo = "domicilio" | "ritiro";
 type Passo = "tipo" | "menu" | "carrello" | "quando" | "dati" | "fatto";
 type Pagamento = "contanti" | "pos";
-const PASSI: Passo[] = ["tipo", "menu", "carrello", "quando", "dati"];
 const BOZZA_LS = "ordina:bozza";
 const BOZZA_MS = 60 * 60_000;
 
@@ -201,24 +200,30 @@ export default function Ordina() {
     return d.oggi ? "oggi" : d.nome === "domani" ? "domani" : `${d.nome} ${d.numero}`;
   }
 
+  // Come l'app: un solo pulsante sabbia in fondo, con gli articoli a sinistra, l'azione al centro e il totale a destra.
   const barra = (testo: string, su: () => void, spento = false) => (
     <div className="o-barra"><div className="dentro">
-      <div className="tot"><small>{articoli} {articoli === 1 ? "articolo" : "articoli"}{costoConsegna > 0 ? ` + consegna ${euro(costoConsegna)}` : ""}</small><b>{euro(totale)}</b></div>
-      <button onClick={su} disabled={spento} className="o-b-oro">{testo}</button>
+      <button onClick={su} disabled={spento} className="o-vai">
+        <span className="n">{articoli}</span>
+        <span className="azione">{testo}</span>
+        <span className="tot">{euro(totale)}</span>
+      </button>
     </div></div>
   );
+  const TITOLI: Record<Passo, string> = { tipo: "Ordina", menu: "Ordina", carrello: "Carrello", quando: tipo === "domicilio" ? "Consegna" : "Ritiro", dati: "I tuoi dati", fatto: "Grazie" };
+  // Le due fasce dell'app: sabbia col logo lineare e il bollino, vino con «‹ Indietro» e il titolo del passo.
   const testata = (indietro?: () => void) => (
-    <>
-      <div className="o-testata">
-        {indietro && <button className="indietro" onClick={indietro}>← Indietro</button>}
-        <img src="/brand/logo-amanoamano-chiaro.png" alt="A Mano A Mano Pugliese" />
-        {passo === "menu" && articoli > 0 && <button className="carrello" onClick={() => vai("carrello")}>{articoli} · {euro(subtotale)}</button>}
+    <div className="o-testa">
+      <div className="o-sabbia">
+        <img src="/brand/logo-amanoamano.png" alt="A Mano A Mano Pugliese" />
+        <img src="/brand/bollino.png" alt="" className="bollino" />
       </div>
-      <div className="o-oro-linea" />
-      {passo !== "fatto" && (
-        <div className="o-passi">{PASSI.map((p) => <span key={p} className={p === passo ? "qui" : PASSI.indexOf(p) < PASSI.indexOf(passo) ? "fatto" : ""} />)}</div>
-      )}
-    </>
+      <div className="o-vino">
+        {indietro && <button className="indietro" onClick={indietro}><b>‹</b> Indietro</button>}
+        <span className="titolo">{TITOLI[passo]}</span>
+        {passo === "menu" && articoli > 0 && <button className="carrello" onClick={() => vai("carrello")}><span className="n">{articoli}</span>{euro(subtotale)}</button>}
+      </div>
+    </div>
   );
 
   if (erroreMenu) return <div className="ordina"><div className="o-corpo o-avviso">{erroreMenu}</div></div>;
@@ -228,13 +233,13 @@ export default function Ordina() {
       <div className="ordina">
         {testata()}
         <div className="o-corpo o-fatto o-entra">
-          <img src="/brand/bollino.png" alt="" style={{ width: 110 }} />
+          <img src="/brand/bollino.png" alt="" className="bollino" />
           <div className={"cerchio" + (esito.ok ? "" : " no")}>{esito.ok ? <svg viewBox="0 0 64 64" aria-hidden><path d="M14 34 L27 47 L50 18" /></svg> : "!"}</div>
           <h1>{esito.titolo}</h1>
           {esito.numero && <div className="numero"><small>Il tuo ordine</small><b>{esito.numero}</b></div>}
           <p>{esito.testo}</p>
-          {esito.segui && <p>Quando il rider parte, lo segui sulla mappa da qui:<br /><a href={esito.segui} style={{ color: "var(--vino)", fontWeight: 700 }}>segui la consegna</a></p>}
-          <button className="o-b-vino o-b-largo" onClick={() => { setEsito(null); setFascia(null); setPagamento(null); setNote(""); vai("tipo"); }}>Nuovo ordine</button>
+          {esito.segui && <><p>Quando il rider parte, lo segui sulla mappa.</p><a href={esito.segui} className="segui">Segui la consegna</a></>}
+          <button className="o-b-linea o-b-largo" onClick={() => { setEsito(null); setFascia(null); setPagamento(null); setNote(""); vai("tipo"); }}>Nuovo ordine</button>
         </div>
       </div>
     );
@@ -246,18 +251,19 @@ export default function Ordina() {
         {testata()}
         <div className="o-corpo o-avvio o-entra">
           <img className="bollino" src="/brand/bollino.png" alt="A Mano A Mano Pugliese" />
-          <h1 className="o-titolo" style={{ marginTop: 14 }}>Come lo vuoi?</h1>
-          <p className="o-sotto">Pizza pugliese, pucce e fritti. Ordini qui, paghi quando arriva.</p>
+          <div className="marca">A Mano A Mano Pugliese</div>
+          <div className="o-sez">Come lo vuoi?</div>
           <div className="o-scelta">
             <button onClick={() => scegliTipo("domicilio")} className={tipo === "domicilio" ? "on" : ""}>
-              <IconaCasa /><span className="nome">A casa</span><small>te lo porta il rider</small>
+              <IconaScooter /><span><span className="nome">Consegna a casa</span><small>te lo porta il rider</small></span>
             </button>
             <button onClick={() => scegliTipo("ritiro")} className={tipo === "ritiro" ? "on" : ""}>
-              <IconaSacchetto /><span className="nome">Lo ritiro</span><small>Via Novara 5/7, Roma</small>
+              <IconaSacchetto /><span><span className="nome">Ritiro in pizzeria</span><small>Via Novara 5/7, Roma</small></span>
             </button>
           </div>
           {tipo === "domicilio" && (
             <div style={{ textAlign: "left" }}>
+              <div className="o-sez">Indirizzo di consegna</div>
               {indirizzo ? (
                 <div className="o-indirizzo">
                   <div className="testo">
@@ -286,31 +292,31 @@ export default function Ordina() {
       <div className="ordina">
         {testata(() => vai("menu"))}
         <div className="o-corpo o-entra">
-          <h1 className="o-titolo">Il tuo ordine</h1>
-          <p className="o-sotto">{tipo === "domicilio" ? `A casa: ${indirizzo?.testo ?? ""}` : "Lo ritiri in pizzeria, Via Novara 5/7."}</p>
+          <div className="o-sez">{tipo === "domicilio" ? "Indirizzo di consegna" : "Ritiro"}</div>
+          <p className="o-sotto" style={{ textAlign: "left" }}>{tipo === "domicilio" ? indirizzo?.testo ?? "" : "In pizzeria, Via Novara 5/7, Roma."}</p>
+          <div className="o-sez">Il tuo ordine</div>
+          <button className="o-link" onClick={() => vai("menu")}>Aggiungi prodotti</button>
           {carrello.length === 0 && <div className="o-nota">Il carrello è vuoto.</div>}
           {carrello.map((r) => (
             <div key={r.chiave} className="o-riga">
-              <Foto p={prodotti.find((p) => p.id === r.id_prodotto)} classe="foto" />
-              <div style={{ flex: 1 }}>
+              <span className="q">{r.quantita}x</span>
+              <div>
                 <div className="nome">{r.descrizione}</div>
-                {r.variazioni.length > 0 && <div className="var">{r.variazioni.map((v) => v.nome).join(" · ")}</div>}
+                {r.variazioni.length > 0 && <div className="var">{r.variazioni.map((v) => `CON ${v.nome}${v.prezzo > 0 ? ` (${euro(v.prezzo)})` : ""}`).join(", ")}</div>}
                 {r.figlie && <div className="var">{r.figlie.map((f) => (f.quantita > 1 ? `${f.quantita}× ` : "") + f.descrizione).join(" · ")}</div>}
-                <div className="prezzo">{euro(prezzoRiga(r))}</div>
               </div>
+              <div className="prezzo">{euro(prezzoRiga(r))}</div>
               <Contatore n={r.quantita} meno={() => cambiaQuantita(r.chiave, -1)} piu={() => cambiaQuantita(r.chiave, 1)} />
             </div>
           ))}
           {carrello.length > 0 && (
             <div className="o-somme">
-              <div><span>Prodotti</span><span>{euro(subtotale)}</span></div>
               {tipo === "domicilio" && <div><span>Consegna{indirizzo?.zona ? ` · ${indirizzo.zona.nome.toLowerCase()}` : ""}</span><span>{costoConsegna > 0 ? euro(costoConsegna) : "gratis"}</span></div>}
               <div className="tot"><span>Totale</span><span>{euro(totale)}</span></div>
             </div>
           )}
           {sottoMinimo && <div className="o-avviso">A casa tua l&apos;ordine minimo è {euro(minimo)}: mancano {euro(minimo - subtotale)}.</div>}
           {errore && <div className="o-avviso">{errore}</div>}
-          <button className="o-b-linea o-b-largo" onClick={() => vai("menu")}>Aggiungi altro</button>
         </div>
         {barra("Scegli quando", () => vai("quando"), carrello.length === 0 || sottoMinimo)}
       </div>
@@ -322,8 +328,7 @@ export default function Ordina() {
       <div className="ordina">
         {testata(() => vai("carrello"))}
         <div className="o-corpo o-entra">
-          <h1 className="o-titolo">{tipo === "domicilio" ? "Quando te lo portiamo?" : "Quando passi?"}</h1>
-          <p className="o-sotto">Scegli il giorno e il quarto d&apos;ora. Quelli barrati sono già pieni.</p>
+          <div className="o-sez">Giorno</div>
           <div className="o-giorni">
             {giorni.map((g) => (
               <button key={g.chiave} onClick={() => { setGiorno(g.chiave); setFascia(null); }} className={g.chiave === giorno ? "on" : ""} disabled={g.chiuso} style={g.chiuso ? { opacity: .4 } : undefined}>
@@ -331,6 +336,8 @@ export default function Ordina() {
               </button>
             ))}
           </div>
+          <div className="o-sez">{tipo === "domicilio" ? "Orario di consegna" : "Orario di ritiro"}</div>
+          <p className="o-sotto">Scegli il quarto d&apos;ora. Quelli barrati sono già pieni.</p>
           {fasce === null && <div className="o-nota">Guardo i posti liberi…</div>}
           {fasce !== null && fasce.length === 0 && (
             <div className="o-avviso">{fasciaEsito === "chiuso" ? "Quel giorno siamo chiusi." : fasciaEsito === "errore" ? "Non riesco a leggere gli orari: riprova." : "Per oggi non ci sono più orari: prova domani."}</div>
@@ -355,27 +362,27 @@ export default function Ordina() {
       <div className="ordina">
         {testata(() => vai("quando"))}
         <div className="o-corpo o-entra">
-          <h1 className="o-titolo">Chi sei?</h1>
+          <div className="o-sez">I tuoi dati</div>
           <p className="o-sotto">Ti chiamiamo solo se c&apos;è un problema con l&apos;ordine.</p>
           <label className="o-campo"><span>Nome</span><input value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" placeholder="Il tuo nome" /></label>
           <label className="o-campo"><span>Telefono</span><input value={telefono} onChange={(e) => setTelefono(e.target.value)} autoComplete="tel" inputMode="tel" placeholder="3xx xxx xxxx" /></label>
           <label className="o-campo"><span>Email (se vuoi)</span><input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" placeholder="facoltativa" /></label>
           <label className="o-campo"><span>Note per la cucina{tipo === "domicilio" ? " o per il rider" : ""}</span><textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder={tipo === "domicilio" ? "citofono, piano, «senza cipolla»…" : "«ben cotta», «senza cipolla»…"} /></label>
-          <div className="o-campo"><span>Come paghi {tipo === "domicilio" ? "al rider" : "in pizzeria"}</span>
-            <div className="o-paga">
-              <button onClick={() => setPagamento("contanti")} className={pagamento === "contanti" ? "on" : ""}><IconaContanti /><span>Contanti</span><small>alla consegna</small></button>
-              <button onClick={() => setPagamento("pos")} className={pagamento === "pos" ? "on" : ""}><IconaCarta /><span>Carta · POS</span><small>alla consegna</small></button>
-            </div>
+          <div className="o-sez">Pagamento</div>
+          <div className="o-paga">
+            <button onClick={() => setPagamento("contanti")} className={pagamento === "contanti" ? "on" : ""}><span className="casella"><svg viewBox="0 0 64 64" aria-hidden><path d="M14 34 L27 47 L50 18" /></svg></span><IconaContanti /><span>Contanti {tipo === "domicilio" ? "alla consegna" : "alla cassa"}</span></button>
+            <button onClick={() => setPagamento("pos")} className={pagamento === "pos" ? "on" : ""}><span className="casella"><svg viewBox="0 0 64 64" aria-hidden><path d="M14 34 L27 47 L50 18" /></svg></span><IconaCarta /><span>Bancomat o carta {tipo === "domicilio" ? "alla consegna" : "alla cassa"}</span></button>
           </div>
+          <div className="o-sez">Il tuo ordine</div>
+          <p className="o-sotto" style={{ textAlign: "left", marginBottom: 4 }}>{tipo === "domicilio" ? "Consegna" : "Ritiro"} {etichettaGiorno(giorno)} alle {fascia?.ora}</p>
           <div className="o-riepilogo">
-            <div className="lapide" style={{ marginBottom: 6 }}>{tipo === "domicilio" ? "A casa" : "Ritiro"} · {etichettaGiorno(giorno)} alle {fascia?.ora}</div>
             {carrello.map((r) => (
-              <div key={r.chiave} className="r"><b>{r.quantita}×</b><span>{r.descrizione}
-                {r.variazioni.length > 0 && <small>{r.variazioni.map((v) => v.nome).join(" · ")}</small>}
+              <div key={r.chiave} className="r"><b>{r.quantita}x</b><span>{r.descrizione}
+                {r.variazioni.length > 0 && <small>{r.variazioni.map((v) => `CON ${v.nome}`).join(", ")}</small>}
                 {r.figlie && <small>{r.figlie.map((f) => (f.quantita > 1 ? `${f.quantita}× ` : "") + f.descrizione).join(" · ")}</small>}
-              </span><span style={{ flex: "none", fontVariantNumeric: "tabular-nums" }}>{euro(prezzoRiga(r))}</span></div>
+              </span><span className="p">{euro(prezzoRiga(r))}</span></div>
             ))}
-            {costoConsegna > 0 && <div className="r"><b></b><span>Consegna</span><span style={{ flex: "none" }}>{euro(costoConsegna)}</span></div>}
+            {costoConsegna > 0 && <div className="r"><b></b><span>Consegna</span><span className="p">{euro(costoConsegna)}</span></div>}
           </div>
           {errore && <div className="o-avviso">{errore}</div>}
         </div>
@@ -390,25 +397,26 @@ export default function Ordina() {
       {testata(() => vai("tipo"))}
       <nav className="o-cat-striscia">
         {categorie.map((c) => (
-          <button key={c.id} onClick={() => { setCategoria(c.id); window.scrollTo({ top: 0 }); }} className={"o-cat" + (c.id === categoria ? " attiva" : "")}>
-            <Foto p={prodotti.find((p) => p.id_categoria === c.id && p.foto_url) ?? prodotti.find((p) => p.id_categoria === c.id)} classe="tondo" tondo />
-            <span className="nome">{c.nome}</span>
-          </button>
+          <button key={c.id} onClick={() => { setCategoria(c.id); window.scrollTo({ top: 0 }); }} className={"o-cat" + (c.id === categoria ? " attiva" : "")}>{c.nome}</button>
         ))}
       </nav>
       <div className="o-corpo o-entra" key={categoria}>
         {prodotti.length === 0 && <div className="o-nota">Carico il menù…</div>}
-        <h1 className="o-titolo" style={{ fontSize: 22, marginBottom: 12 }}>{catCorrente?.nome}</h1>
-        <div className="o-griglia">
+        <div className="o-sez">{catCorrente?.nome}</div>
+        <div className="o-lista">
           {inCategoria.map((p) => {
             const nel = carrello.filter((r) => r.id_prodotto === p.id).reduce((s, r) => s + r.quantita, 0);
             return (
               <button key={p.id} onClick={() => setAperto(p)} className="o-carta">
-                <Foto p={p} classe="foto" />
-                {nel > 0 && <span className="nel">×{nel}</span>}
-                <div className="nome">{p.nome}</div>
-                <div className="descr">{p.descrizione ?? ""}</div>
-                <div className="prezzo"><span>{euro(p.prezzo)}</span><span className="piu">+</span></div>
+                <div className="testo">
+                  <div className="nome">{p.nome}</div>
+                  <div className="descr">{p.descrizione ?? ""}</div>
+                  <div className="prezzo"><span>{euro(p.prezzo)}</span>{catCorrente && /novit/i.test(catCorrente.nome) && <span className="o-etichetta">! Novità</span>}</div>
+                </div>
+                <div className="fotobox">
+                  <Foto p={p} classe="foto" />
+                  {nel > 0 && <span className="nel">{nel}</span>}
+                </div>
               </button>
             );
           })}
@@ -514,11 +522,21 @@ function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, chiudi, 
   }
 
   return (
-    <div className="o-velo" onClick={chiudi}>
-      <div className="o-scheda" onClick={(e) => e.stopPropagation()}>
-        <div className="corpo">
-          {p.foto_url ? <img src={p.foto_url} alt="" className="foto-grande" /> : <div className="o-manca" style={{ aspectRatio: "auto", height: "22vh", borderRadius: 0, width: "calc(100% + 40px)", margin: "0 -20px" }}><img src="/brand/bollino.png" alt="" style={{ height: "60%" }} /></div>}
+    <div className="o-velo">
+      <div className="o-testa">
+        <div className="o-sabbia">
+          <img src="/brand/logo-amanoamano.png" alt="A Mano A Mano Pugliese" />
+          <img src="/brand/bollino.png" alt="" className="bollino" />
+        </div>
+        <div className="o-vino">
+          <button className="indietro" onClick={chiudi}><b>‹</b> Indietro</button>
+          <span className="titolo">Dettagli</span>
+        </div>
+      </div>
+      <div className="o-scheda">
+        <div className="corpo"><div className="dentro">
           <h2>{p.nome}</h2>
+          <div className="fotobox-grande"><Foto p={p} classe="foto-grande" /></div>
           {p.descrizione && <p className="descr">{p.descrizione}</p>}
           <div className="prezzo">{euro(p.prezzo)}</div>
           {p.incluso && <p className="descr" style={{ fontWeight: 700, marginTop: 6 }}>Inclusi nel menu: {p.incluso}</p>}
@@ -529,7 +547,7 @@ function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, chiudi, 
             const cats = categorie.filter((c) => voci.some((x) => x.id_categoria === c.id));
             return (
               <div key={g.id} id={`o-passo-${i}`} style={{ scrollMarginTop: 12 }}>
-                <h3><span className={"o-numero" + (fatto ? " fatto" : "")}>{fatto ? "✓" : i + 1}</span>{g.etichetta} <small style={{ fontWeight: 400, color: "var(--grigio)", textTransform: "none", fontFamily: "Figtree" }}>{scelteMenu[i].length}/{g.quantita}</small></h3>
+                <div className="o-sez" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><span className={"o-numero" + (fatto ? " fatto" : "")}>{fatto ? "✓" : i + 1}</span>{g.etichetta} <small style={{ fontWeight: 400, color: "var(--testo2)" }}>{scelteMenu[i].length}/{g.quantita}</small></div>
                 {(cats.length > 1 ? cats : [null]).map((c) => (
                   <div key={c?.id ?? "tutte"}>
                     {c && <div className="o-gruppo">{c.nome}</div>}
@@ -547,10 +565,10 @@ function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, chiudi, 
             );
           })}
 
-          <h3>Quantità</h3>
+          <div className="o-sez">Quantità</div>
           <Contatore n={q} meno={() => setQ(Math.max(1, q - 1))} piu={() => setQ(Math.min(20, q + 1))} />
 
-          {gruppi.length > 0 && <h3>Aggiungi ingredienti</h3>}
+          {gruppi.length > 0 && <div className="o-sez">Aggiungi ingredienti</div>}
           {gruppi.map((g) => (
             <div key={g}>
               <div className="o-gruppo">{g}</div>
@@ -564,19 +582,20 @@ function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, chiudi, 
               })}
             </div>
           ))}
-        </div>
-        <div className="piede">
-          <button onClick={chiudi} className="o-b-linea">Annulla</button>
+        </div></div>
+        <div className="piede"><div className="dentro">
           <button
             onClick={() => {
               if (completo) return aggiungi(q, scelte.map((v) => ({ nome: v.nome, prezzo: v.prezzo, tipo: "aggiunta" as const })), gruppiMenu.length > 0 ? figlieDaScelte(gruppiMenu, scelteMenu, categorie) : undefined);
               const i = gruppiMenu.findIndex((g, j) => scelteMenu[j].length < g.quantita);
               document.getElementById(`o-passo-${i}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
             }}
-            className={completo ? "o-b-vino" : "o-b-linea"} style={{ flex: 1 }}>
-            {completo ? `Aggiungi · ${euro((p.prezzo + extra) * q)}` : (() => { const g = gruppiMenu.find((g, j) => scelteMenu[j].length < g.quantita); return g ? `Manca: ${g.etichetta.toLowerCase()} ↓` : "Completa le scelte"; })()}
+            className="o-vai">
+            {completo
+              ? <><span className="n">{q}</span><span className="azione">Aggiungi al carrello</span><span className="tot">{euro((p.prezzo + extra) * q)}</span></>
+              : <><span className="n">{q}</span><span className="azione">{(() => { const g = gruppiMenu.find((g, j) => scelteMenu[j].length < g.quantita); return g ? `Manca: ${g.etichetta.toLowerCase()} ↓` : "Completa le scelte"; })()}</span><span className="tot"></span></>}
           </button>
-        </div>
+        </div></div>
       </div>
     </div>
   );
@@ -592,13 +611,14 @@ function Contatore({ n, meno, piu }: { n: number; meno: () => void; piu: () => v
   );
 }
 
-function Foto({ p, classe, tondo }: { p?: ProdottoMenu; classe: string; tondo?: boolean }) {
+function Foto({ p, classe }: { p?: ProdottoMenu; classe: string }) {
   if (p?.foto_url) return <img src={p.foto_url} alt="" className={classe} />;
-  return <div className={"o-manca" + (tondo ? " tondo" : "")} aria-hidden><img src="/brand/bollino.png" alt="" style={{ width: tondo ? "74%" : "48%" }} /></div>;
+  return <div className="o-manca" aria-hidden><img src="/brand/bollino.png" alt="" style={{ width: "52%" }} /></div>;
 }
 
-function IconaCasa() {
-  return <svg className="icona" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M8 30 L32 10 L56 30" /><path d="M14 26v28h36V26" /><path d="M26 54V38h12v16" /></svg>;
+/** Lo scooter della consegna, come l'icona bianca dell'app. */
+function IconaScooter() {
+  return <svg className="icona" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="14" cy="44" r="7" /><circle cx="50" cy="44" r="7" /><path d="M14 44h16l6-16h8" /><path d="M36 28l-4-10h-8" /><path d="M44 28l6 16" /><path d="M8 32h14" /></svg>;
 }
 function IconaSacchetto() {
   return <svg className="icona" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M14 22h36l-3 32H17z" /><path d="M24 22v-4a8 8 0 0 1 16 0v4" /><path d="M24 32h16" opacity=".5" /></svg>;
