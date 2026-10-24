@@ -51,6 +51,12 @@ Roma): sostituisce Velocissimo/2Bit, clean-room. Il cervello gestionale resta
   `scripts/prova-csv-os.mts`); senza turni la capacità parte dalla tabella di Velocissimo
   per giorno della settimana (10/18/22 pizze a quarto d'ora). Il registro delle migrazioni
   di Supabase è la verità: i nomi sono quelli dei file senza numero.
+- **Stampa sulle stampanti di rete** (mig. 0047, 24/10/2026, non ancora accesa in negozio): l'agente
+  `agente-stampa/agente.mjs` sul PC di cassa chiede `/api/stampa/coda` (chiave `STAMPA_KEY`, solo su
+  Vercel e in `chiave.txt` sul PC) e riceve le comande già in ESC/POS per cucina e cassa; le manda
+  alla porta 9100 e segna con `/api/stampa/fatta`. La carta si disegna in `src/lib/stampa/escpos.ts`
+  dallo stesso modello della pagina (`src/lib/comanda.ts`). Prove: `scripts/prova-stampa.mts` e
+  `scripts/prova-agente-stampa.mts` (con `npx --yes tsx`). La fiscale Epson è un lavoro a parte.
 - ⚠️ Col connettore, un testo che contiene la parola che cancella le righe (anche dentro
   una funzione o un commento) fa chiedere una conferma che non si vede e resta appeso:
   in `ordine_modifica` il comando è composto come stringa (`'del' || 'ete …'`).

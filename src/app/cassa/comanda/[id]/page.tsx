@@ -7,35 +7,12 @@
 import { use, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
-import type { Variazione } from "@/lib/types";
+import { normalizzaComanda, vistaComanda, quandoComanda, oraRoma as ora, TIPO_COMANDA as TIPO, CANALE_COMANDA as CANALE, type Comanda } from "@/lib/comanda";
 import "./comanda.css";
 
-interface RigaComanda {
-  id?: string; id_riga_padre?: string | null; incluso?: string | null;
-  descrizione: string; quantita: number; variazioni: Variazione[]; note: string | null;
-  destinazione: "cucina" | "cassa" | "nessuna"; reparto: string; reparto_ordine: number;
-  figlie?: RigaComanda[];
-}
-interface Comanda {
-  id: string; numero: number; numero_visibile?: string; canale: string; tipo: string; stato: string;
-  creato_il: string; ora_consegna: string | null; totale: number; note: string | null;
-  pagamento: "contanti" | "pos" | null; costo_consegna: number; cliente: string | null; telefono: string | null;
-  cliente_note?: string | null; paga_con?: number | null; pagato_online?: boolean; sconto?: number; codice_coupon?: string | null;
-  modificato_il?: string | null; stampe?: number;
-  righe_prima?: { id: string; id_riga_padre: string | null; descrizione: string; quantita: number; variazioni: Variazione[] | null }[] | null;
-  tavolo: number | null; indirizzo: { via: string; civico: string | null; cap: string | null; citta: string | null; zona: string | null } | null;
-  righe: RigaComanda[];
-}
-
-const TIPO: Record<string, string> = { banco: "AL BANCO", ritiro: "RITIRO", domicilio: "DOMICILIO", tavolo: "TAVOLO" };
-const CANALE: Record<string, string> = { app: "App", web: "Sito", totem: "Totem", telefono: "Telefono", cassa: "Cassa", glovo: "Glovo", deliveroo: "Deliveroo", justeat: "Just Eat" };
-const ora = (s: string) => new Date(s).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
-const giornoRoma = (d: Date) => d.toLocaleDateString("it-IT", { timeZone: "Europe/Rome" });
 function quando(iso: string) {
-  const d = new Date(iso), oggi = new Date(), domani = new Date(); domani.setDate(oggi.getDate() + 1);
-  if (giornoRoma(d) === giornoRoma(oggi)) return <>per le <b>{ora(iso)}</b></>;
-  if (giornoRoma(d) === giornoRoma(domani)) return <b>DOMANI alle {ora(iso)}</b>;
-  return <b>{d.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Rome" })} alle {ora(iso)}</b>;
+  const q = quandoComanda(iso);
+  return q.forte ? <b>{q.testo}</b> : <>per le <b>{q.testo.replace("per le ", "")}</b></>;
 }
 
 export default function ComandaPagina({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ stampa?: string }> }) {
@@ -51,8 +28,7 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
   useEffect(() => {
     supabaseBrowser().rpc("comanda_ordine", { p_id: id }).then(({ data, error }) => {
       if (error || !data) { setErrore(error?.message ?? "Ordine non trovato"); return; }
-      const d = data as Comanda;
-      setC({ ...d, totale: Number(d.totale), costo_consegna: Number(d.costo_consegna ?? 0), righe: d.righe.map((r) => ({ ...r, quantita: Number(r.quantita) })) });
+      setC(normalizzaComanda(data as Comanda));
     });
   }, [id]);
 
@@ -71,33 +47,8 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
   if (errore) return <main><p style={{ color: "var(--accento)" }}>{errore}</p></main>;
   if (!c) return <main><p className="muto">Carico la comanda…</p></main>;
 
-  // i reparti nell'ordine del menù; le righe «nessuna» (es. sconti) non vanno in cucina.
-  // Le scelte di un menu (mig. 0023) stanno sotto il menu, non sparse nei reparti delle pizze.
-  const figlieDi = (id?: string) => (id ? c.righe.filter((x) => x.id_riga_padre === id) : []);
-  const reparti: { nome: string; righe: RigaComanda[] }[] = [];
-  for (const r of c.righe.filter((r) => r.destinazione !== "nessuna" && !r.id_riga_padre)) {
-    const riga = { ...r, figlie: figlieDi(r.id) };
-    const g = reparti.find((x) => x.nome === r.reparto);
-    if (g) g.righe.push(riga); else reparti.push({ nome: r.reparto, righe: [riga] });
-  }
-  // Com'era la comanda alla prima stampa (mig. 0043): le righe nuove si segnano NUOVA, quelle tolte si
-  // elencano sotto, così la cucina sa cosa è cambiato senza rileggere tutto (critico giro 12).
-  const firma = (r: { descrizione: string; variazioni: Variazione[] | null }) =>
-    r.descrizione.trim().toUpperCase() + "|" + (r.variazioni ?? []).map((v) => `${v.tipo}:${v.nome}`).sort().join(",");
-  const prima = c.modificato_il && c.righe_prima ? c.righe_prima.filter((r) => !r.id_riga_padre) : null;
-  const contaPrima = new Map<string, number>();
-  for (const r of prima ?? []) contaPrima.set(firma(r), (contaPrima.get(firma(r)) ?? 0) + Number(r.quantita));
-  const contaAdesso = new Map<string, number>();
-  for (const r of c.righe.filter((r) => !r.id_riga_padre)) contaAdesso.set(firma(r), (contaAdesso.get(firma(r)) ?? 0) + Number(r.quantita));
-  // quante in più rispetto alla prima stampa: «NUOVA» se tutta la riga è nuova, «+1 (ora 2)» se è cresciuta
-  const inPiu = (r: RigaComanda) => (prima ? Math.max(0, (contaAdesso.get(firma(r)) ?? 0) - (contaPrima.get(firma(r)) ?? 0)) : 0);
-  const nuova = (r: RigaComanda) => inPiu(r) > 0;
-  const segnoNuova = (r: RigaComanda) => (inPiu(r) >= r.quantita ? "NUOVA " : `+${inPiu(r)} (ora ${r.quantita}) `);
-  const tolte = (prima ?? []).filter((r) => (contaAdesso.get(firma(r)) ?? 0) < (contaPrima.get(firma(r)) ?? 0))
-    .filter((r, i, a) => a.findIndex((x) => firma(x) === firma(r)) === i)
-    .map((r) => ({ descrizione: r.descrizione, quante: (contaPrima.get(firma(r)) ?? 0) - (contaAdesso.get(firma(r)) ?? 0) }));
-  // i pezzi in cucina: le pizze vere, non la riga «Menu» che le contiene
-  const pezzi = c.righe.filter((r) => r.destinazione === "cucina" && !(r.id && c.righe.some((x) => x.id_riga_padre === r.id))).reduce((s, r) => s + r.quantita, 0);
+  // il modello è in src/lib/comanda.ts: la stampante di rete legge lo stesso (agente di stampa)
+  const { reparti, tolte, pezzi } = vistaComanda(c);
 
   return (
     <div className="comanda-pagina">
@@ -134,10 +85,10 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
           <section key={g.nome} className="reparto">
             <h2>{g.nome}</h2>
             {g.righe.map((r, i) => (
-              <div key={i} className={"riga" + (nuova(r) ? " nuova" : "")}>
+              <div key={i} className={"riga" + (r.segno ? " nuova" : "")}>
                 <div className="q">{r.quantita}</div>
                 <div className="cosa">
-                  <div className="descr">{nuova(r) && <span className="segno">{segnoNuova(r)}</span>}{r.descrizione}</div>
+                  <div className="descr">{r.segno && <span className="segno">{r.segno}</span>}{r.descrizione}</div>
                   {r.variazioni.filter((v) => v.tipo === "aggiunta").map((v, j) => <div key={"a" + j} className="con">CON {v.nome}</div>)}
                   {r.variazioni.filter((v) => v.tipo === "rimozione").map((v, j) => <div key={"s" + j} className="senza">SENZA {v.nome}</div>)}
                   {r.variazioni.filter((v) => v.tipo === "nota").map((v, j) => <div key={"n" + j} className="nota">{v.nome}</div>)}
