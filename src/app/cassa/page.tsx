@@ -38,6 +38,7 @@ type OrdineCassa = Ordine & {
   cliente?: { nome: string | null; telefono: string | null; note: string | null } | null;
   indirizzo?: { via: string; civico: string | null } | null;
   zona?: { nome: string } | null; costo_consegna?: number | null;
+  tavolo?: { numero: string } | null; sconto?: number | null; modificato_il?: string | null;
 };
 const PREORDINE_ATTIVO = (o: OrdineCassa) => !["annullato", "consegnato", "ritirato"].includes(o.stato);
 const euro = (n: number) => Number(n).toFixed(2).replace(".", ",") + " €";
@@ -79,7 +80,7 @@ function Cassa() {
   useEffect(() => { try { setStampaAuto(localStorage.getItem(STAMPA_LS) === "1"); } catch {} }, []);
   function cambiaStampaAuto(v: boolean) { setStampaAuto(v); try { localStorage.setItem(STAMPA_LS, v ? "1" : "0"); } catch {} }
   function completa(id: string) {
-    supabaseBrowser().from("ordine").select("*, cliente(nome, telefono, note), indirizzo(via, civico), zona(nome)").eq("id", id).maybeSingle()
+    supabaseBrowser().from("ordine").select("*, cliente(nome, telefono, note), indirizzo(via, civico), zona(nome), tavolo(numero)").eq("id", id).maybeSingle()
       .then(({ data }) => { if (data) setOrdini((prev) => prev.map((o) => (o.id === id ? (data as OrdineCassa) : o))); });
   }
   function stampa(id: string) { setInStampa((p) => (p.includes(id) ? p : [...p, id])); setTimeout(() => setInStampa((p) => p.filter((x) => x !== id)), 15_000); }
@@ -107,7 +108,7 @@ function Cassa() {
 
     supabase
       .from("ordine")
-      .select("*, cliente(nome, telefono, note), indirizzo(via, civico), zona(nome)")
+      .select("*, cliente(nome, telefono, note), indirizzo(via, civico), zona(nome), tavolo(numero)")
       .order("creato_il", { ascending: false })
       .limit(100)
       .then(({ data, error }) => {
@@ -189,7 +190,7 @@ function Cassa() {
                   <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
                   <b className="tempo attesa">{quando(o.ora_consegna!)}</b>
                 </header>
-                <div className="riga">{o.tipo} · {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"}{o.zona?.nome && <> · {o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""}</>}</div>
+                <div className="riga">{o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>}{o.modificato_il && <b className="vino"> · modificata</b>} · {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"}{o.zona?.nome && <> · {o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""}</>}</div>
                 <div className="chi">{o.cliente?.nome ?? o.nome_cliente ?? ""}</div>
                 {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
                 {o.note && <div className="nota">Note: {o.note}</div>}
@@ -215,7 +216,7 @@ function Cassa() {
               {(o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") && (() => { const c = contoAllaRovescia(o, adesso); return c ? <b className={"tempo" + (c.ritardo ? " ritardo" : "")}>{c.testo}</b> : null; })()}
             </header>
             <div className="riga">
-              {o.tipo} · {o.canale} · {new Date(o.creato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+              {o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>} · {o.canale} · {new Date(o.creato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{o.modificato_il && <> · <b className="vino">modificata {new Date(o.modificato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</b></>}
               {o.ora_consegna && <> · <b className={quando(o.ora_consegna).startsWith("per") ? "" : "vino"}>{quando(o.ora_consegna)}</b></>}
             </div>
             {(o.cliente?.nome || o.nome_cliente || o.cliente?.telefono || o.pagamento) && (
@@ -225,7 +226,7 @@ function Cassa() {
             )}
             {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
             {o.cliente?.note && <div className="avviso-cliente">⚠ {o.cliente.note}</div>}
-            <div className="tot">{euro(o.totale)}</div>
+            <div className="tot">{euro(o.totale)}{Number(o.sconto) > 0 && <small className="muto"> (sconto −{euro(Number(o.sconto))})</small>}</div>
             {o.note && <div className="nota">Note: {o.note}</div>}
             <div className="riga">
               {o.stampato_il

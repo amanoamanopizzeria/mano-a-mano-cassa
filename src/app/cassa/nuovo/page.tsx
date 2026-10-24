@@ -408,7 +408,7 @@ function Cassa() {
       const pc = Number(pagaCon.replace(",", "."));
       await supabaseBrowser().rpc("ordine_pagamento", { p_id: r.id, p_pagamento: pagamento === "online" ? null : pagamento, p_paga_con: pc > 0 ? pc : null, p_pagato_online: pagamento === "online" });
     }
-    if (r.esito === "accettato") { svuota(); setGiorno(""); setOra(""); setPagamento(null); setPagaCon(""); setEsito(`Ordine n. ${r.numero} inviato in cucina${quando} · ${euro(Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - scontoManuale))}${pagamento ? (pagamento === "pos" ? " POS" : pagamento === "online" ? " già pagato" : " contanti") : ""}${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
+    if (r.esito === "accettato") { svuota(); setGiorno(""); setOra(""); setPagamento(null); setPagaCon(""); setEsito(`Ordine n. ${r.numero}${tipo === "tavolo" ? ` · tavolo ${tavoli.find((t) => t.id === idTavolo)?.numero ?? ""}` : tipo === "ritiro" && (cliente?.nome || nomeCliente.trim()) ? ` · ${cliente?.nome ?? nomeCliente.trim()}` : ""} inviato in cucina${quando} · ${euro(Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - scontoManuale))}${pagamento ? (pagamento === "pos" ? " POS" : pagamento === "online" ? " già pagato" : " contanti") : ""}${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
     else if (r.esito === "pieno" && r.motivo === "consegne") setErrore(`Quarto d'ora pieno per le consegne${pOra ? ` alle ${ora}` : ""}: scegli un altro orario o un rider in più.`);
     else if (r.esito === "pieno" && r.massimo === 0) setErrore(`Per ${pOra ? (giorniScelta.find((g) => g.v === giorno)?.t.toLowerCase() ?? giorno) : "oggi"} non sono impostati i pizzaioli (0 posti): aprì Capacità e metti quanti sono.`);
     else if (r.esito === "pieno") setErrore(`Quarto d'ora pieno in cucina${pOra ? ` alle ${ora}` : ""}${r.libere ? `: ci stanno ancora ${r.libere} pizze` : ""}. Scegli un altro orario.`);
@@ -584,7 +584,7 @@ function Cassa() {
           </select>
         )}
 
-        <div className="scorri" style={{ flex: 1, borderTop: "1px solid var(--bordo)", borderBottom: "1px solid var(--bordo)" }}>
+        <div className="scorri" style={{ flex: 1, minHeight: 160, borderTop: "1px solid var(--bordo)", borderBottom: "1px solid var(--bordo)" }}>
           {righe.length === 0 && <p className="muto" style={{ padding: 12 }}>Tocca un prodotto per iniziare la comanda.</p>}
           {righe.map((r) => (
             <button key={r.chiave} onClick={() => toccaRiga(r)} style={{
