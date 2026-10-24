@@ -31,6 +31,7 @@ type OrdineCassa = Ordine & {
   nome_cliente?: string | null; pagamento?: "contanti" | "pos" | null; paga_con?: number | null;
   cliente?: { nome: string | null; telefono: string | null; note: string | null } | null;
   indirizzo?: { via: string; civico: string | null } | null;
+  zona?: { nome: string } | null; costo_consegna?: number | null;
 };
 const euro = (n: number) => Number(n).toFixed(2).replace(".", ",") + " €";
 const oraDi = (s: string) => new Date(s).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
@@ -71,7 +72,7 @@ function Cassa() {
   useEffect(() => { try { setStampaAuto(localStorage.getItem(STAMPA_LS) === "1"); } catch {} }, []);
   function cambiaStampaAuto(v: boolean) { setStampaAuto(v); try { localStorage.setItem(STAMPA_LS, v ? "1" : "0"); } catch {} }
   function completa(id: string) {
-    supabaseBrowser().from("ordine").select("*, cliente(nome, telefono, note), indirizzo(via, civico)").eq("id", id).maybeSingle()
+    supabaseBrowser().from("ordine").select("*, cliente(nome, telefono, note), indirizzo(via, civico), zona(nome)").eq("id", id).maybeSingle()
       .then(({ data }) => { if (data) setOrdini((prev) => prev.map((o) => (o.id === id ? (data as OrdineCassa) : o))); });
   }
   function stampa(id: string) { setInStampa((p) => (p.includes(id) ? p : [...p, id])); setTimeout(() => setInStampa((p) => p.filter((x) => x !== id)), 15_000); }
@@ -99,7 +100,7 @@ function Cassa() {
 
     supabase
       .from("ordine")
-      .select("*, cliente(nome, telefono, note), indirizzo(via, civico)")
+      .select("*, cliente(nome, telefono, note), indirizzo(via, civico), zona(nome)")
       .order("creato_il", { ascending: false })
       .limit(100)
       .then(({ data, error }) => {
@@ -179,7 +180,11 @@ function Cassa() {
                   <b style={{ color: "var(--vino)" }}>{quando(o.ora_consegna!)}</b>
                 </div>
                 <div className="muto">{o.tipo} · {o.cliente?.nome ?? o.nome_cliente ?? ""}{o.indirizzo ? ` · ${o.indirizzo.via} ${o.indirizzo.civico ?? ""}` : ""} · {euro(o.totale)}</div>
-                <div className="muto" style={{ fontSize: 13 }}>stampa alle {oraDi(stampaAlle(o)!.toISOString())}{o.stampato_il ? " · già stampata" : ""}</div>
+                <div className="muto" style={{ fontSize: 13 }}>
+                  {o.zona?.nome && <>{o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""} · </>}
+                  {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"} · stampa alle {oraDi(stampaAlle(o)!.toISOString())}{o.stampato_il ? " · già stampata" : ""}
+                </div>
+                {o.note && <div className="muto" style={{ fontSize: 13 }}>Note: {o.note}</div>}
                 <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
                   <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
                   <button onClick={() => stampa(o.id)}>Stampa ora</button>

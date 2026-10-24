@@ -170,10 +170,12 @@ function SchedaConsegna({ c, children }: { c: ConsegnaRider; children: React.Rea
       {c.cliente_nome && <div className="muto">{c.cliente_nome}</div>}
       {c.cliente_note && <div style={{ marginTop: 4, padding: "4px 8px", borderRadius: 6, background: "var(--oro-velo)", borderLeft: "4px solid var(--oro)", fontSize: 16, fontWeight: 600 }}>⚠ {c.cliente_note}</div>}
       <div style={{ margin: "8px 0", fontSize: 24, fontWeight: 800, color: "var(--vino)" }}>
-        {c.pagato_online || Number(c.contanti_da_incassare) === 0
+        {c.pagato_online
           ? <>Già pagato <span className="muto" style={{ fontSize: 13 }}>niente da incassare</span></>
           : c.pagamento === "pos"
-            ? <>{euro(Number(c.contanti_da_incassare))} <span className="muto" style={{ fontSize: 13 }}>col POS</span></>
+            ? <>{euro(Number(c.totale))} <span className="muto" style={{ fontSize: 13 }}>col POS · niente contanti</span></>
+            : Number(c.contanti_da_incassare) === 0
+            ? <>Già pagato <span className="muto" style={{ fontSize: 13 }}>niente da incassare</span></>
             : <>{euro(Number(c.contanti_da_incassare))} <span className="muto" style={{ fontSize: 13 }}>in contanti</span>
                 {c.paga_con != null && Number(c.paga_con) > Number(c.contanti_da_incassare) && (
                   <div style={{ fontSize: 14, fontWeight: 700 }}>paga con {euro(Number(c.paga_con))} → resto {euro(Number(c.paga_con) - Number(c.contanti_da_incassare))}</div>

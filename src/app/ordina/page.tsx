@@ -33,7 +33,7 @@ interface Indirizzo { testo: string; via: string | null; civico: string | null; 
 interface Fascia { ora: string; inizio: string; piena: boolean }
 interface Negozio { nome: string; preordini_giorni: number; attesa_domicilio: number; attesa_ritiro: number }
 interface Orario { giorno: number; tipo: string; dalle: string; alle: string }
-interface Esito { ok: boolean; titolo: string; testo: string; numero?: string; segui?: string | null }
+interface Esito { ok: boolean; titolo: string; testo: string; numero?: string; segui?: string | null; righe?: RigaOrdine[]; totale?: number; consegna?: number }
 
 const giornoRoma = (d: Date) => d.toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }); // AAAA-MM-GG
 const NOMI_GIORNO = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
@@ -150,6 +150,15 @@ export default function Ordina() {
   }
   function scegliIndirizzo(i: Indirizzo) {
     setIndirizzo(i);
+    // senza numero civico non si va avanti: il rider non trova «Viale Regina Margherita» (critico giro 8)
+    if (i.zona && i.civico) alMenu();
+  }
+  const [civicoScritto, setCivicoScritto] = useState("");
+  function confermaCivico() {
+    const c = civicoScritto.trim();
+    if (!indirizzo || !c) return;
+    const i = { ...indirizzo, civico: c, testo: `${indirizzo.via ?? indirizzo.testo} ${c}${indirizzo.citta ? ", " + indirizzo.citta : ""}` };
+    setIndirizzo(i); setCivicoScritto("");
     if (i.zona) alMenu();
   }
   function aggiungi(p: ProdottoMenu, quantita: number, variazioni: Variazione[], figlie?: RigaFiglia[]) {
@@ -172,10 +181,10 @@ export default function Ordina() {
     });
     setInvio(false);
     if (error) { setErrore("Non siamo riusciti a mandare l'ordine. Riprova, o chiamaci."); return; }
-    const r = data as { esito: string; numero?: string; segui?: string | null; motivo?: string; minimo?: number; dalle?: string; alle?: string; libere?: number };
+    const r = data as { esito: string; numero?: string; segui?: string | null; totale?: number; motivo?: string; minimo?: number; dalle?: string; alle?: string; libere?: number };
     switch (r.esito) {
       case "accettato":
-        setEsito({ ok: true, titolo: `Grazie ${nome.trim().split(" ")[0]}!`, numero: r.numero, segui: r.segui,
+        setEsito({ ok: true, titolo: `Grazie ${nome.trim().split(" ")[0]}!`, numero: r.numero, segui: r.segui, righe: carrello, totale: Number(r.totale ?? totale), consegna: costoConsegna,
           testo: tipo === "domicilio"
             ? `Te lo portiamo ${etichettaGiorno(giorno)} alle ${fascia.ora}. Paghi ${pagamento === "pos" ? "col POS" : "in contanti"} al rider.`
             : `Ti aspettiamo ${etichettaGiorno(giorno)} alle ${fascia.ora}. Paghi ${pagamento === "pos" ? "col POS" : "in contanti"} in pizzeria.` });
@@ -190,6 +199,7 @@ export default function Ordina() {
         setErrore("Quell'orario non va più bene: scegline un altro."); setFascia(null); vai("quando"); return;
       case "minimo":
         setErrore(`A casa tua l'ordine minimo è ${euro(Number(r.minimo))}: aggiungi qualcosa.`); vai("carrello"); return;
+      case "manca_civico": setErrore("Manca il numero civico."); setIndirizzo((i) => (i ? { ...i, civico: null } : i)); vai("tipo"); return;
       case "fuori_zona": case "manca_indirizzo":
         setErrore("Non consegniamo a quell'indirizzo."); vai("tipo"); return;
       case "telefono_corto": setErrore("Scrivi un numero di telefono completo: ti chiamiamo solo se c'è un problema."); return;
@@ -243,6 +253,18 @@ export default function Ordina() {
           <h1>{esito.titolo}</h1>
           {esito.numero && <div className="numero"><small>Il tuo ordine</small><b>{esito.numero}</b></div>}
           <p>{esito.testo}</p>
+          {esito.righe && esito.righe.length > 0 && (
+            <div className="o-riepilogo" style={{ textAlign: "left" }}>
+              {esito.righe.map((r) => (
+                <div key={r.chiave} className="r"><b>{r.quantita}×</b><span>{r.descrizione}
+                  {r.variazioni.length > 0 && <small>{r.variazioni.map((v) => v.nome).join(" · ")}</small>}
+                  {r.figlie && <small>{r.figlie.map((f) => (f.quantita > 1 ? `${f.quantita}× ` : "") + f.descrizione).join(" · ")}</small>}
+                </span><span className="p">{euro(prezzoRiga(r))}</span></div>
+              ))}
+              {(esito.consegna ?? 0) > 0 && <div className="r"><b></b><span>Consegna</span><span className="p">{euro(esito.consegna!)}</span></div>}
+              <div className="r"><b></b><span style={{ fontWeight: 800 }}>Totale</span><span className="p" style={{ fontWeight: 800 }}>{euro(esito.totale ?? 0)}</span></div>
+            </div>
+          )}
           {esito.segui && <><p>Quando il rider parte, lo segui sulla mappa.</p><a href={esito.segui} className="segui">Segui la consegna</a></>}
           <button className="o-b-linea o-b-largo" onClick={() => { setEsito(null); setFascia(null); setPagamento(null); setNote(""); vai("tipo"); }}>Nuovo ordine</button>
         </div>
@@ -281,6 +303,16 @@ export default function Ordina() {
                 </div>
               ) : (
                 <CercaIndirizzo scelto={scegliIndirizzo} />
+              )}
+              {indirizzo && indirizzo.zona && !indirizzo.civico && (
+                <div className="o-civico">
+                  <div className="o-avviso" style={{ marginTop: 0 }}>Manca il numero civico: scrivilo qui.</div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <input value={civicoScritto} onChange={(e) => setCivicoScritto(e.target.value)} placeholder="Civico" inputMode="text" autoFocus
+                      onKeyDown={(e) => { if (e.key === "Enter") confermaCivico(); }} style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: "2px solid var(--linea)" }} />
+                    <button className="o-b-vino" onClick={confermaCivico} disabled={!civicoScritto.trim()}>Avanti</button>
+                  </div>
+                </div>
               )}
               {indirizzo && !indirizzo.zona && <div className="o-avviso">Mi dispiace, a quell&apos;indirizzo non arriviamo. Puoi ordinare e ritirare in pizzeria.</div>}
             </div>
@@ -369,7 +401,8 @@ export default function Ordina() {
           <div className="o-sez">I tuoi dati</div>
           <p className="o-sotto">Ti chiamiamo solo se c&apos;è un problema con l&apos;ordine.</p>
           <label className="o-campo"><span>Nome</span><input value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" placeholder="Il tuo nome" /></label>
-          <label className="o-campo"><span>Telefono</span><input value={telefono} onChange={(e) => setTelefono(e.target.value)} autoComplete="tel" inputMode="tel" placeholder="3xx xxx xxxx" /></label>
+          <label className="o-campo"><span>Telefono</span><input value={telefono} onChange={(e) => setTelefono(e.target.value)} autoComplete="tel" inputMode="tel" placeholder="3xx xxx xxxx" />
+            {telefono.trim().length > 0 && telefono.replace(/\D/g, "").length < 9 && <small style={{ color: "var(--vino)", fontWeight: 600 }}>Il numero è corto: servono almeno 9 cifre.</small>}</label>
           <label className="o-campo"><span>Email (se vuoi)</span><input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" placeholder="facoltativa" /></label>
           <label className="o-campo"><span>Note per la cucina{tipo === "domicilio" ? " o per il rider" : ""}</span><textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder={tipo === "domicilio" ? "citofono, piano, «senza cipolla»…" : "«ben cotta», «senza cipolla»…"} /></label>
           <div className="o-sez">Pagamento</div>
@@ -431,6 +464,7 @@ export default function Ordina() {
         <SchedaProdotto
           p={aperto}
           varianti={variantiPer(varianti, aperto.id_categoria, gruppiCat)}
+          massimi={Object.fromEntries(gruppiCat.filter((g) => g.id_categoria === aperto.id_categoria).map((g) => [g.gruppo, g.max_n]))}
           gruppiMenu={gruppiPacchetto(pacchetti, aperto.id)}
           prodotti={prodotti}
           categorie={categorie}
@@ -500,8 +534,8 @@ function CercaIndirizzo({ scelto }: { scelto: (i: Indirizzo) => void }) {
   );
 }
 
-function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, chiudi, aggiungi }: {
-  p: ProdottoMenu; varianti: VarianteMenu[]; gruppiMenu: PacchettoGruppo[]; prodotti: ProdottoMenu[]; categorie: CategoriaMenu[];
+function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, massimi, chiudi, aggiungi }: {
+  p: ProdottoMenu; varianti: VarianteMenu[]; gruppiMenu: PacchettoGruppo[]; prodotti: ProdottoMenu[]; categorie: CategoriaMenu[]; massimi?: Record<string, number>;
   chiudi: () => void; aggiungi: (q: number, v: Variazione[], figlie?: RigaFiglia[]) => void;
 }) {
   const [q, setQ] = useState(1);
@@ -512,7 +546,12 @@ function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, chiudi, 
   const completo = menuCompleto(gruppiMenu, scelteMenu);
 
   function alterna(v: VarianteMenu) {
-    setScelte((prev) => (prev.some((x) => x.id === v.id) ? prev.filter((x) => x.id !== v.id) : [...prev, v]));
+    setScelte((prev) => {
+      if (prev.some((x) => x.id === v.id)) return prev.filter((x) => x.id !== v.id);
+      // «Impasto alto» e «Impasto normale» insieme non hanno senso (critico giro 8): nei gruppi da uno si sostituisce
+      const altri = (massimi?.[v.gruppo] ?? 99) <= 1 ? prev.filter((x) => x.gruppo !== v.gruppo) : prev;
+      return [...altri, v];
+    });
   }
   function scegli(i: number, prod: ProdottoMenu) {
     const g = gruppiMenu[i];
