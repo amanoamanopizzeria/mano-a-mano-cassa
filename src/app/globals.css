@@ -756,3 +756,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .fasce-pagina .f-modifica .regola { font-size: 14px; min-height: 44px; }
 .fasce-pagina .f-modifica .annulla { min-height: 44px; font-size: 15px; }
 .fasce-pagina .f-modifica .ok { min-height: 44px; font-size: 16px; padding: 0 22px; }
+/* /cassa/capacita: i 39 stili in riga alle classi, stessa resa. */
+.capacita .c-errore { color: var(--errore); font-weight: 700; }
+.capacita .c-turno { margin-bottom: 12px; }
+.capacita .c-fascia.spenta { opacity: .5; }
+.capacita .c-fascia .c-testa { display: flex; justify-content: space-between; }

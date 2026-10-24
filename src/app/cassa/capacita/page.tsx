@@ -88,9 +88,9 @@ function Capacita() {
   return (
     <main className="capacita">
       <h1>Capacità — quarti d&apos;ora</h1>
-      {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
+      {errore && <p className="c-errore">{errore}</p>}
 
-      <div className="carta c-turno" style={{ marginBottom: 12 }}>
+      <div className="carta c-turno">
         <label className="c-campo">
           <span>Giorno</span>
           <input type="date" value={giorno} onChange={(e) => setGiorno(e.target.value)} />
@@ -119,8 +119,8 @@ function Capacita() {
           const pienoProd = f.pizze_max > 0 && f.pizze_occupate >= f.pizze_max;
           const pienoCons = f.consegne_max > 0 && f.consegne_occupate >= f.consegne_max;
           return (
-            <div key={f.ora} className={"carta c-fascia" + (pienoProd || pienoCons || f.bloccata_produzione || f.bloccata_consegne ? " piena" : "")} style={{ opacity: f.pizze_max === 0 && f.consegne_max === 0 ? 0.5 : 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <div key={f.ora} className={"carta c-fascia" + (pienoProd || pienoCons || f.bloccata_produzione || f.bloccata_consegne ? " piena" : "") + (f.pizze_max === 0 && f.consegne_max === 0 ? " spenta" : "")}>
+              <div className="c-testa">
                 <strong className="ora">{f.ora.slice(0, 5)}</strong>
                 {(pienoProd || pienoCons || f.bloccata_produzione || f.bloccata_consegne) && (
                   <span className="badge ricevuto" title="SOLD OUT">
