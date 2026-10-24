@@ -393,3 +393,41 @@
 .t-fatto .numero small, .t-paga button, .t-etichetta, .t-cat .nome, .t-testata .titolo { font-family: "Figtree", -apple-system, sans-serif; letter-spacing: .01em; font-weight: 800; }
 .t-gruppo, .t-fatto .numero small { font-weight: 700; }
 .t-ordina, .t-avvio .lapide { font-family: "Oswald", sans-serif; }
+
+/* ===== grafico, giro 9 (24/10/2026): l'avvio e la lista come la home e il menù dell'app =====
+   Home dell'app [03, 12]: fascia sabbia col logo lineare in cima, sotto la grande foto delle mani
+   nell'impasto col bollino a metà, poi la pennellata inclinata «ORDINA SUBITO» vino col testo
+   bianco, a pennello secco con gli angoli sfrangiati. Qui la pennellata dice «ORDINA QUI» e sotto,
+   in piccolo maiuscolo, cosa succede. Il fondo sotto la foto è bianco come nell'app, non crema. */
+.t-avvio .t-sabbia-avvio { position: absolute; top: 0; left: 0; right: 0; z-index: 2; height: 96px; justify-content: center; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+.t-avvio .t-sabbia-avvio img { height: 54px; }
+.t-avvio .velo { background: linear-gradient(180deg, rgba(0,0,0,.08) 0%, rgba(0,0,0,.02) 30%, rgba(0,0,0,.14) 50%, #fff 70%); }
+.t-avvio .bollino { width: min(44vw, 360px); margin-top: -6vh; box-shadow: 0 18px 50px rgba(0,0,0,.22); }
+.t-ordina { margin-top: 4.5vh; transform: rotate(-2.5deg); font-weight: 600; letter-spacing: .08em; padding: .5em 1.6em;
+  clip-path: polygon(0% 10%, 3% 2%, 12% 6%, 30% 0%, 55% 4%, 78% 0%, 97% 5%, 100% 14%, 99% 60%, 100% 92%, 90% 100%, 70% 95%, 45% 100%, 20% 96%, 4% 100%, 0% 88%); }
+.t-ordina.pulsa { animation: pulsa-9 1.8s ease-in-out infinite; }
+@keyframes pulsa-9 { 0%,100% { transform: rotate(-2.5deg) scale(1); } 50% { transform: rotate(-2.5deg) scale(1.03); } }
+.t-avvio .sotto { color: var(--testo2); font-weight: 600; }
+.t-avvio .lapide { color: var(--sabbia-scura); letter-spacing: .26em; }
+.t-avvio .lapide.chiuso { color: var(--vino); }
+.t-avvio .sotto.chiuso b { color: var(--vino); }
+
+/* La lista dei prodotti come il menù dell'app [08]: nome in Oswald, descrizione in due righe, il prezzo in
+   grassetto in fondo a destra del testo, la foto quadrata a destra su sabbia. La foto da 230 a 200 px e la
+   riga più stretta: a 1080×1920 entrano cinque righe invece di quattro, senza niente sotto i 20 px. */
+.t-carta { padding: 18px 4px; gap: 22px; }
+.t-carta .nome { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 32px; letter-spacing: .02em; line-height: 1.05; }
+.t-carta .descr { font-size: 20px; -webkit-line-clamp: 2; margin-top: 6px; }
+.t-carta .prezzo { justify-content: flex-end; padding-top: 10px; }
+.t-carta .prezzo b { font-size: 32px; order: 2; }
+.t-etichetta { order: 1; margin-right: auto; }
+.t-carta .fotobox { width: 200px; height: 200px; border-radius: 12px; }
+.t-carta .piu { width: 72px; height: 72px; right: 8px; bottom: 8px; }
+.t-titolo { font-family: "Oswald", sans-serif; font-weight: 600; letter-spacing: .04em; font-size: 34px; }
+.t-cat .nome { font-family: "Oswald", sans-serif; font-weight: 500; letter-spacing: .06em; font-size: 26px; }
+.t-testata .titolo { font-family: "Oswald", sans-serif; font-weight: 600; letter-spacing: .04em; }
+@media (max-width: 700px) {
+  .t-avvio .t-sabbia-avvio { height: 60px; } .t-avvio .t-sabbia-avvio img { height: 36px; }
+  .t-carta .nome { font-size: 22px; } .t-carta .descr { font-size: 15px; } .t-carta .prezzo b { font-size: 22px; }
+  .t-carta .fotobox { width: 116px; height: 116px; } .t-carta .piu { width: 44px; height: 44px; font-size: 28px; }
+}

@@ -182,7 +182,9 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
       <div className="schermo totem t-avvio" onPointerDown={inizia}>
         <img className="foto" src="/brand/impasto-mani.jpg" alt="" />
         <div className="velo" />
-        <img className="logo-alto" src="/brand/logo-amanoamano-chiaro.png" alt="" />
+        <div className="t-sabbia t-sabbia-avvio">
+          <img src="/brand/logo-amanoamano.png" alt="A Mano A Mano" />
+        </div>
         <div className="corpo t-entra">
           <img className="bollino" src="/brand/bollino.png" alt="A Mano A Mano Pugliese" />
           {chiuso ? (
