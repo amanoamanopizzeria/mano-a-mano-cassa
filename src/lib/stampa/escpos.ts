@@ -133,7 +133,7 @@ export function comandaEscPos(c: Comanda, o: OpzioniStampa): Uint8Array {
   p.centro(false).linea("=");
 
   // chi e dove
-  if (c.cliente) p.grassetto(true).misura(1, 2).testo(c.cliente + (c.ordini_cliente ? `  [${c.ordini_cliente} ORD.]` : "")).misura(1, 1).grassetto(false);
+  if (c.cliente) p.grassetto(true).misura(1, 2).testo(c.cliente + (c.ordini_cliente ? (Number(c.ordini_cliente) === 1 ? "  [PRIMO ORDINE]" : `  [${c.ordini_cliente} ORD.]`) : "")).misura(1, 1).grassetto(false);
   if (c.telefono) p.testo(c.telefono);
   if (c.indirizzo) {
     p.grassetto(true).misura(1, 2).testo(`${c.indirizzo.via} ${c.indirizzo.civico ?? ""}`.trim()).misura(1, 1).grassetto(false);
@@ -143,7 +143,8 @@ export function comandaEscPos(c: Comanda, o: OpzioniStampa): Uint8Array {
   }
   if (c.cliente || c.telefono || c.indirizzo) p.linea();
   // la nota dell'ordine e la nota fissa del cliente (allergie, citofono) subito sopra le pizze
-  if (c.note) p.grassetto(true).testo(`NOTE: ${c.note}`).grassetto(false);
+  // la nota dell'ordine in grande (critico giro 22); la fascia nera resta per la nota fissa del cliente
+  if (c.note) p.grassetto(true).misura(1, 2).testo(`NOTE: ${c.note}`).misura(1, 1).grassetto(false);
   if (c.cliente_note) p.misura(1, 2).fascia(`!! ${c.cliente_note}`).misura(1, 1);
 
   // le righe, reparto per reparto

@@ -104,3 +104,9 @@ WhatsApp agli avvisi) non sono ripetute.*
     vecchia): nell'app il cliente può togliere un ingrediente da una pizza e cercare un prodotto
     per nome; su /ordina nostra oggi non c'è né l'una né l'altra. Le vuoi tutte e due, solo il
     «senza», o nessuna? → Decide se /ordina le aggiunge prima della prova in parallelo.
+
+23. **La nota fissa del cliente va divisa in due?** Oggi è un campo solo, e sulla comanda esce in
+    fascia nera sopra le pizze: va bene per «senza glutine», ma «citofono rotto, chiamare al
+    cancello» finisce nello stesso posto e il pizzaiolo impara a saltare la fascia (critico, giro 22).
+    *Proposta:* due campi nella scheda cliente, «allergie / cucina» (fascia sopra le pizze) e «per il
+    rider» (sotto la via). *Cosa cambia:* chi apre la scheda al telefono scrive la nota nel campo giusto.
