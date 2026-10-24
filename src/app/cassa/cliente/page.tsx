@@ -223,7 +223,7 @@ function Cliente() {
           <h3>Ultimi ordini</h3>
           <ul className="c-lista">
             {(scheda.ultimi_ordini ?? []).map((o) => (
-              <li key={o.numero}>{o.numero_visibile ?? `#${o.numero}`} · {new Date(o.creato_il).toLocaleDateString("it-IT", { day: "numeric", month: "short" })} · {o.tipo} · <b>{Number(o.totale).toFixed(2).replace(".", ",")} €</b></li>
+              <li key={o.numero}><span>{[o.numero_visibile ?? `#${o.numero}`, new Date(o.creato_il).toLocaleDateString("it-IT", { day: "numeric", month: "short" }), o.tipo].filter(Boolean).join(" · ")}</span><b>{Number(o.totale).toFixed(2).replace(".", ",")} €</b></li>
             ))}
             {(scheda.ultimi_ordini ?? []).length === 0 && <li className="muto">Nessun ordine</li>}
           </ul>

@@ -16,11 +16,18 @@ export default function RiepilogoPagina() {
   );
 }
 
-const giornoRoma = (iso: string) => new Date(iso).toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
-function inizioGiorno(): string {
-  // mezzanotte di oggi a Roma, in UTC
-  const oggi = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
-  return new Date(`${oggi}T00:00:00+02:00`).toISOString();
+// La serata, come nel database (giornata_lavorativa, mig. 0040): dopo mezzanotte è ancora la sera
+// prima, il taglio è alle 06:00 di Roma. Critico giro 19: a mezzanotte e mezza la testa del riepilogo
+// leggeva da mezzanotte e il blocco Cassa la serata: due giorni uno sopra l'altro.
+const giornataDi = (iso: string) => new Date(new Date(iso).getTime() - 6 * 3_600_000).toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+const giornataOggi = () => giornataDi(new Date().toISOString());
+function inizioGiornata(g: string): string {
+  // le 06:00 di Roma di quel giorno, in UTC, con l'ora legale o senza
+  for (const off of ["+02:00", "+01:00"]) {
+    const d = new Date(`${g}T06:00:00${off}`);
+    if (d.toLocaleTimeString("it-IT", { hour: "2-digit", timeZone: "Europe/Rome" }).startsWith("06")) return d.toISOString();
+  }
+  return new Date(`${g}T05:00:00Z`).toISOString();
 }
 
 function Riepilogo() {
@@ -34,12 +41,12 @@ function Riepilogo() {
       const { data, error } = await supabase
         .from("ordine")
         .select("*, ordine_riga(*)")
-        .or(`creato_il.gte.${inizioGiorno()},ora_consegna.gte.${inizioGiorno()}`)
+        .or(`creato_il.gte.${inizioGiornata(giornataOggi())},ora_consegna.gte.${inizioGiornata(giornataOggi())}`)
         .order("creato_il", { ascending: false });
       if (error) setErrore(error.message);
-      // «di oggi» = per la sera di oggi: un preordine di domani non conta (critico giro 4b);
-      // un ordine fatto oggi senza ora è di oggi.
-      else setOrdini(((data ?? []) as OrdineConRighe[]).filter((o) => giornoRoma(o.ora_consegna ?? o.creato_il) === giornoRoma(new Date().toISOString())));
+      // «di stasera» = per la serata in corso: un preordine di domani non conta (critico giro 4b);
+      // un ordine senza ora è della serata in cui è stato fatto.
+      else setOrdini(((data ?? []) as OrdineConRighe[]).filter((o) => giornataDi(o.ora_consegna ?? o.creato_il) === giornataOggi()));
     }
     carica();
     const canale = supabase
@@ -65,9 +72,7 @@ function Riepilogo() {
   const [riderDaSaldare, setRiderDaSaldare] = useState<{ nome: string; da_saldare: number }[]>([]);
   useEffect(() => {
     // la giornata lavorativa: dopo mezzanotte è ancora la sera prima (taglio alle 06:00 di Roma)
-    const roma = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Rome" }));
-    roma.setHours(roma.getHours() - 6);
-    const giornata = `${roma.getFullYear()}-${String(roma.getMonth() + 1).padStart(2, "0")}-${String(roma.getDate()).padStart(2, "0")}`;
+    const giornata = giornataOggi();
     supabaseBrowser().rpc("vendite_giornata_totali", { p_giornata: giornata }).then(({ data }) => {
       const d = data as { incassato?: Incassato } | null;
       setIncassato(d?.incassato ?? null);
@@ -83,7 +88,7 @@ function Riepilogo() {
 
   return (
     <main className="riepilogo">
-      <h1>Riepilogo di oggi</h1>
+      <h1>Riepilogo della serata</h1>
       {errore && <p className="r-errore">{errore}</p>}
 
       <div className="griglia r-cima">
