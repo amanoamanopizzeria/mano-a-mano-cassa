@@ -94,7 +94,9 @@ function Mappa() {
       ]);
       if (error) { setErrore(error.message); return; }
       const lista = (data ?? []) as RiderInMappa[];
-      const listaC = ((c.data ?? []) as unknown as ConsegnaInMappa[]);
+      // solo la serata di oggi: quelle di domani stanno nei preordini della cassa (critico giro 10)
+      const oggi = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+      const listaC = ((c.data ?? []) as unknown as ConsegnaInMappa[]).filter((k) => k.stato !== "da_assegnare" || !k.ordine?.ora_consegna || new Date(k.ordine.ora_consegna).toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }) === oggi);
       if (!vivo) return;
       setRiders(lista);
       setConsegne(listaC);

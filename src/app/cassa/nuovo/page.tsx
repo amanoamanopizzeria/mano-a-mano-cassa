@@ -313,7 +313,7 @@ function Cassa() {
     else setErroreCoupon(msg[r.esito] ?? `Coupon non applicabile (${r.esito}).`);
   }
 
-  function svuota() { setRighe([]); setSelezionata(null); setModoVarianti(false); setDigitato(""); setNote(""); setEsito(null); setErrore(null); setMenuAperto(null); setFigliaSel(null); setCoupon(null); setCodiceCoupon(""); setErroreCoupon(null); }
+  function svuota() { setRighe([]); setSelezionata(null); setModoVarianti(false); setDigitato(""); setNote(""); setNomeCliente(""); setEsito(null); setErrore(null); setMenuAperto(null); setFigliaSel(null); setCoupon(null); setCodiceCoupon(""); setErroreCoupon(null); }
 
   async function invia() {
     setErrore(null); setInvio(true);

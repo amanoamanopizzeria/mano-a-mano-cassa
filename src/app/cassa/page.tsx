@@ -33,6 +33,7 @@ type OrdineCassa = Ordine & {
   indirizzo?: { via: string; civico: string | null } | null;
   zona?: { nome: string } | null; costo_consegna?: number | null;
 };
+const PREORDINE_ATTIVO = (o: OrdineCassa) => !["annullato", "consegnato", "ritirato"].includes(o.stato);
 const euro = (n: number) => Number(n).toFixed(2).replace(".", ",") + " €";
 const oraDi = (s: string) => new Date(s).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
 /** «per le 20:30» se è oggi, «domani alle 20:30» o «sab 25 alle 20:30» se no (critico giro 4: la cucina faceva oggi il preordine di domani). */
@@ -172,11 +173,11 @@ function Cassa() {
       {ordini.length === 0 && !errore && (
         <p className="muto">Nessun ordine. Quando arriva, compare qui da solo.</p>
       )}
-      {ordini.some((o) => ePreordine(o, adesso) && o.stato !== "annullato") && (
+      {ordini.some((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o)) && (
         <details className="preordini" open>
-          <summary>Preordini <small>{ordini.filter((o) => ePreordine(o, adesso) && o.stato !== "annullato").length} · si stampano da soli {ATTESA_MIN} minuti prima</small></summary>
+          <summary>Preordini <small>{ordini.filter((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o)).length} · si stampano da soli {ATTESA_MIN} minuti prima</small></summary>
           <div className="griglia">
-            {ordini.filter((o) => ePreordine(o, adesso) && o.stato !== "annullato").sort((a, b) => (a.ora_consegna ?? "").localeCompare(b.ora_consegna ?? "")).map((o) => (
+            {ordini.filter((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o)).sort((a, b) => (a.ora_consegna ?? "").localeCompare(b.ora_consegna ?? "")).map((o) => (
               <article className="carta ordine-c preordine" key={o.id}>
                 <header>
                   <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
@@ -191,6 +192,7 @@ function Cassa() {
                 <div className="azioni">
                   <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
                   <button onClick={() => stampa(o.id)}>Stampa ora</button>
+                  <button onClick={() => cambiaStato(o.id, "annullato")} className={daConfermare === o.id ? "primario" : ""} style={{ marginLeft: "auto" }}>{daConfermare === o.id ? "Sicuro? Tocca ancora" : "Annullato"}</button>
                 </div>
               </article>
             ))}

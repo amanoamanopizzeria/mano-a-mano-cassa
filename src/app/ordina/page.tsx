@@ -203,8 +203,8 @@ export default function Ordina() {
       case "accettato":
         setEsito({ ok: true, titolo: `Grazie ${nome.trim().split(" ")[0]}!`, numero: r.numero, segui: r.segui, righe: carrello, totale: Number(r.totale ?? totale), consegna: costoConsegna,
           testo: tipo === "domicilio"
-            ? `Te lo portiamo ${etichettaGiorno(giorno)} alle ${fascia.ora}. Paghi ${pagamento === "pos" ? "col POS" : "in contanti"} al rider.`
-            : `Ti aspettiamo ${etichettaGiorno(giorno)} alle ${fascia.ora}. Paghi ${pagamento === "pos" ? "col POS" : "in contanti"} in pizzeria.` });
+            ? `Te lo portiamo ${etichettaGiorno(giorno)} alle ${fascia.ora} a ${indirizzo?.testo ?? "casa tua"}. Paghi ${pagamento === "pos" ? "col POS" : "in contanti"} al rider.`
+            : `Ti aspettiamo ${etichettaGiorno(giorno)} alle ${fascia.ora} in Via Novara 5/7. Paghi ${pagamento === "pos" ? "col POS" : "in contanti"} in pizzeria.` });
         setCarrello([]);
         try { localStorage.removeItem(BOZZA_LS); } catch {}
         vai("fatto");
@@ -283,7 +283,7 @@ export default function Ordina() {
             </div>
           )}
           {esito.segui && <><p>Quando il rider parte, lo segui sulla mappa.</p><a href={esito.segui} className="segui">Segui la consegna</a></>}
-          <button className="o-b-linea o-b-largo" onClick={() => { setEsito(null); setFascia(null); setPagamento(null); setNote(""); vai("tipo"); }}>Nuovo ordine</button>
+          <button className="o-b-linea o-b-largo" onClick={() => { setEsito(null); setFascia(null); setPagamento("contanti"); setNote(""); setGiorno(giornoRoma(new Date())); vai("tipo"); }}>Nuovo ordine</button>
         </div>
       </div>
     );
@@ -389,7 +389,7 @@ export default function Ordina() {
               </button>
             ))}
           </div>
-          <div className="o-sez">{tipo === "domicilio" ? "Orario di consegna" : "Orario di ritiro"}</div>
+          <div className="o-sez">{tipo === "domicilio" ? "Orario di consegna" : "Orario di ritiro"} · {etichettaGiorno(giorno)}</div>
           <p className="o-sotto">Il primo orario libero è già scelto: tocca un altro quarto d&apos;ora se preferisci. Quelli barrati sono pieni.</p>
           {fasce === null && <div className="o-nota">Guardo i posti liberi…</div>}
           {fasce !== null && fasce.length === 0 && (
@@ -404,7 +404,7 @@ export default function Ordina() {
           )}
           {errore && <div className="o-avviso">{errore}</div>}
         </div>
-        {barra(fascia ? (fasce && fasce.find((x) => !x.piena)?.inizio === fascia.inizio ? `Il prima possibile · ${fascia.ora}` : `Alle ${fascia.ora}`) : "Scegli un quarto d'ora", () => vai("dati"), !fascia)}
+        {barra(fascia ? (fasce && fasce.find((x) => !x.piena)?.inizio === fascia.inizio ? (giorno === giornoRoma(new Date()) ? `Il prima possibile · ${fascia.ora}` : `${etichettaGiorno(giorno)} alle ${fascia.ora}`) : `${giorno === giornoRoma(new Date()) ? "Oggi" : etichettaGiorno(giorno)} alle ${fascia.ora}`) : "Scegli un quarto d'ora", () => vai("dati"), !fascia)}
       </div>
     );
   }
@@ -428,7 +428,7 @@ export default function Ordina() {
             <button onClick={() => setPagamento("pos")} className={pagamento === "pos" ? "on" : ""}><span className="casella"><svg viewBox="0 0 64 64" aria-hidden><path d="M14 34 L27 47 L50 18" /></svg></span><IconaCarta /><span>Bancomat o carta {tipo === "domicilio" ? "alla consegna" : "alla cassa"}</span></button>
           </div>
           <div className="o-sez">Il tuo ordine</div>
-          <p className="o-sotto" style={{ textAlign: "left", marginBottom: 4 }}>{tipo === "domicilio" ? "Consegna" : "Ritiro"} {etichettaGiorno(giorno)} alle {fascia?.ora}</p>
+          <p className="o-sotto" style={{ textAlign: "left", marginBottom: 4 }}>{tipo === "domicilio" ? "Consegna" : "Ritiro"} <b>{etichettaGiorno(giorno)} alle {fascia?.ora}</b>{tipo === "domicilio" && indirizzo && <><br />a {indirizzo.testo} <button onClick={() => { setIndirizzo(null); vai("tipo"); }} style={{ color: "var(--vino)", fontWeight: 700, textDecoration: "underline", padding: 0 }}>cambia</button></>}{tipo === "ritiro" && <><br />in Via Novara 5/7, Roma</>}</p>
           <div className="o-riepilogo">
             {carrello.map((r) => (
               <div key={r.chiave} className="r"><b>{r.quantita}x</b><span>{r.descrizione}
