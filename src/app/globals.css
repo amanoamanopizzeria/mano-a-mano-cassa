@@ -645,3 +645,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
   .cassa-comanda .c-totale button { min-height: 44px !important; }
   .cassa-comanda .c-invia { margin: 4px 6px 6px !important; padding: 12px !important; min-height: 54px; }
 }
+/* /cassa a 390: «Ieri e prima (N)» al marchio e da 44, i tasti delle carte su due colonne uguali. */
+.lista-ordini .vecchi { min-height: 44px; padding: 0 16px; border: 1.5px solid var(--oro); color: var(--vino); font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
+.lista-ordini .vecchi:active { background: var(--oro-velo); }
+.ordine-c.preordine { border-left: 5px solid var(--oro); }
+@media (max-width: 600px) {
+  .lista-ordini .ordine-c { padding: 12px 14px 10px; }
+  .lista-ordini .ordine-c .azioni { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .lista-ordini .ordine-c .azioni a { display: flex; }
+  .lista-ordini .ordine-c .azioni button { width: 100%; padding: 0 8px; font-size: 14px; }
+  .lista-ordini .ordine-c .azioni button.primario, .lista-ordini .ordine-c .azioni button.azione:only-of-type { grid-column: 1 / -1; }
+  .lista-ordini .vecchi { width: 100%; }
+}
