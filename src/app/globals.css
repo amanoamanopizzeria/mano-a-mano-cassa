@@ -670,3 +670,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
   .capacita .c-conta { font-size: 15px; margin-top: 2px; }
   .capacita .c-conta b { font-size: 19px; }
 }
+
+/* ===== giro 16 del grafico (24/10/2026): le due pagine peggiori della classifica ===== */
+/* /cassa/fasce a 390: 37 pillole «0/35» da 40 px (lo stile in riga vinceva). Ora 44 ovunque, Oswald, col numero
+   leggibile; − e + restano 44 e in riga sotto la pillola come nel giro 7. */
+.fasce-pagina .f-cella-in > button:nth-child(2) { min-height: 44px !important; font-size: 18px !important; font-family: "Oswald", sans-serif; font-weight: 600; letter-spacing: .02em; border-radius: 12px !important; }
+.fasce-pagina .f-tabella thead th { font-size: 14px !important; }
