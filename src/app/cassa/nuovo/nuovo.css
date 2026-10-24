@@ -31,3 +31,13 @@
 @media (max-width: 600px) {
   .cassa-comanda.aperta .c-fondo { position: sticky; bottom: 0; background: #fff; z-index: 3; padding-top: 4px; box-shadow: 0 -6px 12px rgba(26,23,21,.08); }
 }
+
+/* grafico giro 23: il blocco in fondo a 390 col pannello aperto. Da quando INVIA sta dentro .c-fondo
+   (un blocco, non più la colonna flex della comanda) il tasto era largo quanto il testo, 169 px su 390:
+   torna a tutta larghezza come prima, col pannello aperto e chiuso. Il bordo del blocco si vede (filo oro e ombra più netta), così
+   la fila che scorre sotto sembra passare dietro, non tagliata a metà. Solo sotto i 600 px. */
+@media (max-width: 600px) {
+  .cassa-comanda .c-fondo { display: flex; flex-direction: column; }
+  .cassa-comanda .c-fondo .c-invia { align-self: stretch; }
+  .cassa-comanda.aperta .c-fondo { border-top: 1px solid var(--oro-chiaro); box-shadow: 0 -10px 18px -6px rgba(26,23,21,.18); padding-top: 6px; }
+}
