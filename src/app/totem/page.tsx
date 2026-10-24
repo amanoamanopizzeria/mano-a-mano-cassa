@@ -180,7 +180,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
   if (passo === "avvio") {
     return (
       <div className="schermo totem t-avvio" onPointerDown={inizia}>
-        <img className="foto" src="/brand/impasto-mani.jpg" alt="" />
+        <img className="foto" src="/brand/mani-farina.jpg" alt="" />
         <div className="velo" />
         <div className="t-sabbia t-sabbia-avvio">
           <img src="/brand/logo-amanoamano.png" alt="A Mano A Mano" />
