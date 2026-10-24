@@ -22,6 +22,7 @@ interface Comanda {
   pagamento: "contanti" | "pos" | null; costo_consegna: number; cliente: string | null; telefono: string | null;
   cliente_note?: string | null; paga_con?: number | null; pagato_online?: boolean; sconto?: number; codice_coupon?: string | null;
   modificato_il?: string | null; stampe?: number;
+  righe_prima?: { id: string; id_riga_padre: string | null; descrizione: string; quantita: number; variazioni: Variazione[] | null }[] | null;
   tavolo: number | null; indirizzo: { via: string; civico: string | null; cap: string | null; citta: string | null; zona: string | null } | null;
   righe: RigaComanda[];
 }
@@ -79,6 +80,19 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
     const g = reparti.find((x) => x.nome === r.reparto);
     if (g) g.righe.push(riga); else reparti.push({ nome: r.reparto, righe: [riga] });
   }
+  // Com'era la comanda alla prima stampa (mig. 0043): le righe nuove si segnano NUOVA, quelle tolte si
+  // elencano sotto, così la cucina sa cosa è cambiato senza rileggere tutto (critico giro 12).
+  const firma = (r: { descrizione: string; variazioni: Variazione[] | null }) =>
+    r.descrizione.trim().toUpperCase() + "|" + (r.variazioni ?? []).map((v) => `${v.tipo}:${v.nome}`).sort().join(",");
+  const prima = c.modificato_il && c.righe_prima ? c.righe_prima.filter((r) => !r.id_riga_padre) : null;
+  const contaPrima = new Map<string, number>();
+  for (const r of prima ?? []) contaPrima.set(firma(r), (contaPrima.get(firma(r)) ?? 0) + Number(r.quantita));
+  const contaAdesso = new Map<string, number>();
+  for (const r of c.righe.filter((r) => !r.id_riga_padre)) contaAdesso.set(firma(r), (contaAdesso.get(firma(r)) ?? 0) + Number(r.quantita));
+  const nuova = (r: RigaComanda) => !!prima && (contaAdesso.get(firma(r)) ?? 0) > (contaPrima.get(firma(r)) ?? 0);
+  const tolte = (prima ?? []).filter((r) => (contaAdesso.get(firma(r)) ?? 0) < (contaPrima.get(firma(r)) ?? 0))
+    .filter((r, i, a) => a.findIndex((x) => firma(x) === firma(r)) === i)
+    .map((r) => ({ descrizione: r.descrizione, quante: (contaPrima.get(firma(r)) ?? 0) - (contaAdesso.get(firma(r)) ?? 0) }));
   // i pezzi in cucina: le pizze vere, non la riga «Menu» che le contiene
   const pezzi = c.righe.filter((r) => r.destinazione === "cucina" && !(r.id && c.righe.some((x) => x.id_riga_padre === r.id))).reduce((s, r) => s + r.quantita, 0);
 
@@ -117,10 +131,10 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
           <section key={g.nome} className="reparto">
             <h2>{g.nome}</h2>
             {g.righe.map((r, i) => (
-              <div key={i} className="riga">
+              <div key={i} className={"riga" + (nuova(r) ? " nuova" : "")}>
                 <div className="q">{r.quantita}</div>
                 <div className="cosa">
-                  <div className="descr">{r.descrizione}</div>
+                  <div className="descr">{nuova(r) && <span className="segno">NUOVA </span>}{r.descrizione}</div>
                   {r.variazioni.filter((v) => v.tipo === "aggiunta").map((v, j) => <div key={"a" + j} className="con">CON {v.nome}</div>)}
                   {r.variazioni.filter((v) => v.tipo === "rimozione").map((v, j) => <div key={"s" + j} className="senza">SENZA {v.nome}</div>)}
                   {r.variazioni.filter((v) => v.tipo === "nota").map((v, j) => <div key={"n" + j} className="nota">{v.nome}</div>)}
@@ -139,6 +153,12 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
           </section>
         ))}
 
+        {tolte.length > 0 && (
+          <section className="tolte">
+            <h2>TOLTE</h2>
+            {tolte.map((t, i) => <div key={i} className="descr"><s>{t.quante} {t.descrizione}</s></div>)}
+          </section>
+        )}
         {c.note && <section className="note"><b>NOTE:</b> {c.note}</section>}
 
         <footer>

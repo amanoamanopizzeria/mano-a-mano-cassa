@@ -33,3 +33,10 @@
   .comanda-strumenti { display: none; }
   .comanda { border: 0; }
 }
+
+/* Modifica con ristampa (mig. 0043): la riga nuova ha il bordo nero a sinistra e la parola NUOVA; le tolte stanno barrate sotto. */
+.comanda .riga.nuova { border-left: 6px solid #000; padding-left: 6px; }
+.comanda .segno { background: #000; color: #fff; padding: 0 4px; font-size: 13px; vertical-align: middle; }
+.comanda .tolte { margin-top: 8px; border-top: 2px solid #000; padding-top: 4px; }
+.comanda .tolte h2 { font-size: 14px; margin: 0 0 2px; }
+.comanda .tolte .descr { font-size: 15px; }
