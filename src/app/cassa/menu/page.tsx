@@ -67,10 +67,11 @@ function Menu() {
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
       {gruppi.map((g) => (
-        <section key={g.id} style={{ marginTop: 16 }}>
+        <section key={g.id} className="m-gruppo">
           <h2>{g.nome}</h2>
+          <div className="m-categorie">
           {categorie.filter((c) => c.id_gruppo === g.id).map((c) => (
-            <div key={c.id} className="carta" style={{ marginBottom: 10 }}>
+            <div key={c.id} className="carta">
               <strong className="cat">{c.nome}</strong>
               {(() => {
                 const della = prodotti.filter((p) => p.id_categoria === c.id);
@@ -101,7 +102,7 @@ function Menu() {
                 );
               })()}
               {gruppiVar.some((g) => g.id_categoria === c.id) && (
-                <div className="muto" style={{ marginTop: 6 }}>
+                <div className="muto m-varianti">
                   Varianti: {gruppiVar.filter((g) => g.id_categoria === c.id).map((g) =>
                     `${g.gruppo} (${variazioni.filter((v) => v.gruppo === g.gruppo && (v.id_categoria === null || v.id_categoria === c.id)).length})`
                   ).join(" · ")}
@@ -109,6 +110,7 @@ function Menu() {
               )}
             </div>
           ))}
+          </div>
         </section>
       ))}
     </main>

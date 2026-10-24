@@ -92,10 +92,16 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 /* ===== la home: il logo e le schede-porta ===== */
 /* Home (giro 5): tasti grandi, «Nuovo ordine» enorme, porte 3×n senza scorrere a 1280×800. */
 .home { max-width: 1180px; }
-.home .testa { display: flex; align-items: center; gap: 16px; margin: 4px 0 16px; }
-.home .testa .logo { display: block; height: 48px; margin: 0; }
-.home .testa h1 { margin: 0; font-size: 24px; }
-.home .testa .muto { margin: 2px 0 0; font-size: 14px; }
+/* Giro 12 del grafico (24/10/2026): la testata dell'app (fascia sabbia col logo lineare, barra vino),
+   e le carte divise in «La sera», «I clienti», «Il giorno»: di sera si guarda la prima fila e basta. */
+.home .testa { margin: -16px -16px 16px; border-radius: 0; }
+.home .testa .sabbia { background: #c9a981; height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+.home .testa .logo { display: block; height: 30px; margin: 0; }
+.home .testa .bollino { height: 40px; width: 40px; border-radius: 999px; background: #fff; padding: 2px; }
+.home .testa .vino { background: var(--vino); color: #fff; min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px; }
+.home .testa h1 { margin: 0; font-size: 20px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+.home .testa span { font-size: 15px; opacity: .9; }
+.home .sez { grid-column: 1 / -1; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 15px; font-weight: 500; color: var(--muto); margin: 8px 0 -4px; padding-bottom: 4px; border-bottom: 1.5px solid var(--bordo); }
 .home .griglia { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .home .carta { text-decoration: none; display: flex; flex-direction: column; justify-content: center; min-height: 108px;
   padding: 14px 18px; border-bottom: 4px solid var(--oro); }
@@ -110,8 +116,12 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .home .carta.principale::after { content: "+"; order: -1; flex: none; width: 72px; height: 72px; border-radius: 50%; background: var(--oro);
   color: var(--vino-scuro); font: 600 48px/72px "Oswald", sans-serif; text-align: center; }
 @media (max-width: 720px) {
-  .home .testa .logo { height: 40px; }
-  .home .testa h1 { font-size: 20px; }
+  .home .testa { margin: -16px -16px 12px; }
+  .home .testa .sabbia { height: 46px; padding: 0 12px; }
+  .home .testa .logo { height: 26px; }
+  .home .testa .bollino { height: 34px; width: 34px; }
+  .home .testa h1 { font-size: 18px; }
+  .home .testa span { font-size: 14px; }
   .home .griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .home .carta { min-height: 80px; padding: 12px 10px; }
   .home .carta strong { font-size: 18px; letter-spacing: .01em; white-space: nowrap; }
@@ -195,9 +205,19 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .sala .tavolo.allarme { border-color: var(--vino); box-shadow: 0 0 0 2px var(--vino), var(--ombra); }
 
 /* Il menù in sola lettura: una riga per prodotto, il prezzo a destra in colonna. */
-.menu-lettura .cat { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 17px; font-weight: 600; color: var(--vino); }
+.menu-lettura .cat { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 20px; font-weight: 600; color: var(--vino); }
 .menu-lettura .prodotti { list-style: none; margin: 8px 0 0; padding: 0; }
-.menu-lettura .prodotti li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; padding: 5px 0; border-bottom: 1px dashed var(--bordo); font-size: 15px; }
+.menu-lettura .prodotti li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; padding: 8px 0; border-bottom: 1px dashed var(--bordo); font-size: 16px; line-height: 1.3; }
+/* Giro 12 del grafico (24/10/2026): leggibile sul tablet. Testo 16, prezzo 17 tabulare, categoria 20,
+   il gruppo come titolo con la riga sotto, e dai 900 px le categorie su due colonne (7,6 schermate → meno). */
+.menu-lettura h1 { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 28px; margin-bottom: 2px; }
+.menu-lettura .m-gruppo h2 { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .08em; font-size: 16px; font-weight: 500; color: var(--muto); border-bottom: 1.5px solid var(--bordo); padding-bottom: 4px; margin: 20px 0 10px; }
+.menu-lettura .m-categorie { display: grid; gap: 10px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .menu-lettura .m-categorie { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+.menu-lettura .m-categorie .carta { margin: 0; }
+.menu-lettura .prodotti li .prezzo { font-size: 17px; }
+.menu-lettura .prodotti li .muto { font-size: 14px; }
+.menu-lettura .m-varianti { margin-top: 8px; font-size: 14px; }
 .menu-lettura .prodotti li .nome { flex: 1; min-width: 160px; }
 .menu-lettura .prodotti li .prezzo { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .menu-lettura .prodotti li .muto { flex-basis: 100%; }
@@ -209,6 +229,19 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .accesso { padding-top: 40px; text-align: center; }
 .accesso .bollino { width: 120px; margin: 0 auto 12px; display: block; }
 .accesso .carta { text-align: left; }
+/* Giro 12 del grafico (24/10/2026): la veste dell'app, i campi da 52 e il tasto da 56. */
+.accesso.app { padding-top: 0; max-width: 440px; }
+.accesso.app .a-testa { margin: -16px -16px 20px; }
+.accesso.app .a-sabbia { background: #c9a981; height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+.accesso.app .a-sabbia img { height: 30px; }
+.accesso.app .a-sabbia .bollino { height: 40px; width: 40px; margin: 0; border-radius: 999px; background: #fff; padding: 2px; }
+.accesso.app .a-vino { background: var(--vino); color: #fff; min-height: 48px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px; }
+.accesso.app h1 { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 28px; margin: 8px 0 14px; }
+.accesso.app .carta { display: grid; gap: 10px; }
+.accesso.app input { width: 100%; min-width: 0; box-sizing: border-box; min-height: 52px; padding: 12px 14px; font-size: 17px; }
+.accesso.app .a-entra { min-height: 56px; padding: 0 16px; font-size: 18px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+.accesso.app .a-registra { min-height: 44px; background: transparent; border-color: transparent; color: var(--muto); font-size: 15px; text-decoration: underline; }
+.accesso.app .a-msg { margin-top: 12px; padding: 10px 14px; border-radius: 12px; background: var(--errore-chiaro); color: var(--errore); font-weight: 600; font-size: 15px; }
 
 /* ===== giro 3 del grafico (23/10/2026): i minori del critico 4b ===== */
 .mappa-link { display: inline-block; margin-left: 8px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--vino); color: var(--vino); font-weight: 600; font-size: 14px; text-decoration: none; white-space: nowrap; }
@@ -225,7 +258,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .sala .sala-griglia .azioni button { flex: 1; padding: 6px 8px; font-size: 14px; white-space: nowrap; }
 /* Il menù: gli spenti chiusi in un ramo sotto la categoria. */
 .menu-lettura details.spenti { margin-top: 8px; }
-.menu-lettura details.spenti summary { cursor: pointer; font-size: 14px; color: var(--muto); font-weight: 600; }
+.menu-lettura details.spenti summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; font-size: 15px; color: var(--muto); font-weight: 600; }
 .menu-lettura details.spenti summary::marker { color: var(--oro); }
 
 /* ===== giro 4 del grafico (23/10/2026) ===== */
