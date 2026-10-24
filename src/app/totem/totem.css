@@ -474,3 +474,5 @@
 .totem .t-scheda .fotobox-grande .t-manca { height: 100%; }
 .totem .t-scheda .descr { margin-top: 18px; }
 .totem .t-scheda .prezzo { align-self: center; margin-top: 10px; }
+/* in una colonna flex i blocchi con margin: auto si stringerebbero al contenuto: restano larghi come prima */
+.totem .t-scheda .corpo > *:not(.fotobox-grande):not(.prezzo) { width: 100%; box-sizing: border-box; }
