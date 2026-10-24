@@ -5,6 +5,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
+import type { Variazione } from "@/lib/types";
+
+// Il conto: le righe di tutti gli ordini aperti del tavolo, con le varianti, e il totale.
+interface RigaConto { id: string; descrizione: string; quantita: number; prezzo_unit: number; variazioni: Variazione[] | null; id_riga_padre: string | null }
+interface OrdineConto { id: string; numero_visibile: string | null; numero: number; totale: number; stato: string; sconto: number | null; ordine_riga: RigaConto[] }
+const euro = (n: number) => n.toFixed(2).replace(".", ",") + " €";
+const prezzoRiga = (r: RigaConto) => (Number(r.prezzo_unit) + (r.variazioni ?? []).reduce((a, v) => a + Number(v.prezzo ?? 0), 0)) * Number(r.quantita);
 
 interface Tavolo {
   id: string;
@@ -35,6 +42,8 @@ function Tavoli() {
   const [tavoli, setTavoli] = useState<Tavolo[]>([]);
   const [errore, setErrore] = useState<string | null>(null);
   const [, setOra] = useState(0);
+  const [conto, setConto] = useState<{ tavolo: Tavolo; ordini: OrdineConto[] } | null>(null);
+  const [chiudo, setChiudo] = useState(false);
 
   const carica = useCallback(async () => {
     const { data, error } = await supabaseBrowser()
@@ -71,9 +80,26 @@ function Tavoli() {
     if (error) setErrore(error.message);
   }
 
+  // «Conto»: si segna il tavolo «al conto» e si apre il conto vero (critico giro 10: «Conto senza conto»).
   async function passaAlConto(t: Tavolo) {
-    const { error } = await supabaseBrowser().from("tavolo").update({ stato: "conto" }).eq("id", t.id);
-    if (error) setErrore(error.message);
+    if (t.stato === "occupato") await supabaseBrowser().from("tavolo").update({ stato: "conto" }).eq("id", t.id);
+    const { data, error } = await supabaseBrowser().from("ordine")
+      .select("id, numero_visibile, numero, totale, stato, sconto, ordine_riga(id, descrizione, quantita, prezzo_unit, variazioni, id_riga_padre)")
+      .eq("id_tavolo", t.id).not("stato", "in", "(annullato,ritirato,consegnato)").order("creato_il");
+    if (error) { setErrore(error.message); return; }
+    setConto({ tavolo: t, ordini: (data ?? []) as unknown as OrdineConto[] });
+  }
+
+  // Si incassa (contanti o POS): gli ordini si chiudono e il tavolo si libera, in una transazione (mig. 0041).
+  async function incassa(pagamento: "contanti" | "pos") {
+    if (!conto) return;
+    setChiudo(true);
+    const { data, error } = await supabaseBrowser().rpc("tavolo_conto_chiudi", { p_id_tavolo: conto.tavolo.id, p_pagamento: pagamento });
+    setChiudo(false);
+    if (error) { setErrore(error.message); return; }
+    const r = data as { esito: string };
+    if (r.esito !== "chiuso") { setErrore("Conto non chiuso (" + r.esito + ")."); return; }
+    setConto(null);
   }
 
   const sezioni: { titolo: string; zona: "dentro" | "fuori" }[] = [
@@ -108,7 +134,7 @@ function Tavoli() {
                   )}
                   <div className="azioni" style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
                     {t.stato === "libero" && <button className="primario" onClick={() => apri(t)}>Apri</button>}
-                    {t.stato === "occupato" && <button onClick={() => passaAlConto(t)}>Conto</button>}
+                    {t.stato !== "libero" && <button className={t.stato === "conto" ? "primario" : ""} onClick={() => passaAlConto(t)}>Conto</button>}
                     {t.stato !== "libero" && <button onClick={() => chiudi(t)}>Libera</button>}
                   </div>
                 </div>
@@ -117,6 +143,47 @@ function Tavoli() {
           </div>
         </section>
       ))}
+
+      {conto && (() => {
+        const righe = conto.ordini.flatMap((o) => o.ordine_riga);
+        const padri = righe.filter((r) => !r.id_riga_padre);
+        const totale = conto.ordini.reduce((a, o) => a + Number(o.totale), 0);
+        return (
+          <div className="conto-velo" onClick={() => setConto(null)}>
+            <section className="carta conto" onClick={(e) => e.stopPropagation()}>
+              <header>
+                <strong className="num">Tavolo {conto.tavolo.numero}</strong>
+                <span className="muto">{conto.tavolo.coperti} coperti · {minutiDa(conto.tavolo.aperto_il)} min</span>
+                <button className="chiudi-conto" onClick={() => setConto(null)}>✕</button>
+              </header>
+              {padri.length === 0 ? (
+                <p className="muto">Nessun ordine aperto su questo tavolo.</p>
+              ) : (
+                <ul className="righe">
+                  {padri.map((r) => (
+                    <li key={r.id}>
+                      <span className="q">{Number(r.quantita)}×</span>
+                      <span className="d">
+                        {r.descrizione}
+                        {(r.variazioni ?? []).length > 0 && <small> {(r.variazioni ?? []).map((v) => (v.tipo === "rimozione" ? "senza " : "+ ") + v.nome).join(", ")}</small>}
+                        {righe.filter((f) => f.id_riga_padre === r.id).map((f) => <small key={f.id} className="figlia">· {f.descrizione}</small>)}
+                      </span>
+                      <span className="p">{euro(prezzoRiga(r))}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {conto.ordini.some((o) => Number(o.sconto) > 0) && <div className="muto" style={{ textAlign: "right" }}>sconti −{euro(conto.ordini.reduce((a, o) => a + Number(o.sconto ?? 0), 0))}</div>}
+              <div className="totale"><span>Totale</span><strong>{euro(totale)}</strong></div>
+              <div className="azioni-conto">
+                <button onClick={() => window.print()}>Stampa</button>
+                <button className="primario" disabled={chiudo || padri.length === 0} onClick={() => incassa("contanti")}>Contanti</button>
+                <button className="primario" disabled={chiudo || padri.length === 0} onClick={() => incassa("pos")}>POS</button>
+              </div>
+            </section>
+          </div>
+        );
+      })()}
     </main>
   );
 }

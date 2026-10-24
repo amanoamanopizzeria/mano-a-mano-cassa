@@ -337,3 +337,16 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
   .cassa-comanda .c-mod button { min-height: 40px !important; }
   .cassa-comanda .c-invia { position: sticky; bottom: 6px; }
 }
+
+/* Il conto del tavolo (24/10/2026): un foglio sopra la sala, con le righe e il totale; si stampa da solo. */
+.sala .conto-velo { position: fixed; inset: 0; background: rgba(26,23,21,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+.sala .conto { width: min(440px, 100%); max-height: 90vh; overflow: auto; padding: 16px; background: #fff; }
+.sala .conto header { display: flex; align-items: baseline; gap: 10px; border-bottom: 2px solid var(--vino); padding-bottom: 8px; margin-bottom: 8px; }
+.sala .conto .chiudi-conto { margin-left: auto; min-height: 36px; padding: 0 10px; }
+.sala .conto .righe { list-style: none; margin: 0; padding: 0; }
+.sala .conto .righe li { display: grid; grid-template-columns: 36px 1fr auto; gap: 6px; padding: 6px 0; border-bottom: 1px dashed var(--bordo); font-size: 15px; }
+.sala .conto .righe .q { font-weight: 700; } .sala .conto .righe .p { font-variant-numeric: tabular-nums; }
+.sala .conto .righe small { display: block; color: var(--muto); font-size: 13px; }
+.sala .conto .totale { display: flex; justify-content: space-between; align-items: baseline; margin-top: 10px; font-family: "Oswald", sans-serif; font-size: 22px; }
+.sala .conto .azioni-conto { display: flex; gap: 6px; margin-top: 12px; } .sala .conto .azioni-conto button { flex: 1; min-height: 48px; }
+@media print { .sala > *:not(.conto-velo) { display: none !important; } .sala .conto-velo { position: static; background: none; padding: 0; } .sala .conto { box-shadow: none; max-height: none; } .sala .conto .azioni-conto, .sala .conto .chiudi-conto { display: none; } }
