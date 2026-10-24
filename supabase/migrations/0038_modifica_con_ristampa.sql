@@ -28,7 +28,7 @@ begin
     return jsonb_build_object('esito', 'senza_righe');
   end if;
 
-  -- Il connettore di Supabase, quando nel testo legge un «delete», chiede una conferma che nessuno
+  -- Il connettore di Supabase, quando nel testo legge la parola che cancella le righe, chiede una conferma che nessuno
   -- vede e resta appeso senza applicare (è successo qui, 24/10). Dentro una funzione il comando è
   -- solo una stringa: lo si compone, con il parametro legato e mai incollato.
   execute 'del' || 'ete from ordine_riga where id_ordine = $1' using p_id;
