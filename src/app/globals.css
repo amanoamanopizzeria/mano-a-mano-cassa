@@ -533,3 +533,68 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .fasce-pagina .f-salvato button { flex: none; min-height: 44px; padding: 0 18px; background: #fff; color: var(--vino); border-color: transparent; font-size: 15px; font-weight: 700; }
 @keyframes f-sale { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @media (max-width: 620px) { .fasce-pagina .f-salvato { width: calc(100vw - 24px); justify-content: space-between; } }
+
+/* ===== giro 13 del grafico (24/10/2026) ===== */
+/* Il conto: ogni riga sotto il suo ordine (numero visibile), e a 390 sta in una schermata:
+   righe più strette, foglio dal basso con lo scorrimento solo sulle righe. */
+.sala .conto .righe .ordine-num { grid-template-columns: 0 1fr 0; gap: 0; padding: 10px 0 4px; border-bottom: none; }
+.sala .conto .righe .ordine-num .d { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .08em; font-size: 13px; color: var(--muto); display: flex; align-items: baseline; gap: 8px; }
+.sala .conto .righe .ordine-num .d b { font-size: 16px; color: var(--vino); letter-spacing: .04em; }
+.sala .conto .righe .ordine-num .d small { display: inline; margin: 0; font-size: 13px; color: var(--muto); font-family: "Figtree", sans-serif; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.sala .conto .righe .ordine-num + li { border-top: 1px solid var(--bordo); }
+@media (max-width: 620px) {
+  .sala .conto-velo { align-items: flex-end; padding: 0; }
+  .sala .conto { width: 100%; max-height: 92dvh; border-radius: 18px 18px 0 0; padding: 14px 16px calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+  .sala .conto .righe { overflow: auto; flex: 1 1 auto; min-height: 0; }
+  .sala .conto .righe li { padding: 6px 0; font-size: 15px; grid-template-columns: 40px 1fr auto; }
+  .sala .conto .righe .q { font-size: 18px; }
+  .sala .conto .righe .p { font-size: 16px; }
+  .sala .conto .righe small { font-size: 13px; }
+  .sala .conto header .num { font-size: 24px; }
+  .sala .conto .totale { margin-top: 8px; padding-top: 8px; }
+  .sala .conto .totale strong { font-size: 30px; }
+  .sala .conto .azioni-conto { margin-top: 10px; }
+  .sala .conto .azioni-conto button { min-height: 50px; }
+}
+/* La scheda del cliente: si legge in un colpo. Nome 32, via 20, le note fisse in evidenza. */
+.cliente-pagina .cl-chiamata { margin-bottom: 12px; border-color: var(--oro); background: var(--vino-chiaro); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cliente-pagina .cl-chiamata .tel { font-size: 32px; line-height: 1; }
+.cliente-pagina .cl-chiamata .chi { flex: 1; min-width: 160px; }
+.cliente-pagina .cl-chiamata .chi strong { font-size: 20px; display: block; }
+.cliente-pagina .cl-chiamata .chi strong span { color: var(--vino); font-variant-numeric: tabular-nums; }
+.cliente-pagina .cl-chiamata .chi .muto { font-size: 14px; }
+.cliente-pagina .cl-prendi { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 10px 20px; border-radius: 999px; background: var(--vino); color: #fff; text-decoration: none; font-weight: 700; font-size: 16px; white-space: nowrap; }
+.cliente-pagina .cl-chiudi { min-height: 44px; min-width: 44px; font-size: 18px; }
+.cliente-pagina .cl-scheda { margin-top: 12px; border-left: 6px solid var(--oro); }
+.cliente-pagina .cl-scheda.black { border-left-color: var(--errore); }
+.cliente-pagina .cl-intesta { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.cliente-pagina .cl-nome { font-size: 32px; line-height: 1.05; font-family: "Oswald", sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; overflow-wrap: anywhere; }
+.cliente-pagina .cl-tel { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; padding-top: 6px; }
+.cliente-pagina .cl-via { margin: 8px 0 0; font-size: 20px; font-weight: 700; line-height: 1.25; }
+.cliente-pagina .cl-via .muto { font-size: 15px; font-weight: 400; display: block; }
+.cliente-pagina .cl-scheda .cl-prendi { margin-top: 10px; }
+.cliente-pagina .cl-black { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: var(--errore); color: #fff; font-weight: 800; font-size: 17px; }
+.cliente-pagina .cl-punti { margin: 8px 0 0; font-size: 15px; }
+.cliente-pagina .cl-punti .stella { color: var(--oro); font-weight: 800; }
+.cliente-pagina .cl-tag { display: inline-block; margin: 4px 4px 0 0; padding: 2px 8px; border-radius: 999px; background: var(--oro-velo); border: 1px solid var(--oro-chiaro); font-size: 14px; }
+.cliente-pagina .cl-note { margin: 12px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--oro-velo); border: 1.5px solid var(--oro); font-size: 17px; line-height: 1.35; }
+.cliente-pagina .cl-note strong { display: block; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .08em; font-size: 13px; color: var(--muto); margin-bottom: 2px; }
+/* Il planner a 1024 sul PC di cassa: celle da leggere da lontano. */
+@media (min-width: 900px) {
+  .fasce-pagina .f-tabella td.f-col-ora { font-size: 22px !important; padding: 8px 14px !important; }
+  .fasce-pagina .f-tabella th { font-size: 15px !important; padding: 10px 8px !important; }
+  .fasce-pagina .f-cella-in > button:nth-child(2) { min-width: 96px; min-height: 44px; font-size: 20px; font-family: "Oswald", sans-serif; font-weight: 600; letter-spacing: .02em; }
+  .fasce-pagina .f-passo { width: 48px; height: 48px; font-size: 24px; }
+}
+.fasce-pagina .f-turno { min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px; }
+.fasce-pagina .f-salvato { background: #fff; color: var(--testo); border: 2px solid var(--vino); box-shadow: 0 10px 28px rgba(26,23,21,.22); padding: 6px 6px 6px 16px; }
+.fasce-pagina .f-salvato .ora { color: var(--vino); }
+.fasce-pagina .f-salvato .ok { color: var(--ok); }
+.fasce-pagina .f-salvato button { background: var(--vino); color: #fff; }
+/* La capacità: a 1024 quattro quarti d'ora per fila, numeri grandi nel conteggio. */
+.capacita .c-fascia .ora { font-size: 28px; }
+.capacita .c-conta { font-size: 16px; }
+.capacita .c-conta b { font-family: "Oswald", sans-serif; font-size: 22px; font-weight: 600; color: var(--vino); }
+.capacita .c-fascia.piena .ora { color: var(--vino); }
+@media (min-width: 900px) { .capacita .c-griglia { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; } }
+@media (max-width: 480px) { .capacita .c-griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); } .capacita .c-azioni button { font-size: 13px; padding: 0 6px; } }
