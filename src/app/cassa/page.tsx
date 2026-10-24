@@ -159,11 +159,14 @@ function Cassa() {
 
   return (
     <main className="lista-ordini">
-      <h1>Cassa — ordini</h1>
-      <label className="muto" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <input type="checkbox" checked={stampaAuto} onChange={(e) => cambiaStampaAuto(e.target.checked)} />
-        Stampa da sola la comanda di ogni ordine nuovo
-      </label>
+      <div className="lo-testa">
+        <h1>Cassa — ordini</h1>
+        <label className={"lo-auto" + (stampaAuto ? " on" : "")}>
+          <input type="checkbox" checked={stampaAuto} onChange={(e) => cambiaStampaAuto(e.target.checked)} />
+          <span className="spunta" aria-hidden>{stampaAuto ? "✓" : ""}</span>
+          Stampa da sola ogni comanda nuova
+        </label>
+      </div>
       {inStampa.map((id) => <iframe key={id} src={`/cassa/comanda/${id}?stampa=1`} title="comanda" style={{ position: "absolute", width: 0, height: 0, border: 0 }} />)}
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
       {ordini.length === 0 && !errore && (
@@ -174,18 +177,18 @@ function Cassa() {
           <summary>Preordini <small>{ordini.filter((o) => ePreordine(o, adesso) && o.stato !== "annullato").length} · si stampano da soli {ATTESA_MIN} minuti prima</small></summary>
           <div className="griglia">
             {ordini.filter((o) => ePreordine(o, adesso) && o.stato !== "annullato").sort((a, b) => (a.ora_consegna ?? "").localeCompare(b.ora_consegna ?? "")).map((o) => (
-              <article className="carta preordine" key={o.id}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <strong style={{ fontSize: 20, fontFamily: "Oswald, sans-serif", fontWeight: 600 }}>{o.numero_visibile ?? `#${o.numero}`}</strong>
-                  <b style={{ color: "var(--vino)" }}>{quando(o.ora_consegna!)}</b>
-                </div>
-                <div className="muto">{o.tipo} · {o.cliente?.nome ?? o.nome_cliente ?? ""}{o.indirizzo ? ` · ${o.indirizzo.via} ${o.indirizzo.civico ?? ""}` : ""} · {euro(o.totale)}</div>
-                <div className="muto" style={{ fontSize: 13 }}>
-                  {o.zona?.nome && <>{o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""} · </>}
-                  {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"} · stampa alle {oraDi(stampaAlle(o)!.toISOString())}{o.stampato_il ? " · già stampata" : ""}
-                </div>
-                {o.note && <div className="muto" style={{ fontSize: 13 }}>Note: {o.note}</div>}
-                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+              <article className="carta ordine-c preordine" key={o.id}>
+                <header>
+                  <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
+                  <b className="tempo attesa">{quando(o.ora_consegna!)}</b>
+                </header>
+                <div className="riga">{o.tipo} · {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"}{o.zona?.nome && <> · {o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""}</>}</div>
+                <div className="chi">{o.cliente?.nome ?? o.nome_cliente ?? ""}</div>
+                {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
+                {o.note && <div className="nota">Note: {o.note}</div>}
+                <div className="tot">{euro(o.totale)}</div>
+                <div className="riga">stampa alle {oraDi(stampaAlle(o)!.toISOString())}{o.stampato_il ? " · già stampata" : ""}</div>
+                <div className="azioni">
                   <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
                   <button onClick={() => stampa(o.id)}>Stampa ora</button>
                 </div>
@@ -196,39 +199,33 @@ function Cassa() {
       )}
       <div className="griglia">
         {ordini.filter((o) => !ePreordine(o, adesso) || o.stato === "annullato").map((o) => (
-          <article className="carta" key={o.id}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <strong style={{ fontSize: 20, fontFamily: "Oswald, sans-serif", fontWeight: 600 }}>{o.numero_visibile ?? `#${o.numero}`}</strong>
+          <article className={"carta ordine-c " + o.stato + ((() => { const c = (o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") ? contoAllaRovescia(o, adesso) : null; return c?.ritardo ? " ritardo" : ""; })())} key={o.id}>
+            <header>
+              <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
               <span className={`badge ${o.stato}`}>{ETICHETTE[o.stato]}</span>
-            </div>
-            <div className="muto">
-              {o.tipo} · {o.canale} ·{" "}
-              {new Date(o.creato_il).toLocaleTimeString("it-IT", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-              {o.ora_consegna && <> · <b style={quando(o.ora_consegna).startsWith("per") ? undefined : { color: "var(--vino)" }}>{quando(o.ora_consegna)}</b></>}
-              {(o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") && (() => { const c = contoAllaRovescia(o, adesso); return c ? <> · <b style={{ color: c.ritardo ? "var(--errore)" : "var(--ok)" }}>{c.testo}</b></> : null; })()}
+              {(o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") && (() => { const c = contoAllaRovescia(o, adesso); return c ? <b className={"tempo" + (c.ritardo ? " ritardo" : "")}>{c.testo}</b> : null; })()}
+            </header>
+            <div className="riga">
+              {o.tipo} · {o.canale} · {new Date(o.creato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+              {o.ora_consegna && <> · <b className={quando(o.ora_consegna).startsWith("per") ? "" : "vino"}>{quando(o.ora_consegna)}</b></>}
             </div>
             {(o.cliente?.nome || o.nome_cliente || o.cliente?.telefono || o.pagamento) && (
-              <div style={{ marginTop: 6, fontWeight: 600 }}>
-                {o.cliente?.nome ?? o.nome_cliente}{o.cliente?.telefono && <span className="muto" style={{ fontWeight: 400 }}> · {o.cliente.telefono}</span>}{o.pagamento && ` · ${o.pagamento === "pos" ? "POS" : "contanti"}`}{o.pagamento === "contanti" && o.paga_con && Number(o.paga_con) > Number(o.totale) && <span style={{ color: "var(--vino)" }}> · paga con {euro(Number(o.paga_con))}, resto {euro(Number(o.paga_con) - Number(o.totale))}</span>}
+              <div className="chi">
+                {o.cliente?.nome ?? o.nome_cliente}{o.cliente?.telefono && <span className="tel"> · {o.cliente.telefono}</span>}{o.pagamento && <span className="paga"> · {o.pagamento === "pos" ? "POS" : "contanti"}</span>}{o.pagamento === "contanti" && o.paga_con && Number(o.paga_con) > Number(o.totale) && <span className="resto"> · paga con {euro(Number(o.paga_con))}, resto {euro(Number(o.paga_con) - Number(o.totale))}</span>}
               </div>
             )}
-            {o.indirizzo && <div>{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
-            {o.cliente?.note && <div style={{ fontSize: 13, padding: "3px 8px", borderRadius: 8, background: "var(--oro-velo)", borderLeft: "3px solid var(--oro)" }}>⚠ {o.cliente.note}</div>}
-            <div style={{ margin: "8px 0", fontSize: 22, fontFamily: "Oswald, sans-serif", fontWeight: 600, color: "var(--testo)", fontVariantNumeric: "tabular-nums" }}>
-              {euro(o.totale)}
-            </div>
-            {o.note && <div className="muto">Note: {o.note}</div>}
-            <div className="muto">
+            {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
+            {o.cliente?.note && <div className="avviso-cliente">⚠ {o.cliente.note}</div>}
+            <div className="tot">{euro(o.totale)}</div>
+            {o.note && <div className="nota">Note: {o.note}</div>}
+            <div className="riga">
               {o.stampato_il
                 ? <>stampata {new Date(o.stampato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{(o.stampe ?? 0) > 1 && ` (×${o.stampe})`}</>
                 : o.stato === "ricevuto" || o.stato === "in_preparazione"
-                  ? <span style={{ fontWeight: 700 }}>non stampata</span>
+                  ? <b className="vino">non stampata</b>
                   : <span>non stampata</span>}
             </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+            <div className="azioni">
               <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
               <button onClick={() => stampa(o.id)} disabled={inStampa.includes(o.id)}>{inStampa.includes(o.id) ? "Stampo…" : "Stampa"}</button>
               {TRANSIZIONI_ORDINE[o.stato].map((s) => (

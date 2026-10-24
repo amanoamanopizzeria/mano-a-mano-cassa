@@ -231,3 +231,44 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .preordini summary { cursor: pointer; font-family: "Oswald", sans-serif; font-size: 20px; text-transform: uppercase; color: var(--vino); margin-bottom: 8px; }
 .preordini summary small { font-family: "Figtree", sans-serif; text-transform: none; font-size: 14px; color: var(--muto); margin-left: 8px; }
 .carta.preordine { border-left: 5px solid var(--oro); }
+
+/* ===== giro 7 del grafico (24/10/2026): le pagine dello staff, numeri grandi e tasti da dito ===== */
+/* /cassa: la lista degli ordini. Il numero e il tempo si leggono da un metro, lo stato è la pillola,
+   i tasti sono alti almeno 44 px, la scheda in ritardo ha il filo rosso a sinistra. */
+.lista-ordini .lo-testa { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.lista-ordini .lo-testa h1 { margin: 0; }
+.lo-auto { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--muto); cursor: pointer; padding: 8px 14px 8px 8px; border-radius: 999px; background: #fff; border: 1px solid var(--bordo); min-height: 44px; }
+.lo-auto input { position: absolute; opacity: 0; width: 0; height: 0; }
+.lo-auto .spunta { width: 26px; height: 26px; border-radius: 6px; background: var(--bordo); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; flex: none; }
+.lo-auto.on { color: var(--testo); border-color: var(--oro); }
+.lo-auto.on .spunta { background: var(--vino); }
+.lista-ordini .griglia { gap: 12px; }
+@media (min-width: 900px) { .lista-ordini .griglia { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.ordine-c { padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+.ordine-c header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 2px; }
+.ordine-c .num { font-family: "Oswald", sans-serif; font-size: 30px; line-height: 1; font-weight: 600; letter-spacing: .02em; }
+.ordine-c .badge { font-size: 13px; padding: 4px 11px; }
+.ordine-c .tempo { margin-left: auto; font-size: 17px; font-weight: 800; color: var(--ok); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ordine-c .tempo.ritardo { color: var(--errore); }
+.ordine-c .tempo.attesa { color: var(--vino); }
+.ordine-c.ritardo { border-left: 5px solid var(--errore); }
+.ordine-c.annullato { opacity: .6; }
+.ordine-c .riga { font-size: 14px; color: var(--muto); line-height: 1.35; }
+.ordine-c .riga b { color: var(--testo); font-weight: 700; }
+.ordine-c .riga b.vino { color: var(--vino); }
+.ordine-c .chi { font-size: 17px; font-weight: 700; margin-top: 4px; line-height: 1.3; }
+.ordine-c .chi .tel { font-weight: 500; color: var(--muto); font-variant-numeric: tabular-nums; }
+.ordine-c .chi .paga { font-weight: 700; }
+.ordine-c .chi .resto { color: var(--vino); font-weight: 700; display: block; font-size: 15px; }
+.ordine-c .via { font-size: 16px; line-height: 1.3; }
+.ordine-c .avviso-cliente { font-size: 14px; padding: 5px 10px; border-radius: 8px; background: var(--oro-velo); border-left: 3px solid var(--oro); font-weight: 600; }
+.ordine-c .tot { margin: 6px 0 2px; font-family: "Oswald", sans-serif; font-size: 28px; line-height: 1; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ordine-c .nota { font-size: 14px; color: var(--testo); background: var(--sfondo); border-radius: 8px; padding: 5px 10px; }
+.ordine-c .azioni { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.ordine-c .azioni a { flex: 1 1 auto; display: flex; }
+.ordine-c .azioni button { min-height: 44px; font-size: 15px; padding: 0 14px; flex: 1 1 auto; white-space: nowrap; }
+.ordine-c .azioni button.azione { flex: 2 1 auto; }
+.ordine-c .azioni button.primario { flex: 2 1 auto; background: var(--errore); border-color: var(--errore); }
+.ordine-c.preordine .num { font-size: 26px; }
+.preordini summary { font-size: 22px; min-height: 44px; display: flex; align-items: center; }
+.preordini summary small { font-size: 14px; }
