@@ -136,16 +136,21 @@ export default function Ordina() {
 
   const vai = useCallback((p: Passo) => { setErrore(null); setPasso(p); window.scrollTo({ top: 0 }); }, []);
 
-  function scegliTipo(t: Tipo) {
-    setTipo(t);
-    if (t === "ritiro") setIndirizzo(null);
-    if (t !== tipo) setFascia(null);
-  }
-  function avantiDalTipo() {
-    if (!tipo) return;
-    if (tipo === "domicilio" && !indirizzo?.zona) return;
+  // Un tocco solo (Edoardo, 24/10/2026: «se clicco ordina a domicilio o ritira, già apre il menu»):
+  // «Ritiro» va dritto al menù; «A casa» va al menù appena c'è un indirizzo in zona.
+  function alMenu() {
     setCategoria((c) => c ?? categorie[0]?.id ?? null);
     vai("menu");
+  }
+  function scegliTipo(t: Tipo) {
+    setTipo(t);
+    if (t !== tipo) setFascia(null);
+    if (t === "ritiro") { setIndirizzo(null); alMenu(); return; }
+    if (indirizzo?.zona) alMenu();
+  }
+  function scegliIndirizzo(i: Indirizzo) {
+    setIndirizzo(i);
+    if (i.zona) alMenu();
   }
   function aggiungi(p: ProdottoMenu, quantita: number, variazioni: Variazione[], figlie?: RigaFiglia[]) {
     const cat = categorie.find((c) => c.id === p.id_categoria);
@@ -275,14 +280,13 @@ export default function Ordina() {
                   <button className="cambia" onClick={() => setIndirizzo(null)}>Cambia</button>
                 </div>
               ) : (
-                <CercaIndirizzo scelto={setIndirizzo} />
+                <CercaIndirizzo scelto={scegliIndirizzo} />
               )}
               {indirizzo && !indirizzo.zona && <div className="o-avviso">Mi dispiace, a quell&apos;indirizzo non arriviamo. Puoi ordinare e ritirare in pizzeria.</div>}
             </div>
           )}
           {errore && <div className="o-avviso">{errore}</div>}
         </div>
-        {barra("Vai al menù", avantiDalTipo, !tipo || (tipo === "domicilio" && !indirizzo?.zona))}
       </div>
     );
   }
@@ -345,13 +349,13 @@ export default function Ordina() {
           {fasce !== null && fasce.length > 0 && (
             <div className="o-fasce">
               {fasce.map((f) => (
-                <button key={f.inizio} onClick={() => { if (!f.piena) { setFascia(f); setErrore(null); } }} className={(fascia?.inizio === f.inizio ? "on" : "") + (f.piena ? " piena" : "")} disabled={f.piena}>{f.ora}</button>
+                <button key={f.inizio} onClick={() => { if (!f.piena) { setFascia(f); setErrore(null); vai("dati"); } }} className={(fascia?.inizio === f.inizio ? "on" : "") + (f.piena ? " piena" : "")} disabled={f.piena}>{f.ora}</button>
               ))}
             </div>
           )}
           {errore && <div className="o-avviso">{errore}</div>}
         </div>
-        {barra(fascia ? `Alle ${fascia.ora} · avanti` : "Scegli un orario", () => vai("dati"), !fascia)}
+        {barra(fascia ? `Alle ${fascia.ora} · avanti` : "Scegli un quarto d'ora", () => vai("dati"), !fascia)}
       </div>
     );
   }
