@@ -159,14 +159,14 @@ function Cliente() {
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
       {chiamata && (
-        <div className="carta" style={{ marginBottom: 12, borderColor: "var(--oro)", background: "var(--vino-chiaro)", display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 32 }}>📞</span>
-          <div style={{ flex: 1 }}>
-            <strong style={{ fontSize: 20 }}>Sta chiamando <span style={{ color: "var(--vino)", fontVariantNumeric: "tabular-nums" }}>{chiamata.numero}</span></strong>
-            <div className="muto" style={{ fontSize: 14 }}>{new Date(chiamata.ricevuta_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{chiamata.origine === "prova" ? " · prova" : ""}</div>
+        <div className="carta cl-chiamata">
+          <span className="tel">📞</span>
+          <div className="chi">
+            <strong>Sta chiamando <span>{chiamata.numero}</span></strong>
+            <div className="muto">{new Date(chiamata.ricevuta_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{chiamata.origine === "prova" ? " · prova" : ""}</div>
           </div>
-          <a href={"/cassa/nuovo?telefono=" + encodeURIComponent(chiamata.numero)} className="primario" style={{ display: "inline-flex", alignItems: "center", minHeight: 48, padding: "10px 20px", borderRadius: 999, background: "var(--vino)", color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: 16, whiteSpace: "nowrap" }}>Prendi l&apos;ordine</a>
-          <button onClick={() => setChiamata(null)} aria-label="Chiudi" style={{ minHeight: 44, minWidth: 44, fontSize: 18 }}>✕</button>
+          <a href={"/cassa/nuovo?telefono=" + encodeURIComponent(chiamata.numero)} className="primario cl-prendi">Prendi l&apos;ordine</a>
+          <button onClick={() => setChiamata(null)} aria-label="Chiudi" className="cl-chiudi">✕</button>
         </div>
       )}
 
@@ -186,26 +186,29 @@ function Cliente() {
       {scheda?.esito === "numero_corto" && <p className="muto">Numero troppo corto.</p>}
 
       {scheda?.esito === "trovato" && scheda.cliente && (
-        <div className="carta" style={{ marginTop: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <strong style={{ fontSize: 26, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".02em" }}>{scheda.cliente.nome ?? "Senza nome"}</strong>
-            <span style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{scheda.cliente.telefono}</span>
+        <div className={"carta cl-scheda" + (scheda.cliente.black_list ? " black" : "")}>
+          <div className="cl-intesta">
+            <strong className="cl-nome">{scheda.cliente.nome ?? "Senza nome"}</strong>
+            <span className="cl-tel">{scheda.cliente.telefono}</span>
           </div>
-          {!chiamata && (
-            <a href={"/cassa/nuovo?telefono=" + encodeURIComponent(scheda.cliente.telefono)} className="primario" style={{ display: "inline-flex", alignItems: "center", minHeight: 48, marginTop: 10, padding: "10px 20px", borderRadius: 999, background: "var(--vino)", color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: 16 }}>Prendi l&apos;ordine</a>
+          {(scheda.indirizzi ?? []).length > 0 && (
+            <p className="cl-via">{scheda.indirizzi![0].via} {scheda.indirizzi![0].civico ?? ""}<span className="muto">{[scheda.indirizzi![0].cap, scheda.indirizzi![0].citta].filter(Boolean).join(" ")}</span></p>
           )}
-          {scheda.cliente.black_list && (
-            <p style={{ marginTop: 8, padding: 8, borderRadius: 8, background: "var(--errore)", color: "#fff", fontWeight: 800, fontSize: 17 }}>BLACK LIST: non si prende l&apos;ordine senza Edoardo.</p>
-          )}
-          <p className="muto" style={{ marginTop: 6, fontSize: 15 }}>
-            <span style={{ color: "var(--oro)", fontWeight: 800 }}>★ {scheda.cliente.punti ?? 0}</span> punti{Number(scheda.cliente.credito ?? 0) > 0 && <> · credito {Number(scheda.cliente.credito).toFixed(2).replace(".", ",")} €</>}{scheda.cliente.card && <> · card {scheda.cliente.card}</>}
-            {(scheda.cliente.tag ?? []).length > 0 && <span style={{ display: "block" }}>{(scheda.cliente.tag ?? []).map((t) => <span key={t} style={{ display: "inline-block", margin: "2px 4px 0 0", padding: "1px 6px", borderRadius: 999, background: "var(--oro-velo)", border: "1px solid var(--oro-chiaro)", fontSize: 14 }}>{t}</span>)}</span>}
-          </p>
           {scheda.cliente.note && (
-            <p style={{ marginTop: 8, padding: "8px 12px", borderRadius: 12, background: "var(--oro-velo)", borderLeft: "4px solid var(--oro)" }}>
-              <strong>Note fisse:</strong> {scheda.cliente.note}
+            <p className="cl-note">
+              <strong>Note fisse</strong>{scheda.cliente.note}
             </p>
           )}
+          {!chiamata && (
+            <a href={"/cassa/nuovo?telefono=" + encodeURIComponent(scheda.cliente.telefono)} className="primario cl-prendi">Prendi l&apos;ordine</a>
+          )}
+          {scheda.cliente.black_list && (
+            <p className="cl-black">BLACK LIST: non si prende l&apos;ordine senza Edoardo.</p>
+          )}
+          <p className="muto cl-punti">
+            <span className="stella">★ {scheda.cliente.punti ?? 0}</span> punti{Number(scheda.cliente.credito ?? 0) > 0 && <> · credito {Number(scheda.cliente.credito).toFixed(2).replace(".", ",")} €</>}{scheda.cliente.card && <> · card {scheda.cliente.card}</>}
+            {(scheda.cliente.tag ?? []).length > 0 && <span style={{ display: "block" }}>{(scheda.cliente.tag ?? []).map((t) => <span key={t} className="cl-tag">{t}</span>)}</span>}
+          </p>
           <h3>Indirizzi</h3>
           <ul className="c-lista">
             {(scheda.indirizzi ?? []).map((i) => (
