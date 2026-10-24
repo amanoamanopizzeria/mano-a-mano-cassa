@@ -476,3 +476,8 @@
 .totem .t-scheda .prezzo { align-self: center; margin-top: 10px; }
 /* in una colonna flex i blocchi con margin: auto si stringerebbero al contenuto: restano larghi come prima */
 .totem .t-scheda .corpo > *:not(.fotobox-grande):not(.prezzo) { width: 100%; box-sizing: border-box; }
+
+/* ===== grafico, giro 22 (24/10/2026): il carrello come l'app, righe col filo sottile
+   invece di schede con l'ombra; stessa foto, stessi tasti − e +. ===== */
+.totem .t-riga { background: transparent; box-shadow: none; border-radius: 0; margin-bottom: 0; padding: 20px 4px; border-bottom: 1px solid var(--filo, rgba(26,23,21,.14)); }
+.totem .t-riga:last-of-type { border-bottom: 0; }
