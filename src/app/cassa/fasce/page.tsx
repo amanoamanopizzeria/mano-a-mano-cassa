@@ -136,20 +136,20 @@ function Fasce() {
   const eOggi = giorno === oggi();
 
   return (
-    <main style={{ maxWidth: 980 }} className="fasce-pagina">
+    <main className="fasce-pagina">
       {ultimo && (
         <div role="status" className="f-salvato">
           <span className="testo"><b className="ora">{ultimo.ora.slice(0, 5)}</b> {ultimo.tipo === "produzione" ? "pizze" : "consegne"} {ultimo.prima} → <b>{ultimo.dopo}</b> <span className="ok">✓ salvato</span></span>
           <button onClick={annullaUltimo}>Annulla</button>
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <h1 style={{ margin: 0 }}>Planner — fasce</h1>
-        <input type="date" value={giorno} onChange={(e) => setGiorno(e.target.value)} style={{ minHeight: 44, fontSize: 16 }} />
+      <div className="f-testa">
+        <h1>Planner — fasce</h1>
+        <input type="date" value={giorno} onChange={(e) => setGiorno(e.target.value)} className="f-giorno" />
         <Link href="/cassa/capacita" className="f-turno">
           {turno ? <><b>{turno.pizzaioli}</b> pizzaioli · <b>{turno.rider}</b> rider</> : "Imposta pizzaioli e rider"} →
         </Link>
-        <span className="f-totale" style={{ marginLeft: "auto" }}>
+        <span className="f-totale">
           <b>{totali.ordini}</b> ordini · <b>{totali.pizze}</b> pizze · <b>{totali.consegne}</b> consegne · <b>{totali.euro.toFixed(2).replace(".", ",")} €</b>
         </span>
       </div>
@@ -160,7 +160,7 @@ function Fasce() {
         <span><span className="f-pill lente">🔍 2</span> gli ordini della fascia: tocca per vederli</span>
         <span className="muto">Con − e + cambi il massimo di quel quarto d&apos;ora; tocca il numero per scriverlo.</span>
       </div>
-      {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
+      {errore && <p className="f-errore">{errore}</p>}
 
       {prossime.length > 0 && (
         <div className="carta f-prossime">
@@ -176,14 +176,14 @@ function Fasce() {
         </div>
       )}
 
-      <div className="carta" style={{ marginTop: 12, padding: 0, overflow: "hidden" }}>
-        <table className="f-tabella" style={{ width: "100%", borderCollapse: "collapse", fontSize: 15 }}>
+      <div className="carta f-carta">
+        <table className="f-tabella">
           <thead>
-            <tr style={{ background: "var(--sfondo)", color: "var(--muto)", fontSize: 14, fontFamily: "Oswald, sans-serif", fontWeight: 500, textTransform: "uppercase", letterSpacing: ".1em" }}>
-              <th className="f-col-ora" style={{ textAlign: "left", padding: "8px 12px", width: 70 }}>Ora</th>
-              <th style={{ padding: 8 }}>Pizze</th>
-              <th style={{ padding: 8 }}>Consegne</th>
-              <th className="f-col-ord" style={{ padding: 8, width: 70 }}>Ordini</th>
+            <tr>
+              <th className="f-col-ora">Ora</th>
+              <th>Pizze</th>
+              <th>Consegne</th>
+              <th className="f-col-ord">Ordini</th>
             </tr>
           </thead>
           <tbody>
@@ -193,46 +193,46 @@ function Fasce() {
               const corrente = eOggi && ora <= adesso && adesso < aggiungi15(ora);
               const passata = eOggi && ora < adesso && !corrente;
               return [
-                <tr key={ora} style={{ borderTop: corrente ? "2px solid var(--vino)" : "1px solid var(--bordo)", opacity: passata ? .55 : 1, background: aperta === ora ? "var(--oro-velo)" : undefined }}>
-                  <td className="f-col-ora" style={{ padding: "6px 12px", fontWeight: 700, fontVariantNumeric: "tabular-nums", fontSize: 18, color: corrente ? "var(--vino)" : undefined }}>
-                    {corrente && <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 999, background: "var(--vino)", marginRight: 6 }} />}{ora}
+                <tr key={ora} className={"f-riga" + (corrente ? " corrente" : "") + (passata ? " passata" : "") + (aperta === ora ? " aperta" : "")}>
+                  <td className="f-col-ora">
+                    {corrente && <span className="f-punto" />}{ora}
                   </td>
-                  <td className="f-cella" style={{ textAlign: "center", padding: 4, whiteSpace: "nowrap" }}><span className="f-cella-in">
+                  <td className="f-cella"><span className="f-cella-in">
                     <button className="f-passo" onClick={() => passo(f, "produzione", -1)} aria-label={`Una pizza in meno alle ${ora}`}>−</button>
                     <Pillola n={f.pizze_occupate} max={f.pizze_max} bloccata={f.bloccata_produzione}
                       onClick={() => setModifica({ ora: f.ora, tipo: "produzione", massimo: f.pizze_max, reali: f.pizze_occupate })} />
                     <button className="f-passo" onClick={() => passo(f, "produzione", 1)} aria-label={`Una pizza in più alle ${ora}`}>+</button>
                   </span></td>
-                  <td className="f-cella" style={{ textAlign: "center", padding: 4, whiteSpace: "nowrap" }}><span className="f-cella-in">
+                  <td className="f-cella"><span className="f-cella-in">
                     <button className="f-passo" onClick={() => passo(f, "consegne", -1)} aria-label={`Una consegna in meno alle ${ora}`}>−</button>
                     <Pillola n={f.consegne_occupate} max={f.consegne_max} bloccata={f.bloccata_consegne}
                       onClick={() => setModifica({ ora: f.ora, tipo: "consegne", massimo: f.consegne_max, reali: f.consegne_occupate })} />
                     <button className="f-passo" onClick={() => passo(f, "consegne", 1)} aria-label={`Una consegna in più alle ${ora}`}>+</button>
                   </span></td>
-                  <td className="f-col-ord" style={{ textAlign: "center", padding: 4 }}>
+                  <td className="f-col-ord">
                     <button onClick={() => setAperta(aperta === ora ? null : ora)} title={lista.length === 1 ? "1 ordine in questa fascia: tocca per vederlo" : `${lista.length} ordini in questa fascia: tocca per vederli`}
-                      style={{ border: "none", background: lista.length ? "var(--vino-chiaro)" : "transparent", borderRadius: 999, padding: "6px 10px", minHeight: 44, minWidth: 44, fontSize: 16, fontWeight: 700, color: lista.length ? "var(--vino)" : "var(--muto)" }}>
+                      className={"f-lente" + (lista.length ? " con" : "")}>
                       🔍{lista.length > 0 && <> {lista.length}<span className="sr">{lista.length === 1 ? " ordine" : " ordini"}</span></>}
                     </button>
                   </td>
                 </tr>,
                 aperta === ora && (
-                  <tr key={ora + "-ordini"} style={{ background: "var(--oro-velo)" }}>
-                    <td colSpan={4} style={{ padding: "4px 12px 10px" }}>
+                  <tr key={ora + "-ordini"} className="f-ordini">
+                    <td colSpan={4}>
                       {lista.length === 0 && <span className="muto">Nessun ordine in questa fascia.</span>}
                       {lista.map((o) => (
-                        <div key={o.id} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", padding: "8px 0", fontSize: 15, borderTop: "1px solid var(--bordo)", opacity: o.stato === "annullato" ? .5 : 1 }}>
+                        <div key={o.id} className={"f-ordine" + (o.stato === "annullato" ? " annullato" : "")}>
                           <b>#{o.numero}</b>
                           <span className={"badge " + o.stato}>{STATO[o.stato] ?? o.stato}</span>
                           <span>{TIPO[o.tipo] ?? o.tipo}{o.ora_consegna ? " · " + oraRoma(o.ora_consegna) : ""}</span>
-                          <span style={{ flex: 1 }}>
+                          <span className="chi">
                             {o.cliente ?? (o.telefono ? "" : <span className="muto">senza cliente</span>)}
                             {o.telefono && <span className="muto"> {o.telefono}</span>}
                             {o.indirizzo && <span className="muto"> · {o.indirizzo}</span>}
                             {o.note && <span className="muto"> · {o.note}</span>}
                           </span>
                           <span className="muto">{o.pizze} {o.pizze === 1 ? "pizza" : "pizze"}</span>
-                          <b style={{ fontVariantNumeric: "tabular-nums", fontSize: 17 }}>{Number(o.totale).toFixed(2).replace(".", ",")} €</b>
+                          <b className="tot">{Number(o.totale).toFixed(2).replace(".", ",")} €</b>
                         </div>
                       ))}
                     </td>
@@ -245,29 +245,28 @@ function Fasce() {
       </div>
 
       {modifica && (
-        <div onClick={() => setModifica(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 }}>
-          <div className="carta" onClick={(e) => e.stopPropagation()} style={{ width: 320, maxWidth: "calc(100vw - 32px)", padding: 18, textAlign: "center" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 600, fontFamily: "Oswald, sans-serif", textTransform: "uppercase", letterSpacing: ".06em" }}>
+        <div onClick={() => setModifica(null)} className="f-velo">
+          <div className="carta f-modifica" onClick={(e) => e.stopPropagation()}>
+            <div className="testa">
               <span>{modifica.tipo === "produzione" ? "pizze" : "rider"}</span>
               <span>{modifica.ora.slice(0, 5)}</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, margin: "18px 0 8px" }}>
-              <button onClick={() => setModifica({ ...modifica, massimo: Math.max(0, modifica.massimo - 1) })} style={{ width: 52, height: 52, borderRadius: 999, fontSize: 26 }}>−</button>
-              <div style={{ fontSize: 44, fontWeight: 800, color: "var(--vino)", fontVariantNumeric: "tabular-nums", fontFamily: "Oswald, sans-serif" }}>
-                {modifica.reali}<span style={{ fontSize: 20, color: "var(--muto)" }}> / {modifica.massimo}</span>
+            <div className="conta">
+              <button onClick={() => setModifica({ ...modifica, massimo: Math.max(0, modifica.massimo - 1) })} className="passo">−</button>
+              <div className="cifra">
+                {modifica.reali}<span> / {modifica.massimo}</span>
               </div>
-              <button onClick={() => setModifica({ ...modifica, massimo: modifica.massimo + 1 })} style={{ width: 52, height: 52, borderRadius: 999, fontSize: 26 }}>+</button>
+              <button onClick={() => setModifica({ ...modifica, massimo: modifica.massimo + 1 })} className="passo">+</button>
             </div>
-            <div style={{ border: "1px solid var(--oro)", borderRadius: 10, padding: 6, color: "var(--muto)" }}>
+            <div className="massimo">
               {modifica.reali} reali · massimo <input type="number" min={0} value={modifica.massimo}
-                onChange={(e) => setModifica({ ...modifica, massimo: Math.max(0, Number(e.target.value) || 0) })}
-                style={{ width: 64, minHeight: 40, fontSize: 16, textAlign: "center" }} />
+                onChange={(e) => setModifica({ ...modifica, massimo: Math.max(0, Number(e.target.value) || 0) })} />
             </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "space-between" }}>
-              <button onClick={() => salvaMassimo(modifica, true)} className="muto" style={{ fontSize: 14, minHeight: 44 }}>Torna alla regola</button>
-              <span style={{ flex: 1 }} />
-              <button onClick={() => setModifica(null)} style={{ minHeight: 44, fontSize: 15 }}>Annulla</button>
-              <button onClick={() => salvaMassimo(modifica)} className="primario" style={{ minHeight: 44, fontSize: 16, padding: "0 22px" }}>OK</button>
+            <div className="azioni">
+              <button onClick={() => salvaMassimo(modifica, true)} className="muto regola">Torna alla regola</button>
+              <span className="spazio" />
+              <button onClick={() => setModifica(null)} className="annulla">Annulla</button>
+              <button onClick={() => salvaMassimo(modifica)} className="primario ok">OK</button>
             </div>
           </div>
         </div>
@@ -287,13 +286,8 @@ function Pillola({ n, max, bloccata, onClick }: { n: number; max: number; blocca
   const piena = bloccata || (max > 0 ? n >= max : n > 0);
   const quasi = !piena && max > 0 && n / max >= .7;
   const vuota = n === 0 && max === 0;
-  const sfondo = piena ? "var(--vino)" : quasi ? "var(--oro)" : "var(--bordo)";
-  const colore = piena ? "#fff" : "var(--testo)";
   return (
-    <button onClick={onClick} style={{
-      border: "none", borderRadius: 999, padding: "6px 12px", minWidth: 64, minHeight: 40, fontWeight: 700, fontSize: 16,
-      fontVariantNumeric: "tabular-nums", background: sfondo, color: colore, opacity: vuota ? .45 : 1,
-    }}>
+    <button onClick={onClick} className={"f-pillola" + (piena ? " piena" : quasi ? " quasi" : "") + (vuota ? " vuota" : "")}>
       {bloccata ? "✕ " : ""}{n}/{max}
     </button>
   );

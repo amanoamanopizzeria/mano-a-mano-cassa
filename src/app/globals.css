@@ -707,3 +707,52 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .riepilogo .r-ordine .r-num { font-size: 26px; font-family: "Oswald", sans-serif; font-weight: 600; font-variant-numeric: tabular-nums; }
 .riepilogo .r-ordine .r-dove { font-size: 15px; }
 .riepilogo .r-ordine .r-tot { margin-top: 4px; font-weight: 600; font-size: 24px; font-family: "Oswald", sans-serif; font-variant-numeric: tabular-nums; color: var(--vino); }
+/* /cassa/fasce: i 158 stili in riga alle classi, stessa resa (la pillola col posto occupato, le righe della
+   tabella, la fascia aperta, il modulo del massimo). */
+.fasce-pagina { max-width: 980px; }
+.fasce-pagina .f-testa { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fasce-pagina .f-testa h1 { margin: 0; }
+.fasce-pagina .f-giorno { min-height: 44px; font-size: 16px; }
+.fasce-pagina .f-totale { margin-left: auto; }
+.fasce-pagina .f-errore { color: var(--errore); font-weight: 700; }
+.fasce-pagina .f-carta { margin-top: 12px; padding: 0; overflow: hidden; }
+.fasce-pagina .f-tabella { width: 100%; border-collapse: collapse; font-size: 15px; }
+.fasce-pagina .f-tabella thead tr { background: var(--sfondo); color: var(--muto); font-size: 14px; font-family: "Oswald", sans-serif; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; }
+.fasce-pagina .f-tabella th { padding: 8px; }
+.fasce-pagina .f-tabella th.f-col-ora { text-align: left; padding: 8px 12px; width: 70px; }
+.fasce-pagina .f-tabella th.f-col-ord { width: 70px; }
+.fasce-pagina .f-riga { border-top: 1px solid var(--bordo); }
+.fasce-pagina .f-riga.corrente { border-top: 2px solid var(--vino); }
+.fasce-pagina .f-riga.passata { opacity: .55; }
+.fasce-pagina .f-riga.aperta { background: var(--oro-velo); }
+.fasce-pagina .f-riga td.f-col-ora { padding: 6px 12px; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 18px; }
+.fasce-pagina .f-riga.corrente td.f-col-ora { color: var(--vino); }
+.fasce-pagina .f-punto { display: inline-block; width: 8px; height: 8px; border-radius: 999px; background: var(--vino); margin-right: 6px; }
+.fasce-pagina td.f-cella { text-align: center; padding: 4px; white-space: nowrap; }
+.fasce-pagina td.f-col-ord { text-align: center; padding: 4px; }
+.fasce-pagina .f-lente { border: none; background: transparent; border-radius: 999px; padding: 6px 10px; min-height: 44px; min-width: 44px; font-size: 16px; font-weight: 700; color: var(--muto); }
+.fasce-pagina .f-lente.con { background: var(--vino-chiaro); color: var(--vino); }
+.fasce-pagina .f-pillola { border: none; border-radius: 999px; padding: 6px 12px; min-width: 64px; min-height: 44px; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; background: var(--bordo); color: var(--testo); }
+.fasce-pagina .f-pillola.quasi { background: var(--oro); }
+.fasce-pagina .f-pillola.piena { background: var(--vino); color: #fff; }
+.fasce-pagina .f-pillola.vuota { opacity: .45; }
+.fasce-pagina .f-ordini { background: var(--oro-velo); }
+.fasce-pagina .f-ordini td { padding: 4px 12px 10px; }
+.fasce-pagina .f-ordine { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 8px 0; font-size: 15px; border-top: 1px solid var(--bordo); }
+.fasce-pagina .f-ordine.annullato { opacity: .5; }
+.fasce-pagina .f-ordine .chi { flex: 1; }
+.fasce-pagina .f-ordine .tot { font-variant-numeric: tabular-nums; font-size: 17px; }
+.fasce-pagina .f-velo { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 10; }
+.fasce-pagina .f-modifica { width: 320px; max-width: calc(100vw - 32px); padding: 18px; text-align: center; }
+.fasce-pagina .f-modifica .testa { display: flex; justify-content: space-between; font-weight: 600; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+.fasce-pagina .f-modifica .conta { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 18px 0 8px; }
+.fasce-pagina .f-modifica .passo { width: 52px; height: 52px; border-radius: 999px; font-size: 26px; padding: 0; }
+.fasce-pagina .f-modifica .cifra { font-size: 44px; font-weight: 800; color: var(--vino); font-variant-numeric: tabular-nums; font-family: "Oswald", sans-serif; }
+.fasce-pagina .f-modifica .cifra span { font-size: 20px; color: var(--muto); }
+.fasce-pagina .f-modifica .massimo { border: 1px solid var(--oro); border-radius: 10px; padding: 6px; color: var(--muto); }
+.fasce-pagina .f-modifica .massimo input { width: 64px; min-height: 40px; font-size: 16px; text-align: center; }
+.fasce-pagina .f-modifica .azioni { display: flex; gap: 8px; margin-top: 14px; justify-content: space-between; }
+.fasce-pagina .f-modifica .azioni .spazio { flex: 1; }
+.fasce-pagina .f-modifica .regola { font-size: 14px; min-height: 44px; }
+.fasce-pagina .f-modifica .annulla { min-height: 44px; font-size: 15px; }
+.fasce-pagina .f-modifica .ok { min-height: 44px; font-size: 16px; padding: 0 22px; }
