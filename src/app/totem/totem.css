@@ -481,3 +481,10 @@
    invece di schede con l'ombra; stessa foto, stessi tasti − e +. ===== */
 .totem .t-riga { background: transparent; box-shadow: none; border-radius: 0; margin-bottom: 0; padding: 20px 4px; border-bottom: 1px solid var(--filo, rgba(26,23,21,.14)); }
 .totem .t-riga:last-of-type { border-bottom: 0; }
+
+/* giro 22 (critico giro 20): la regola del giro 21 «.totem .t-sabbia { position: relative }» vinceva su
+   quella della schermata d'avvio, e la fascia scendeva nella colonna fino a coprire il bollino
+   (1080×1920: fascia 976–1072, bollino 957–1317). Sull'avvio la fascia torna fissa in cima. */
+.totem.t-avvio .t-sabbia-avvio { position: absolute; top: 0; left: 0; right: 0; padding: 0 24px; }
+/* e sugli schermi bassi (1024×768) il bollino si stringe con l'altezza, così non finisce sotto la fascia */
+.totem.t-avvio .bollino { width: min(44vw, 360px, 36vh); }
