@@ -420,54 +420,50 @@ function Cassa() {
     else setErrore("Ordine non inserito (" + r.esito + "). Chiedi a Edoardo.");
   }
 
-  const scheda = { display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "var(--vino)", color: "#fff", borderBottom: "3px solid var(--oro)" } as const;
-  const ghost = { background: "rgba(255,255,255,.14)", color: "#fff", borderColor: "transparent", padding: "0 14px", minHeight: 44, fontSize: 15 } as const;
 
   return (
-    <div className="schermo cassa-nuovo" style={{ flexDirection: "row" }}>
-      {/* ===== Sinistra: categorie e tessere ===== */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <div className="barra" style={scheda}>
-          <Link href="/cassa" style={{ textDecoration: "none" }}><button style={ghost}>⌂</button></Link>
-          <Link href="/cassa/cliente" style={{ textDecoration: "none" }}><button style={ghost}>Dati cliente</button></Link>
-          <button style={{ ...ghost, background: "var(--oro)", color: "var(--testo)" }}>Ordine</button>
-          <Link href="/cassa/tavoli" style={{ textDecoration: "none" }}><button style={ghost}>Sala</button></Link>
-          <span style={{ marginLeft: 12, fontFamily: "Oswald, sans-serif", fontWeight: 600, letterSpacing: ".04em", fontSize: 16, textTransform: "uppercase", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+    <div className="schermo cassa-nuovo">
+      {/* ===== Sinistra: categorie e tessere (giro 18 del grafico: le classi stanno in globals.css,
+          il colore della categoria resta un dato e viaggia nella variabile --riga) ===== */}
+      <div className="cn-sinistra">
+        <div className="barra">
+          <Link href="/cassa"><button className="ghost">⌂</button></Link>
+          <Link href="/cassa/cliente"><button className="ghost">Dati cliente</button></Link>
+          <button className="ghost ordine">Ordine</button>
+          <Link href="/cassa/tavoli"><button className="ghost">Sala</button></Link>
+          <span className="titolo">
             {menuAperto ? `${menuAperto.p.nome} · ${menuAperto.gruppi[menuAperto.passo]?.etichetta ?? ""}` : modoVarianti ? `Varianti · ${figliaAttiva ? figliaAttiva.descrizione + " (" + (rigaSel?.descrizione ?? "") + ")" : rigaSel?.descrizione ?? ""}` : catCorrente?.nome}
           </span>
-          <span style={{ flex: 1 }} />
+          <span className="spazio" />
         </div>
 
         {menuAperto ? (
           <>
             {/* I passi del menu: «Scegli le 2 pizze» → «Scegli la bibita», come online (SCEGLI LA PIZZA 2–2). */}
-            <div style={{ display: "grid", gridTemplateColumns: `auto repeat(${menuAperto.gruppi.length}, 1fr) auto`, gap: 4, padding: 6, background: "var(--sfondo)" }}>
-              <button className="tessera" onClick={() => setMenuAperto(null)} style={{ minHeight: 44, padding: "6px 14px", fontSize: 14, color: "var(--vino)", borderColor: "var(--vino)" }}>← Annulla</button>
+            <div className="cn-passi">
+              <button className="tessera indietro" onClick={() => setMenuAperto(null)}>← Annulla</button>
               {menuAperto.gruppi.map((g, i) => (
-                <button key={g.id} className={"tessera" + (menuAperto.scelte[i].length === g.quantita ? " oro" : "")} onClick={() => setMenuAperto({ ...menuAperto, passo: i })} style={{
-                  minHeight: 44, padding: "6px 4px", fontSize: 14,
-                  outline: i === menuAperto.passo ? "3px solid var(--vino)" : "none", outlineOffset: -3, flexDirection: "column", gap: 2,
-                }}>
+                <button key={g.id} className={"tessera passo colonna stretta" + (menuAperto.scelte[i].length === g.quantita ? " oro" : "") + (i === menuAperto.passo ? " corrente" : "")} onClick={() => setMenuAperto({ ...menuAperto, passo: i })}>
                   <span>{g.etichetta}</span>
                   <span className="prezzo">{menuAperto.scelte[i].length === 0 ? `${menuAperto.scelte[i].length}/${g.quantita}` : menuAperto.scelte[i].map((x) => x.nome).join(", ")}</span>
                 </button>
               ))}
-              <button className="tessera primario" onClick={confermaMenu} disabled={!menuCompleto(menuAperto.gruppi, menuAperto.scelte)} style={{ minHeight: 44, padding: "6px 14px", fontSize: 14 }}>
+              <button className="tessera primario conferma" onClick={confermaMenu} disabled={!menuCompleto(menuAperto.gruppi, menuAperto.scelte)}>
                 In comanda · {euro(prezzoDi(menuAperto.p, listino) * quantitaDigitata)}
               </button>
             </div>
-            {menuAperto.p.incluso && <div style={{ padding: "4px 10px", fontSize: 14, color: "var(--muto)" }}>Inclusi nel menu: <b>{menuAperto.p.incluso}</b></div>}
-            <div className="scorri" style={{ flex: 1, padding: 6, display: "grid", gridTemplateColumns: "repeat(var(--colonne), 1fr)", gap: 4, alignContent: "start" }}>
+            {menuAperto.p.incluso && <div className="cn-inclusi">Inclusi nel menu: <b>{menuAperto.p.incluso}</b></div>}
+            <div className="scorri cn-griglia">
               {(() => {
                 const g = menuAperto.gruppi[menuAperto.passo];
                 const scelte = menuAperto.scelte[menuAperto.passo];
                 return prodotti.filter((p) => g.scelte.includes(p.id)).map((p) => {
                   const n = scelte.filter((x) => x.id === p.id).length;
                   return (
-                    <button key={p.id} className={"tessera" + (n > 0 ? " oro" : "")} onClick={() => toccaScelta(p)} style={{ boxShadow: n > 0 ? undefined : striscia(categorie.find((c) => c.id === p.id_categoria)?.colore), flexDirection: "column", gap: 4, position: "relative" }}>
+                    <button key={p.id} className={"tessera colonna" + (n > 0 ? " oro" : " riga")} onClick={() => toccaScelta(p)} style={n > 0 ? undefined : striscia(categorie.find((c) => c.id === p.id_categoria)?.colore)}>
                       <span>{p.nome}</span>
-                      {n > 0 && <span style={{ position: "absolute", top: 4, right: 6, fontSize: 13, fontWeight: 700, color: "var(--vino)" }}>{g.quantita > 1 ? `×${n}` : "✓"}</span>}
-                      {n > 0 && g.quantita > 1 && <span onClick={(e) => { e.stopPropagation(); togliScelta(menuAperto.passo, scelte.findIndex((x) => x.id === p.id)); }} className="prezzo" style={{ textDecoration: "underline" }}>togli una</span>}
+                      {n > 0 && <span className="conta">{g.quantita > 1 ? `×${n}` : "✓"}</span>}
+                      {n > 0 && g.quantita > 1 && <span onClick={(e) => { e.stopPropagation(); togliScelta(menuAperto.passo, scelte.findIndex((x) => x.id === p.id)); }} className="prezzo togli">togli una</span>}
                     </button>
                   );
                 });
@@ -476,16 +472,14 @@ function Cassa() {
           </>
         ) : !modoVarianti ? (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(var(--colonne), 1fr)", gap: 4, padding: 6, background: "var(--sfondo)" }}>
+            <div className="cn-categorie">
               {categorie.map((c) => (
-                <button key={c.id} className={"tessera" + (c.id === categoria ? " attiva" : "")} onClick={() => setCategoria(c.id)} style={{
-                  minHeight: 44, padding: "6px 4px", fontSize: 14, boxShadow: c.id === categoria ? undefined : striscia(c.colore),
-                }}>{c.nome}</button>
+                <button key={c.id} className={"tessera categoria" + (c.id === categoria ? " attiva" : " riga")} onClick={() => setCategoria(c.id)} style={c.id === categoria ? undefined : striscia(c.colore)}>{c.nome}</button>
               ))}
             </div>
-            <div className="scorri" style={{ flex: 1, padding: 6, display: "grid", gridTemplateColumns: "repeat(var(--colonne), 1fr)", gap: 4, alignContent: "start" }}>
+            <div className="scorri cn-griglia">
               {prodotti.filter((p) => p.id_categoria === categoria).map((p) => (
-                <button key={p.id} className="tessera" onClick={() => toccaProdotto(p)} style={{ boxShadow: striscia(catCorrente?.colore), flexDirection: "column", gap: 4 }}>
+                <button key={p.id} className="tessera colonna riga" onClick={() => toccaProdotto(p)} style={striscia(catCorrente?.colore)}>
                   <span>{p.nome}</span>
                   <span className="prezzo">{prezzoDi(p, listino) > 0 ? euro(prezzoDi(p, listino)) : "da impostare"}</span>
                 </button>
@@ -494,32 +488,30 @@ function Cassa() {
           </>
         ) : (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: `auto repeat(${Math.max(gruppi.length, 1)}, 1fr)`, gap: 4, padding: 6, background: "var(--sfondo)" }}>
-              <button className="tessera" onClick={() => setModoVarianti(false)} style={{ minHeight: 44, padding: "6px 14px", fontSize: 14, color: "var(--vino)", borderColor: "var(--vino)" }}>← Prodotti</button>
+            <div className="cn-passi">
+              <button className="tessera indietro" onClick={() => setModoVarianti(false)}>← Prodotti</button>
               {gruppi.map((g) => (
-                <button key={g} className={"tessera" + (g === gruppoAttivo ? " attiva" : "")} onClick={() => setGruppo(g)} style={{
-                  minHeight: 44, padding: "6px 4px", fontSize: 14,
-                }}>{g}</button>
+                <button key={g} className={"tessera passo" + (g === gruppoAttivo ? " attiva" : "")} onClick={() => setGruppo(g)}>{g}</button>
               ))}
             </div>
             {figlie.length > 0 && (
-              <div style={{ display: "flex", gap: 4, padding: "6px 6px 0", flexWrap: "wrap" }}>
-                <span className="muto" style={{ fontSize: 14, alignSelf: "center" }}>Su quale:</span>
+              <div className="cn-figlie">
+                <span className="muto eti">Su quale:</span>
                 {figlie.map((f, i) => ({ f, i })).filter(({ f }) => gruppiPerCategoria(gruppiCat, prodotti.find((p) => p.id === f.id_prodotto)?.id_categoria ?? null).length > 0).map(({ f, i }) => (
-                  <button key={i} onClick={() => setFigliaSel(i)} className={(figliaSel ?? 0) === i ? "primario" : ""} style={{ padding: "6px 12px", fontSize: 14, minHeight: 40 }}>
+                  <button key={i} onClick={() => setFigliaSel(i)} className={(figliaSel ?? 0) === i ? "primario" : ""}>
                     {f.quantita > 1 ? `${f.quantita}× ` : ""}{f.descrizione}{f.variazioni.length > 0 ? ` (${f.variazioni.map((v) => v.nome).join(", ")})` : ""}
                   </button>
                 ))}
               </div>
             )}
-            <div className="scorri" style={{ flex: 1, padding: 6, display: "grid", gridTemplateColumns: "repeat(var(--colonne), 1fr)", gap: 4, alignContent: "start" }}>
-              <button className={"tessera" + (segno === "con" ? " attiva" : "")} onClick={() => setSegno("con")} style={{ fontWeight: 600, boxShadow: segno === "con" ? undefined : striscia("#c9973f") }}>CON</button>
-              <button className={"tessera" + (segno === "senza" ? " attiva" : "")} onClick={() => setSegno("senza")} style={{ fontWeight: 600, boxShadow: segno === "senza" ? undefined : striscia("#c9973f") }}>SENZA</button>
+            <div className="scorri cn-griglia">
+              <button className={"tessera segno" + (segno === "con" ? " attiva" : " riga")} onClick={() => setSegno("con")} style={segno === "con" ? undefined : striscia("#c9973f")}>CON</button>
+              <button className={"tessera segno" + (segno === "senza" ? " attiva" : " riga")} onClick={() => setSegno("senza")} style={segno === "senza" ? undefined : striscia("#c9973f")}>SENZA</button>
               {variantiSel.filter((v) => v.gruppo === gruppoAttivo).map((v) => {
                 const nome = segno === "con" ? v.nome : "senza " + v.nome;
                 const on = (figliaAttiva ? figliaAttiva.variazioni : rigaSel?.variazioni ?? []).some((x) => x.nome === nome);
                 return (
-                  <button key={v.id} className={"tessera" + (on ? " oro" : "")} onClick={() => toccaVariante(v)} style={{ textTransform: "none", flexDirection: "column", gap: 2 }}>
+                  <button key={v.id} className={"tessera variante colonna stretta" + (on ? " oro" : "")} onClick={() => toccaVariante(v)}>
                     <span>{v.nome}</span>
                     {segno === "con" && v.prezzo > 0 && <span className="prezzo">+ {euro(v.prezzo)}</span>}
                   </button>
@@ -729,7 +721,9 @@ function oggiISO() { return isoLocale(new Date()); }
 
 /** Il colore della categoria (quello di Velocissimo) resta come striscia sotto la tessera, non più come fondo:
  * la tessera è bianca col marchio, il colore aiuta ancora l'occhio a ritrovare il reparto. */
+/** Il colore della categoria (dal database) per la striscia in fondo alla tessera: è un dato, non uno
+ *  stile, e viaggia nella variabile --riga che `.tessera.riga` disegna. */
 function striscia(hex: string | null | undefined) {
   const c = hex && /^#[0-9a-f]{6}$/i.test(hex) ? hex : "#e8d2a6";
-  return `inset 0 -4px 0 ${c}, 0 1px 2px rgba(26,23,21,.06)`;
+  return { "--riga": c } as React.CSSProperties;
 }

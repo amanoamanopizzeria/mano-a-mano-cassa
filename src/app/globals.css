@@ -772,3 +772,32 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .lista-ordini .lo-stampa { position: absolute; width: 0; height: 0; border: 0; }
 .lista-ordini .lo-errore { color: var(--accento); }
 .lista-ordini .ordine-c button.annulla { margin-left: auto; }
+/* /cassa/nuovo, la parte sinistra (barra, categorie, tessere): gli stili in riga alle classi, stesse
+   misure. La comanda (destra) non si tocca. */
+.cassa-nuovo { flex-direction: row; }
+.cassa-nuovo .cn-sinistra { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.cassa-nuovo .barra { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--vino); color: #fff; border-bottom: 3px solid var(--oro); }
+.cassa-nuovo .barra a { text-decoration: none; }
+.cassa-nuovo .barra .ghost { background: rgba(255,255,255,.14); color: #fff; border-color: transparent; padding: 0 14px; min-height: 44px; font-size: 15px; }
+.cassa-nuovo .barra .ghost.ordine { background: var(--oro); color: var(--testo); }
+.cassa-nuovo .barra .titolo { margin-left: 12px; font-family: "Oswald", sans-serif; font-weight: 600; letter-spacing: .04em; font-size: 16px; text-transform: uppercase; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cassa-nuovo .barra .spazio { flex: 1; }
+.cassa-nuovo .cn-passi { display: flex; gap: 4px; padding: 6px; background: var(--sfondo); }
+.cassa-nuovo .cn-passi .tessera.passo { flex: 1 1 0; }
+.cassa-nuovo .cn-categorie { display: grid; grid-template-columns: repeat(var(--colonne), 1fr); gap: 4px; padding: 6px; background: var(--sfondo); }
+.cassa-nuovo .cn-griglia { flex: 1; padding: 6px; display: grid; grid-template-columns: repeat(var(--colonne), 1fr); gap: 4px; align-content: start; }
+.cassa-nuovo .cn-inclusi { padding: 4px 10px; font-size: 14px; color: var(--muto); }
+.cassa-nuovo .cn-figlie { display: flex; gap: 4px; padding: 6px 6px 0; flex-wrap: wrap; }
+.cassa-nuovo .cn-figlie .eti { font-size: 14px; align-self: center; }
+.cassa-nuovo .cn-figlie button { padding: 6px 12px; font-size: 14px; min-height: 44px; }
+.cassa-nuovo .tessera.riga { box-shadow: inset 0 -4px 0 var(--riga, #e8d2a6), 0 1px 2px rgba(26,23,21,.06); }
+.cassa-nuovo .tessera.colonna { flex-direction: column; gap: 4px; position: relative; }
+.cassa-nuovo .tessera.colonna.stretta { gap: 2px; }
+.cassa-nuovo .tessera.categoria, .cassa-nuovo .tessera.passo { min-height: 44px; padding: 6px 4px; font-size: 14px; }
+.cassa-nuovo .tessera.indietro, .cassa-nuovo .tessera.conferma { min-height: 44px; padding: 6px 14px; font-size: 14px; }
+.cassa-nuovo .tessera.indietro { color: var(--vino); border-color: var(--vino); }
+.cassa-nuovo .tessera.passo.corrente { outline: 3px solid var(--vino); outline-offset: -3px; }
+.cassa-nuovo .tessera.segno { font-weight: 600; }
+.cassa-nuovo .tessera.variante { text-transform: none; }
+.cassa-nuovo .tessera .conta { position: absolute; top: 4px; right: 6px; font-size: 13px; font-weight: 700; color: var(--vino); }
+.cassa-nuovo .tessera .togli { text-decoration: underline; }
