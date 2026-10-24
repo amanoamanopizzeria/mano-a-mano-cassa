@@ -34,8 +34,11 @@ export default function Login() {
   }
 
   return (
-    <main className="accesso" style={{ maxWidth: 400 }}>
-      <img src="/brand/bollino.png" alt="A Mano a Mano" className="bollino" />
+    <main className="accesso app">
+      <div className="a-testa">
+        <div className="a-sabbia"><img src="/brand/logo-amanoamano.png" alt="A Mano A Mano Pugliese" /><img src="/brand/bollino.png" alt="" className="bollino" /></div>
+        <div className="a-vino">Mano a Mano Cassa</div>
+      </div>
       <h1>Accedi</h1>
       <form
         onSubmit={(e) => {
@@ -43,7 +46,6 @@ export default function Login() {
           accedi(false);
         }}
         className="carta"
-        style={{ display: "grid", gap: 10 }}
       >
         <input
           type="email"
@@ -52,7 +54,6 @@ export default function Login() {
           onChange={(e) => setEmail(e.target.value)}
           required
           autoComplete="username"
-          style={{ padding: 12, fontSize: 16 }}
         />
         <input
           type="password"
@@ -62,16 +63,15 @@ export default function Login() {
           required
           minLength={6}
           autoComplete="current-password"
-          style={{ padding: 12, fontSize: 16 }}
         />
-        <button className="primario" type="submit" disabled={inCorso} style={{ padding: 14, fontSize: 17, fontFamily: "Oswald, sans-serif", textTransform: "uppercase", letterSpacing: ".06em" }}>
+        <button className="primario a-entra" type="submit" disabled={inCorso}>
           Accedi
         </button>
-        <button type="button" disabled={inCorso} onClick={() => accedi(true)}>
+        <button type="button" className="a-registra" disabled={inCorso} onClick={() => accedi(true)}>
           Registrati
         </button>
       </form>
-      {messaggio && <p style={{ color: "var(--accento)" }}>{messaggio}</p>}
+      {messaggio && <p className="a-msg">{messaggio}</p>}
     </main>
   );
 }
