@@ -160,7 +160,9 @@ function Tavoli() {
                 <p className="muto">Nessun ordine aperto su questo tavolo.</p>
               ) : (
                 <ul className="righe">
-                  {padri.map((r) => (
+                  {conto.ordini.map((o) => [
+                    <li key={o.id + "-num"} className="ordine-num" aria-label="Ordine"><span className="q" /><span className="d">Ordine <b>{o.numero_visibile ?? `#${o.numero}`}</b>{conto.ordini.length > 1 && <small>{euro(Number(o.totale))}</small>}</span><span className="p" /></li>,
+                    ...o.ordine_riga.filter((r) => !r.id_riga_padre).map((r) => (
                     <li key={r.id}>
                       <span className="q">{Number(r.quantita)}×</span>
                       <span className="d">
@@ -170,7 +172,8 @@ function Tavoli() {
                       </span>
                       <span className="p">{euro(prezzoRiga(r))}</span>
                     </li>
-                  ))}
+                    )),
+                  ])}
                 </ul>
               )}
               {conto.ordini.some((o) => Number(o.sconto) > 0) && <div className="muto" style={{ textAlign: "right" }}>sconti −{euro(conto.ordini.reduce((a, o) => a + Number(o.sconto ?? 0), 0))}</div>}
