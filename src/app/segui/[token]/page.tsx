@@ -98,12 +98,13 @@ export default function Segui({ params }: { params: Promise<{ token: string }> }
     <div className="sg">
       <style>{CSS}</style>
       <header className="sg-testa">
-        <img src="/brand/bollino.png" alt="A Mano a Mano" />
-        <div>
-          <div className="sg-lapide">A Mano a Mano · Pugliese</div>
-          <h1>{s?.numero ? `Ordine ${s.numero}` : "Il tuo ordine"}</h1>
+        <div className="sg-sabbia">
+          <img src="/brand/logo-amanoamano.png" alt="A Mano A Mano Pugliese" />
+          <img src="/brand/bollino.png" alt="" className="bollino" />
         </div>
+        <div className="sg-vino"><h1>{s?.numero ? `Ordine ${s.numero}` : "Il tuo ordine"}</h1></div>
       </header>
+      <div className="sg-corpo">
 
       {errore && <p className="sg-errore">{errore}</p>}
 
@@ -111,7 +112,8 @@ export default function Segui({ params }: { params: Promise<{ token: string }> }
 
       {s && s.stato !== "annullata" && (
         <>
-          <div className="sg-grande">
+          <div className={"sg-grande " + s.stato}>
+            {s.stato === "ritirata" && <span className="sg-icona" aria-hidden>🛵</span>}
             {PASSI[indice].t}
             {s.stato === "ritirata" && s.rider && <span> con {s.rider}</span>}
           </div>
@@ -134,31 +136,44 @@ export default function Segui({ params }: { params: Promise<{ token: string }> }
           </ol>
         </>
       )}
+      </div>
     </div>
   );
 }
 
+/* Giro 11 del grafico (24/10/2026): la veste dell'app come /ordina (docs/grafico/APP_RIFERIMENTO.md):
+   fascia sabbia col logo lineare e il bollino, barra vino col titolo, fondo bianco, lo stato grande in vino,
+   la mappa, i passi a righe col filo, il pulsante sabbia per Google Maps. Niente sotto i 13 px. */
 const CSS = `
-.sg { min-height: 100dvh; background: #fbf7f0; color: #1a1715; font-family: Figtree, system-ui, sans-serif; padding: 16px; max-width: 560px; margin: 0 auto; }
-.sg-testa { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 2px solid #c9973f; }
-.sg-testa img { width: 56px; height: 56px; }
-.sg-lapide { font-family: Oswald, sans-serif; text-transform: uppercase; letter-spacing: .18em; font-size: 13px; color: #c9973f; }
-.sg h1 { margin: 2px 0 0; font-family: Oswald, sans-serif; text-transform: uppercase; font-size: 26px; color: #8a1538; }
-.sg-grande { margin-top: 18px; font-family: Oswald, sans-serif; font-size: 28px; line-height: 1.15; text-transform: uppercase; color: #8a1538; }
-.sg-sotto { margin-top: 4px; font-size: 17px; color: #6f6a63; }
-.sg-mappa { margin-top: 14px; height: 52vh; min-height: 300px; border-radius: 18px; overflow: hidden; box-shadow: 0 6px 24px rgba(26,23,21,.12); }
+.sg { --vino: #8d0536; --sabbia: #c9a981; --sabbia-scura: #a88a64; --sabbia-chiara: #f1e8da; --nero: #1a1715; --testo2: #4b4640; --linea: #e6e6e6; --tassello: #ededed; --ok: #2e7d4f;
+  min-height: 100dvh; background: #fff; color: var(--nero); font-family: Figtree, system-ui, sans-serif; margin: 0; }
+.sg-testa { position: sticky; top: 0; z-index: 5; }
+.sg-sabbia { background: var(--sabbia); height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; }
+.sg-sabbia img { height: 26px; }
+.sg-sabbia .bollino { height: 34px; width: 34px; border-radius: 999px; background: #fff; padding: 2px; }
+.sg-vino { background: var(--vino); color: #fff; min-height: 44px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
+.sg h1 { margin: 0; font-size: 17px; font-weight: 700; }
+.sg-corpo { padding: 14px 16px 28px; max-width: 760px; margin: 0 auto; box-sizing: border-box; }
+.sg-grande { margin-top: 4px; font-family: Oswald, sans-serif; font-weight: 600; font-size: 30px; line-height: 1.1; text-transform: uppercase; letter-spacing: .02em; color: var(--vino); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sg-grande.consegnata { color: var(--ok); }
+.sg-grande .sg-icona { font-family: system-ui, sans-serif; font-size: 34px; line-height: 1; }
+.sg-sotto { margin-top: 6px; font-size: 16px; color: var(--testo2); font-variant-numeric: tabular-nums; }
+.sg-mappa { margin: 14px -16px 0; height: 46vh; min-height: 280px; overflow: hidden; border-top: 1px solid var(--linea); border-bottom: 1px solid var(--linea); }
+@media (min-width: 760px) { .sg-mappa { margin: 14px 0 0; border-radius: 12px; border: 1px solid var(--linea); } }
 .sg-pin { display: flex; align-items: center; justify-content: center; border-radius: 999px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.25); font-size: 22px; width: 100%; height: 100%; }
-.sg-pizzeria { border: 3px solid #c9973f; }
+.sg-pizzeria { border: 3px solid var(--sabbia); }
 /* Leaflet mette width:auto sulle immagini dei marker e vinceva: il bollino copriva mezza mappa (critico giro 7) */
 .leaflet-marker-pane .sg-pizzeria img { width: 32px !important; height: 32px !important; max-width: none; }
-.sg-rider { background: #8a1538; border: 3px solid #fff; font-size: 26px; }
-.sg-casa { border: 3px solid #8a1538; }
-.sg-google { display: block; margin-top: 12px; text-align: center; padding: 14px; border-radius: 999px; background: #fff; border: 2px solid #8a1538; color: #8a1538; font-weight: 700; text-decoration: none; font-size: 17px; }
-.sg-nota { color: #6f6a63; font-size: 15px; }
-.sg-passi { list-style: none; padding: 0; margin: 18px 0 0; }
-.sg-passi li { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 17px; color: #6f6a63; }
-.sg-passi .pallino { width: 30px; height: 30px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: #e9e1d2; font-weight: 800; }
-.sg-passi li.fatto .pallino { background: #c9973f; color: #fff; }
-.sg-passi li.ora { color: #1a1715; font-weight: 700; } .sg-passi li.ora .pallino { background: #8a1538; color: #fff; }
-.sg-errore { margin-top: 16px; padding: 12px; border-radius: 12px; background: #fff3f4; border: 2px solid #c8102e; color: #c8102e; font-weight: 700; }
+.sg-rider { background: var(--vino); border: 3px solid #fff; font-size: 26px; }
+.sg-casa { border: 3px solid var(--vino); }
+.sg .leaflet-control-attribution { font-size: 13px; }
+.sg-google { display: flex; align-items: center; justify-content: center; margin-top: 12px; min-height: 52px; padding: 0 16px; border-radius: 4px; background: var(--sabbia); color: var(--nero); font-weight: 700; text-decoration: none; font-size: 17px; box-shadow: 0 2px 6px rgba(0,0,0,.12); }
+.sg-nota { color: var(--testo2); font-size: 15px; margin: 10px 0 0; }
+.sg-sez { text-align: center; font-weight: 700; font-size: 16px; padding-bottom: 5px; border-bottom: 1.5px solid var(--nero); margin: 18px 0 4px; }
+.sg-passi { list-style: none; padding: 0; margin: 14px 0 0; border-top: 1.5px solid var(--nero); }
+.sg-passi li { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 6px 2px; border-bottom: 1px solid var(--linea); font-size: 16px; color: var(--testo2); }
+.sg-passi .pallino { width: 34px; height: 34px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: var(--tassello); font-weight: 800; flex: none; font-size: 15px; }
+.sg-passi li.fatto .pallino { background: var(--sabbia); color: #fff; }
+.sg-passi li.ora { color: var(--nero); font-weight: 700; font-size: 17px; } .sg-passi li.ora .pallino { background: var(--vino); color: #fff; }
+.sg-errore { margin-top: 12px; padding: 12px 14px; border-radius: 4px; background: #fbeef2; color: var(--vino); font-weight: 600; font-size: 15px; line-height: 1.35; }
 `;
