@@ -319,3 +319,21 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
    dell'input, 20 caratteri). Ora riempiono la riga e non di più. */
 .cliente-pagina input, .cliente-pagina textarea { width: 100%; min-width: 0; box-sizing: border-box; }
 .cliente-pagina form input[type="tel"] { width: auto; flex: 1 1 180px; }
+
+/* /cassa/nuovo sul telefono (giro 8 del grafico, 24/10/2026). Fino a 600 px la colonna della comanda
+   non sta di fianco: diventa un pannello fisso in fondo. Chiuso mostra la maniglia («3 righe · Apri la
+   comanda»), il fascione «Modifica C-xx» se c'è, il totale e «Invia in cucina»; aperto sale a 88dvh e
+   mostra tutto il resto (tipi, righe, −/+, tastierino, quando, coupon, nome, note). Stessi tasti, stesse
+   funzioni: cambia solo dove stanno. Sul PC e sul tablet la maniglia non esiste. */
+.c-maniglia { display: none; }
+@media (max-width: 600px) {
+  .cassa-nuovo .scorri { padding-bottom: 170px; }
+  .cassa-nuovo .barra { overflow-x: auto; scrollbar-width: none; }
+  .cassa-comanda { position: fixed; left: 0; right: 0; bottom: 0; width: 100% !important; max-height: 88dvh; border-left: none !important; border-top: 2px solid var(--oro); border-radius: 18px 18px 0 0; box-shadow: 0 -8px 24px rgba(26,23,21,.18) !important; z-index: 20; overflow-y: auto; }
+  .cassa-comanda .c-maniglia { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; margin: 6px 6px 0; padding: 0 14px; border-radius: 999px; background: var(--vino-chiaro); border: 1px solid var(--oro-chiaro); font-size: 15px; color: var(--vino); }
+  .cassa-comanda .c-maniglia b { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 17px; text-transform: uppercase; letter-spacing: .04em; color: var(--testo); }
+  .cassa-comanda:not(.aperta) > *:not(.c-maniglia):not(.c-mod):not(.c-totale):not(.c-invia) { display: none !important; }
+  .cassa-comanda .c-mod { font-size: 14px; }
+  .cassa-comanda .c-mod button { min-height: 40px !important; }
+  .cassa-comanda .c-invia { position: sticky; bottom: 6px; }
+}

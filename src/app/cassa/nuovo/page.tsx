@@ -83,6 +83,9 @@ function Cassa() {
   // Modifica con ristampa (mig. 0038, come in Velocissimo): con ?modifica=<id> si riapre un ordine già
   // battuto, si cambiano le righe e la comanda si ristampa con la scritta MODIFICATA. Il tipo non cambia.
   const [modifica, setModifica] = useState<{ id: string; numero: string } | null>(null);
+  // giro 8 del grafico: sul telefono (≤ 600 px) la comanda è un pannello in fondo che si apre dalla maniglia;
+  // sul PC e sul tablet non cambia niente (la classe non ha effetto).
+  const [comandaAperta, setComandaAperta] = useState(false);
 
   // La comanda battuta resta anche se si va a Dati cliente e si torna (critico giro 5: «cancella la comanda»).
   const BOZZA = "cassa:bozza";
@@ -522,9 +525,13 @@ function Cassa() {
       </div>
 
       {/* ===== Destra: comanda, tastierino, invio ===== */}
-      <aside className="cassa-comanda" style={{ display: "flex", flexDirection: "column", background: "#fff", borderLeft: "1px solid var(--bordo)", boxShadow: "-6px 0 18px rgba(26,23,21,.05)" }}>
+      <aside className={"cassa-comanda" + (comandaAperta ? " aperta" : "")} style={{ display: "flex", flexDirection: "column", background: "#fff", borderLeft: "1px solid var(--bordo)", boxShadow: "-6px 0 18px rgba(26,23,21,.05)" }}>
+        <button className="c-maniglia" onClick={() => setComandaAperta((a) => !a)} aria-expanded={comandaAperta}>
+          <b>{righe.length} {righe.length === 1 ? "riga" : "righe"}</b>
+          <span>{comandaAperta ? "Chiudi la comanda ▾" : "Apri la comanda ▴"}</span>
+        </button>
         {modifica && (
-          <div style={{ margin: "6px 6px 0", padding: "8px 12px", borderRadius: 12, background: "var(--oro)", color: "var(--testo)", fontSize: 14, display: "flex", gap: 8, alignItems: "center" }}>
+          <div className="c-mod" style={{ margin: "6px 6px 0", padding: "8px 12px", borderRadius: 12, background: "var(--oro)", color: "var(--testo)", fontSize: 14, display: "flex", gap: 8, alignItems: "center" }}>
             <b style={{ fontFamily: "Oswald, sans-serif", textTransform: "uppercase", letterSpacing: ".04em" }}>Modifica {modifica.numero}</b>
             <span style={{ flex: 1 }}>le righe qui sotto sostituiscono la comanda, che si ristampa</span>
             <Link href="/cassa" style={{ textDecoration: "none" }}><button style={{ padding: "2px 10px", minHeight: 32 }}>Lascia stare</button></Link>
@@ -682,7 +689,7 @@ function Cassa() {
             {!idIndirizzo ? "Serve l'indirizzo di consegna: aprilo da Dati cliente." : fuoriZona ? "Fuori dalle zone di consegna: non consegniamo lì." : `Minimo d'ordine ${euro(zonaSel!.minimo_ordine)}: mancano ${euro(zonaSel!.minimo_ordine - totale)}.`}
           </div>
         )}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 6px 6px" }}>
+        <div className="c-totale" style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 6px 6px" }}>
           <button onClick={svuota} disabled={righe.length === 0} style={{ minHeight: 40, fontSize: 14 }}>Svuota</button>
           <span style={{ flex: 1, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
             {costoConsegna > 0 && <span className="muto" style={{ display: "block" }}>+ consegna {euro(costoConsegna)}</span>}
@@ -691,7 +698,7 @@ function Cassa() {
             <span style={{ fontSize: 30, fontWeight: 800, color: "var(--vino)", fontFamily: "Oswald, sans-serif", lineHeight: 1.1 }}>{euro(righe.length === 0 ? 0 : Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - (modifica ? 0 : scontoManuale)))}</span>
           </span>
         </div>
-        <button onClick={invia} className="primario" disabled={invio || righe.length === 0 || (!modifica && ((tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)))} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
+        <button onClick={invia} className="primario c-invia" disabled={invio || righe.length === 0 || (!modifica && ((tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)))} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
           {invio ? (modifica ? "Salvo…" : "Invio…") : modifica ? "Salva e ristampa" : "Invia in cucina"}
         </button>
       </aside>
