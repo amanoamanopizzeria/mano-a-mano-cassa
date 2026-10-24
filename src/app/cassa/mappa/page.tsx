@@ -185,11 +185,11 @@ function Mappa() {
 
   return (
     <main className="mappa-pagina">
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-        <h1 style={{ margin: 0 }}>Cassa — rider in mappa</h1>
-        <span className="muto m-conta" style={{ fontSize: 15 }}><b>{riders.length}</b> rider · <b>{consegne.length}</b> consegne in corso</span>
+      <div className="m-testa">
+        <h1>Cassa — rider in mappa</h1>
+        <span className="muto m-conta"><b>{riders.length}</b> rider · <b>{consegne.length}</b> consegne in corso</span>
       </div>
-      {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
+      {errore && <p className="m-errore">{errore}</p>}
       <div className="m-cornice">
         <div ref={divRef} className="mappa-mappa" />
         {!mappaPronta && !errore && <div className="m-carico" aria-live="polite"><img src="/brand/bollino.png" alt="" /><span>Carico la mappa…</span></div>}
@@ -206,10 +206,10 @@ function Mappa() {
       <h2>Rider</h2>
       <div className="griglia">
         {riders.map((r) => (
-          <div className="carta m-scheda" key={r.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="carta m-scheda" key={r.id}>
             <span className={"m-rider" + (fermo(r) ? " fermo" : "")}>{iniziali(r.nome)}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <strong style={{ fontSize: 19 }}>{r.nome}</strong>
+            <div className="m-corpo">
+              <strong>{r.nome}</strong>
               <div className="muto">
                 {r.consegne_in_corso} {r.consegne_in_corso === 1 ? "consegna" : "consegne"} in corso ·{" "}
                 {r.aggiornata_il ? "posizione delle " + oraDi(r.aggiornata_il) : "nessuna posizione"}
@@ -222,15 +222,15 @@ function Mappa() {
       </div>
 
       <h2>Consegne in corso</h2>
-      {erroreAssegna && <p style={{ color: "var(--errore)", fontWeight: 700 }}>{erroreAssegna}</p>}
+      {erroreAssegna && <p className="m-errore-assegna">{erroreAssegna}</p>}
       <div className="griglia">
         {consegne.map((k) => (
-          <div className="carta m-scheda" key={k.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div className="carta m-scheda a-capo" key={k.id}>
             <span className={"m-goccia " + k.stato}><span>{k.ordine?.numero ?? ""}</span></span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <strong style={{ fontSize: 19 }}>{nomeOrdine(k.ordine)}</strong>
+            <div className="m-corpo">
+              <strong>{nomeOrdine(k.ordine)}</strong>
               {k.ordine?.ora_consegna && <span className="muto"> · per le {oraDi(k.ordine.ora_consegna)}</span>}
-              <div className="muto">{k.ordine?.indirizzo ? `${k.ordine.indirizzo.via} ${k.ordine.indirizzo.civico ?? ""}` : <b style={{ color: "var(--vino)" }}>senza indirizzo: da sistemare</b>}{nomeRider(k.id_rider) ? ` · ${nomeRider(k.id_rider)}` : ""}{k.ordine?.indirizzo && k.ordine.indirizzo.lat == null ? " · non sulla mappa" : ""}</div>
+              <div className="muto">{k.ordine?.indirizzo ? `${k.ordine.indirizzo.via} ${k.ordine.indirizzo.civico ?? ""}` : <b className="m-manca">senza indirizzo: da sistemare</b>}{nomeRider(k.id_rider) ? ` · ${nomeRider(k.id_rider)}` : ""}{k.ordine?.indirizzo && k.ordine.indirizzo.lat == null ? " · non sulla mappa" : ""}</div>
             </div>
             {k.stato !== "ritirata" && riders.length > 0 && (
               <select

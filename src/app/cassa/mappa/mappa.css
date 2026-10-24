@@ -73,3 +73,17 @@
 .m-carico { position: absolute; inset: 0; border-radius: 18px; background: var(--sfondo); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; z-index: 500; font-size: 17px; font-weight: 600; color: var(--muto); pointer-events: none; }
 .m-carico img { width: 64px; height: 64px; animation: m-pulsa 1.2s ease-in-out infinite; }
 @keyframes m-pulsa { 0%, 100% { opacity: .55; transform: scale(.96); } 50% { opacity: 1; transform: scale(1); } }
+
+/* ===== grafico, giro 23 (24/10/2026): via gli stili in riga (12 → 0), stessa resa; e + / − della
+   mappa da 40 a 44 come ogni altro tasto della cassa. ===== */
+.mappa-pagina .m-testa { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.mappa-pagina .m-testa h1 { margin: 0; }
+.mappa-pagina .m-conta { font-size: 15px; }
+.mappa-pagina .m-errore { color: var(--accento); }
+.mappa-pagina .m-errore-assegna { color: var(--errore); font-weight: 700; }
+.mappa-pagina .m-scheda { display: flex; align-items: center; gap: 12px; }
+.mappa-pagina .m-scheda.a-capo { flex-wrap: wrap; }
+.mappa-pagina .m-scheda .m-corpo { flex: 1; min-width: 0; }
+.mappa-pagina .m-scheda strong { font-size: 19px; }
+.mappa-pagina .m-manca { color: var(--vino); }
+.mappa-pagina .leaflet-container .leaflet-control-zoom a { width: 44px; height: 44px; line-height: 44px; }
