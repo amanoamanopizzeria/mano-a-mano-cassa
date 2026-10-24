@@ -73,3 +73,4 @@
   .comanda, .comanda * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .comanda .modificata, .comanda .segno, .comanda .tolte h2, .comanda footer .totale .paga { background: #000 !important; color: #fff !important; }
 }
+.comanda-strumenti button { min-height: 44px; font-size: 15px; }

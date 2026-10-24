@@ -607,7 +607,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .rider .r-gps.on::before { background: var(--ok); }
 .rider .r-tutto { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 0 0 10px; padding: 10px 14px; border-radius: 12px; background: var(--oro-velo); border: 1.5px solid var(--oro); font-size: 15px; font-weight: 600; }
 .rider .r-tutto b { font-family: "Oswald", sans-serif; font-size: 26px; font-weight: 600; color: var(--vino); font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; }
-.rider .r-insieme { margin-top: 6px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--vino); color: #fff; font-size: 15px; font-weight: 600; line-height: 1.2; }
+.rider .r-insieme { margin-top: 6px; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; background: var(--vino); color: #fff; font-size: 15px; font-weight: 600; line-height: 1.25; }
+.rider .r-insieme::before { flex: none; }
 .rider .r-insieme::before { content: "⇄"; font-size: 17px; }
 .rider .r-insieme b { font-family: "Oswald", sans-serif; font-size: 17px; font-weight: 600; letter-spacing: .02em; }
 /* /cassa/rider: le voci del borsello a righe (etichetta a sinistra, cifra a destra) a 390 e in fila a 1024;
