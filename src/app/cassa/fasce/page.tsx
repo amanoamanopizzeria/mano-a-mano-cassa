@@ -115,17 +115,34 @@ function Fasce() {
     setModifica(null);
     carica();
   }
-  // −/+ direttamente sulla riga: un tocco cambia il massimo di QUEL quarto d'ora (Edoardo 24/10)
+  // −/+ direttamente sulla riga: un tocco cambia il massimo di QUEL quarto d'ora (Edoardo 24/10).
+  // Si salva subito, ma per 6 secondi resta «Salvato · Annulla» (critico giro 10: con le dita del
+  // servizio il «+» si tocca per sbaglio): «Annulla» rimette il numero di prima.
+  const [ultimo, setUltimo] = useState<{ ora: string; tipo: Reparto; prima: number; dopo: number; reali: number } | null>(null);
   async function passo(f: CapacitaFascia, tipo: Reparto, d: number) {
     const attuale = tipo === "produzione" ? f.pizze_max : f.consegne_max;
     const reali = tipo === "produzione" ? f.pizze_occupate : f.consegne_occupate;
-    await salvaMassimo({ ora: f.ora, tipo, massimo: Math.max(0, attuale + d), reali });
+    const dopo = Math.max(0, attuale + d);
+    await salvaMassimo({ ora: f.ora, tipo, massimo: dopo, reali });
+    setUltimo({ ora: f.ora, tipo, prima: attuale, dopo, reali });
+    setTimeout(() => setUltimo((u) => (u && u.ora === f.ora && u.tipo === tipo && u.dopo === dopo ? null : u)), 6000);
+  }
+  async function annullaUltimo() {
+    if (!ultimo) return;
+    await salvaMassimo({ ora: ultimo.ora, tipo: ultimo.tipo, massimo: ultimo.prima, reali: ultimo.reali });
+    setUltimo(null);
   }
 
   const eOggi = giorno === oggi();
 
   return (
     <main style={{ maxWidth: 980 }} className="fasce-pagina">
+      {ultimo && (
+        <div role="status" style={{ position: "fixed", left: "50%", bottom: 18, transform: "translateX(-50%)", zIndex: 40, display: "flex", gap: 10, alignItems: "center", padding: "10px 14px", borderRadius: 999, background: "var(--testo)", color: "#fff", fontSize: 15, boxShadow: "0 8px 22px rgba(26,23,21,.3)" }}>
+          <span>{ultimo.ora.slice(0, 5)} · {ultimo.tipo === "produzione" ? "pizze" : "consegne"} {ultimo.prima} → <b>{ultimo.dopo}</b> · salvato</span>
+          <button onClick={annullaUltimo} style={{ minHeight: 36, padding: "0 12px", background: "var(--oro)", color: "var(--testo)", borderColor: "transparent" }}>Annulla</button>
+        </div>
+      )}
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <h1 style={{ margin: 0 }}>Planner — fasce</h1>
         <input type="date" value={giorno} onChange={(e) => setGiorno(e.target.value)} style={{ minHeight: 44, fontSize: 16 }} />
