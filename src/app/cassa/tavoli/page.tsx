@@ -110,9 +110,9 @@ function Tavoli() {
   return (
     <main className="sala">
       <h1>Sala</h1>
-      {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
+      {errore && <p className="s-errore">{errore}</p>}
       {sezioni.map((s) => (
-        <section key={s.zona} style={{ marginTop: 14 }}>
+        <section key={s.zona} className="s-zona">
           <h2>{s.titolo}</h2>
           <div className="griglia sala-griglia">
             {tavoli.filter((t) => t.zona === s.zona).sort((a, b) => a.numero.localeCompare(b.numero, "it", { numeric: true })).map((t) => {
@@ -123,16 +123,16 @@ function Tavoli() {
                   key={t.id}
                   className={"carta tavolo " + t.stato + (allarme ? " allarme" : "")}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4 }}>
+                  <div className="s-intesta">
                     <strong className="num">{t.numero}</strong>
                     <span className={`badge stato-${t.stato}`}>{t.stato === "occupato" ? "occ." : t.stato}</span>
                   </div>
                   {t.stato !== "libero" && (
                     <div className="muto riga-min">
-                      {t.coperti} cop. · <b style={allarme ? { color: "var(--vino)" } : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
+                      {t.coperti} cop. · <b className={allarme ? "da-troppo" : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
                     </div>
                   )}
-                  <div className="azioni" style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 6 }}>
+                  <div className="azioni">
                     {t.stato === "libero" && <button className="primario" onClick={() => apri(t)}>Apri</button>}
                     {t.stato !== "libero" && <button className={t.stato === "conto" ? "primario" : ""} onClick={() => passaAlConto(t)}>Conto</button>}
                     {t.stato !== "libero" && <button onClick={() => chiudi(t)}>Libera</button>}
@@ -176,7 +176,7 @@ function Tavoli() {
                   ])}
                 </ul>
               )}
-              {conto.ordini.some((o) => Number(o.sconto) > 0) && <div className="muto" style={{ textAlign: "right" }}>sconti −{euro(conto.ordini.reduce((a, o) => a + Number(o.sconto ?? 0), 0))}</div>}
+              {conto.ordini.some((o) => Number(o.sconto) > 0) && <div className="muto sconti">sconti −{euro(conto.ordini.reduce((a, o) => a + Number(o.sconto ?? 0), 0))}</div>}
               <div className="totale"><span>Totale</span><strong>{euro(totale)}</strong></div>
               <div className="azioni-conto">
                 <button onClick={() => window.print()}>Stampa</button>

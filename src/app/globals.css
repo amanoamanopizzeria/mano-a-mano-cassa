@@ -801,3 +801,12 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .cassa-nuovo .tessera.variante { text-transform: none; }
 .cassa-nuovo .tessera .conta { position: absolute; top: 4px; right: 6px; font-size: 13px; font-weight: 700; color: var(--vino); }
 .cassa-nuovo .tessera .togli { text-decoration: underline; }
+
+/* ===== giro 19 del grafico (24/10/2026): via gli stili in riga da sala, scheda cliente, borsello e rider ===== */
+/* /cassa/tavoli e il conto */
+.sala .s-errore { color: var(--accento); }
+.sala .s-zona { margin-top: 14px; }
+.sala .tavolo .s-intesta { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+.sala .tavolo .riga-min b.da-troppo { color: var(--vino); }
+.sala .tavolo .azioni { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.sala .conto .sconti { text-align: right; }
