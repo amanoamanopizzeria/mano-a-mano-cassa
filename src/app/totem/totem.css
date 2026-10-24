@@ -461,3 +461,6 @@
 .totem .t-sabbia img { height: 66px; max-width: 100%; object-fit: contain; }
 .totem .t-sabbia .bollino { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); height: 72px; width: 72px; }
 .t-avvio .t-sabbia-avvio img { height: 66px; }
+/* 2. il menù: prezzo a sinistra, pillola accanto */
+.totem .t-carta .prezzo { justify-content: flex-start; gap: 16px; }
+.totem .t-carta .prezzo b { order: 0; }
