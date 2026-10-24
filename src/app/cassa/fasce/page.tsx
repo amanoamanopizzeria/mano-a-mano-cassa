@@ -180,18 +180,18 @@ function Fasce() {
                   <td className="f-col-ora" style={{ padding: "6px 12px", fontWeight: 700, fontVariantNumeric: "tabular-nums", fontSize: 18, color: corrente ? "var(--vino)" : undefined }}>
                     {corrente && <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 999, background: "var(--vino)", marginRight: 6 }} />}{ora}
                   </td>
-                  <td className="f-cella" style={{ textAlign: "center", padding: 4, whiteSpace: "nowrap" }}>
+                  <td className="f-cella" style={{ textAlign: "center", padding: 4, whiteSpace: "nowrap" }}><span className="f-cella-in">
                     <button className="f-passo" onClick={() => passo(f, "produzione", -1)} aria-label={`Una pizza in meno alle ${ora}`}>−</button>
                     <Pillola n={f.pizze_occupate} max={f.pizze_max} bloccata={f.bloccata_produzione}
                       onClick={() => setModifica({ ora: f.ora, tipo: "produzione", massimo: f.pizze_max, reali: f.pizze_occupate })} />
                     <button className="f-passo" onClick={() => passo(f, "produzione", 1)} aria-label={`Una pizza in più alle ${ora}`}>+</button>
-                  </td>
-                  <td className="f-cella" style={{ textAlign: "center", padding: 4, whiteSpace: "nowrap" }}>
+                  </span></td>
+                  <td className="f-cella" style={{ textAlign: "center", padding: 4, whiteSpace: "nowrap" }}><span className="f-cella-in">
                     <button className="f-passo" onClick={() => passo(f, "consegne", -1)} aria-label={`Una consegna in meno alle ${ora}`}>−</button>
                     <Pillola n={f.consegne_occupate} max={f.consegne_max} bloccata={f.bloccata_consegne}
                       onClick={() => setModifica({ ora: f.ora, tipo: "consegne", massimo: f.consegne_max, reali: f.consegne_occupate })} />
                     <button className="f-passo" onClick={() => passo(f, "consegne", 1)} aria-label={`Una consegna in più alle ${ora}`}>+</button>
-                  </td>
+                  </span></td>
                   <td className="f-col-ord" style={{ textAlign: "center", padding: 4 }}>
                     <button onClick={() => setAperta(aperta === ora ? null : ora)} title={lista.length === 1 ? "1 ordine in questa fascia: tocca per vederlo" : `${lista.length} ordini in questa fascia: tocca per vederli`}
                       style={{ border: "none", background: lista.length ? "var(--vino-chiaro)" : "transparent", borderRadius: 999, padding: "6px 10px", minHeight: 44, minWidth: 44, fontSize: 16, fontWeight: 700, color: lista.length ? "var(--vino)" : "var(--muto)" }}>
