@@ -110,44 +110,63 @@ export function comandaEscPos(c: Comanda, o: OpzioniStampa): Uint8Array {
   const p = new Carta(colonne, o.tabella ?? 19);
   const { reparti, tolte, pezzi } = vistaComanda(c);
   // Edoardo, 25/10/2026: «in cucina manda comunque l'ordine completo, anche con la via ed il totale,
-  // casomai non ci ritroviamo le comande». Le due copie sono uguali; cambia solo la riga in fondo.
-  const cassa = true;
+  // casomai non ci ritroviamo le comande». Le due copie sono uguali; cambia solo la riga «copia …».
+  // L'ordine delle cose è quello del pizzaiolo (critico giro 21): numero, tipo, ORA, chi, note e
+  // allergie subito sopra le pizze, le pizze, poi i soldi.
+  const annullato = c.stato === "annullato";
+  const copia = o.ruolo === "cucina" ? "- copia cucina -" : "- copia cassa -";
 
-  // testata: il numero grande, poi se è una ristampa, poi tipo e quando
-  p.centro(true).misura(2, 2).grassetto(true).testo(c.numero_visibile ?? `#${c.numero}`).grassetto(false).misura(1, 1);
-  if (c.stato === "annullato") p.misura(1, 2).fascia("ANNULLATO - NON FARE").misura(1, 1);
+  // testata: il numero grande, la copia, se è annullata o una ristampa
+  p.centro(true).misura(2, 2).grassetto(true).testo(c.numero_visibile ?? `#${c.numero}`).grassetto(false).misura(1, 1).testo(copia);
+  if (annullato) p.misura(1, 2).fascia("ANNULLATO - NON FARE").misura(1, 1);
   if (c.modificato_il) p.fascia(`MODIFICATA - RISTAMPA ${oraRoma(c.modificato_il)}`);
   else if ((c.stampe ?? 0) > 0) p.fascia("RISTAMPA");
-  p.misura(1, 2).grassetto(true).testo(`${TIPO_COMANDA[c.tipo] ?? c.tipo.toUpperCase()}${c.tavolo != null ? ` ${c.tavolo}` : ""}`).grassetto(false).misura(1, 1);
+
+  // il tipo: il domicilio in fascia nera, così non si confonde col ritiro (2Bit stampava un disegno)
+  const tipo = `${TIPO_COMANDA[c.tipo] ?? c.tipo.toUpperCase()}${c.tavolo != null ? ` ${c.tavolo}` : ""}`;
+  if (c.tipo === "domicilio") p.misura(2, 2).fascia(tipo).misura(1, 1);
+  else p.misura(2, 2).grassetto(true).testo(tipo).grassetto(false).misura(1, 1);
+  // l'ora grande sempre, oggi come domani
   const q = c.ora_consegna ? quandoComanda(c.ora_consegna, o.adesso) : null;
-  const ricevuto = `ricevuto ${oraRoma(c.creato_il)} · ${CANALE_COMANDA[c.canale] ?? c.canale}`;
-  if (q?.forte) p.misura(1, 2).grassetto(true).testo(q.testo).grassetto(false).misura(1, 1).testo(ricevuto);
-  else p.testo(`${q ? q.testo : "subito"} · ${ricevuto}`);
+  p.misura(1, 2).grassetto(true).testo(q ? q.testo : "SUBITO").grassetto(false).misura(1, 1);
+  p.testo(`ricevuto ${oraRoma(c.creato_il)} · ${CANALE_COMANDA[c.canale] ?? c.canale}`);
   p.centro(false).linea("=");
 
   // chi e dove
-  if (c.cliente) p.grassetto(true).misura(1, 2).testo(c.cliente).misura(1, 1).grassetto(false);
-  if (cassa && c.telefono) p.testo(c.telefono);
-  if (c.cliente_note) p.grassetto(true).testo(`!! ${c.cliente_note}`).grassetto(false);
-  if (cassa && c.indirizzo) {
-    p.grassetto(true).testo(`${c.indirizzo.via} ${c.indirizzo.civico ?? ""}`.trim()).grassetto(false);
-    const sotto = [c.indirizzo.cap, c.indirizzo.citta].filter(Boolean).join(" ") + (c.indirizzo.zona ? ` · zona ${c.indirizzo.zona}` : "");
+  if (c.cliente) p.grassetto(true).misura(1, 2).testo(c.cliente + (c.ordini_cliente ? `  [${c.ordini_cliente} ORD.]` : "")).misura(1, 1).grassetto(false);
+  if (c.telefono) p.testo(c.telefono);
+  if (c.indirizzo) {
+    p.grassetto(true).misura(1, 2).testo(`${c.indirizzo.via} ${c.indirizzo.civico ?? ""}`.trim()).misura(1, 1).grassetto(false);
+    const sotto = [c.indirizzo.cap, c.indirizzo.citta].filter(Boolean).join(" ");
     if (sotto.trim()) p.testo(sotto.trim());
+    if (c.indirizzo.zona) p.grassetto(true).misura(1, 2).testo(`ZONA ${c.indirizzo.zona.toUpperCase()}`).misura(1, 1).grassetto(false);
   }
-  if (c.cliente || c.cliente_note || (cassa && (c.telefono || c.indirizzo))) p.linea();
+  if (c.cliente || c.telefono || c.indirizzo) p.linea();
+  // la nota dell'ordine e la nota fissa del cliente (allergie, citofono) subito sopra le pizze
+  if (c.note) p.grassetto(true).testo(`NOTE: ${c.note}`).grassetto(false);
+  if (c.cliente_note) p.misura(1, 2).fascia(`!! ${c.cliente_note}`).misura(1, 1);
 
   // le righe, reparto per reparto
+  const grande = annullato ? 1 : 2;
   for (const g of reparti) {
     p.fascia(g.nome.toUpperCase());
     for (const r of g.righe) {
-      if (r.segno) p.rovescio(true).grassetto(true).testo(r.segno.trim()).rovescio(false).grassetto(false);
-      p.misura(1, 2).grassetto(true).testo(r.descrizione.toUpperCase(), "    ", `${String(r.quantita).padStart(2)}  `).grassetto(false).misura(1, 1);
-      for (const v of r.variazioni.filter((v) => v.tipo === "aggiunta")) p.testo(`CON ${v.nome}`, "     ");
+      if (r.segno && r.inPiu < r.quantita) {
+        // cresciuta: in grande quante FARE ancora, in piccolo quante in tutto (critico giro 21)
+        p.rovescio(true).grassetto(true).testo("IN PIÙ").rovescio(false);
+        p.misura(1, grande).testo(r.descrizione.toUpperCase(), "    ", `+${String(r.inPiu).padEnd(3)}`).misura(1, 1).grassetto(false);
+        const fatte = r.quantita - r.inPiu;
+        p.testo(`(in tutto ${r.quantita}, ${fatte} già ${fatte === 1 ? "fatta" : "fatte"})`, "     ");
+      } else {
+        if (r.segno) p.rovescio(true).grassetto(true).testo("NUOVA").rovescio(false).grassetto(false);
+        p.misura(1, grande).grassetto(true).testo(r.descrizione.toUpperCase(), "    ", `${String(r.quantita).padStart(2)}  `).grassetto(false).misura(1, 1);
+      }
+      for (const v of r.variazioni.filter((v) => v.tipo === "aggiunta")) p.grassetto(true).testo(`CON ${v.nome}`, "     ").grassetto(false);
       for (const v of r.variazioni.filter((v) => v.tipo === "rimozione")) p.grassetto(true).testo(`SENZA ${v.nome}`, "     ").grassetto(false);
       for (const v of r.variazioni.filter((v) => v.tipo === "nota")) p.testo(v.nome, "     ");
       if (r.note) p.testo(r.note, "     ");
       for (const f of r.figlie) {
-        p.testo(`${f.quantita > 1 ? `${f.quantita}x` : "-"} ${f.descrizione}`, "     ");
+        p.testo(`${f.quantita > 1 ? `${f.quantita}x` : "·"} ${f.descrizione}`, "     ");
         for (const v of (f.variazioni ?? []).filter((v) => v.tipo === "aggiunta")) p.testo(`CON ${v.nome}`, "       ");
         for (const v of (f.variazioni ?? []).filter((v) => v.tipo === "rimozione")) p.testo(`SENZA ${v.nome}`, "       ");
       }
@@ -155,23 +174,22 @@ export function comandaEscPos(c: Comanda, o: OpzioniStampa): Uint8Array {
     }
   }
   if (tolte.length > 0) {
-    p.fascia("TOLTE");
-    for (const t of tolte) p.testo(`${t.quante} x ${t.descrizione.toUpperCase()}  (NON FARE)`);
+    p.fascia("TOLTE - NON FARE");
+    for (const t of tolte) p.grassetto(true).testo(`${t.quante} x ${t.descrizione.toUpperCase()}`).grassetto(false);
   }
-  if (c.note) p.linea().grassetto(true).testo(`NOTE: ${c.note}`).grassetto(false);
 
-  // in fondo: i pezzi per la cucina, i soldi per la cassa
+  // in fondo: i pezzi, poi i soldi
   p.linea("=").testo(`${pezzi} ${pezzi === 1 ? "pezzo" : "pezzi"} in cucina`);
-  if (cassa) {
-    if (c.costo_consegna > 0) p.coppia("consegna", `${euroComanda(c.costo_consegna)} €`);
-    if (Number(c.sconto ?? 0) > 0) p.coppia(`sconto ${c.codice_coupon ?? ""}`.trim(), `-${euroComanda(Number(c.sconto))} €`);
-    p.misura(1, 2).grassetto(true).coppia("TOTALE", `${euroComanda(c.totale)} €`).grassetto(false).misura(1, 1);
-    const come = c.pagato_online ? "GIA' PAGATO" : c.pagamento === "pos" ? "POS" : c.pagamento === "contanti" ? "CONTANTI" : "PAGAMENTO DA CHIEDERE";
-    p.centro(true).fascia(come).centro(false);
-    if (!c.pagato_online && c.paga_con != null && Number(c.paga_con) > c.totale)
-      p.grassetto(true).testo(`PAGA CON ${euroComanda(Number(c.paga_con))} € -> RESTO ${euroComanda(Number(c.paga_con) - c.totale)} €`).grassetto(false);
-  }
-  p.centro(true).testo(o.ruolo === "cucina" ? "- copia cucina -" : "- copia cassa -").centro(false);
+  if (c.costo_consegna > 0) p.coppia("consegna", `${euroComanda(c.costo_consegna)} €`);
+  if (Number(c.sconto ?? 0) > 0) p.coppia(`sconto ${c.codice_coupon ?? ""}`.trim(), `-${euroComanda(Number(c.sconto))} €`);
+  p.misura(1, 2).grassetto(true).coppia("TOTALE", `${euroComanda(c.totale)} €`).grassetto(false).misura(1, 1);
+  const come = c.pagato_online ? "GIÀ PAGATO" : c.pagamento === "pos" ? "POS" : c.pagamento === "contanti" ? "CONTANTI"
+    : c.tipo === "tavolo" ? "SI PAGA AL CONTO" : "PAGAMENTO DA CHIEDERE";
+  p.centro(true).fascia(come).centro(false);
+  if (!c.pagato_online && c.paga_con != null && Number(c.paga_con) > c.totale)
+    p.grassetto(true).testo(`PAGA CON ${euroComanda(Number(c.paga_con))} € -> RESTO ${euroComanda(Number(c.paga_con) - c.totale)} €`).grassetto(false);
+  if (annullato) p.misura(1, 2).fascia("ANNULLATO - NON FARE").misura(1, 1);
+  p.centro(true).testo(copia).centro(false);
   return p.avanti(1).taglia().byte();
 }
 

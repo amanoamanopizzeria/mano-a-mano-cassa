@@ -14,16 +14,22 @@ import { leggiStampanti } from "../src/lib/stampa/stampanti";
 import type { Comanda } from "../src/lib/comanda";
 
 const ricevute: Record<string, Buffer[]> = { cucina: [], cassa: [] };
-const accese: Record<string, boolean> = { cucina: true, cassa: true };
-function stampanteFinta(nome: string): Promise<number> {
+// una stampante spenta non risponde proprio (connessione rifiutata): non accetta e poi chiude, che
+// per il PC sarebbe una stampa andata a buon fine (era la prova che a volte non passava)
+const server: Record<string, net.Server> = {};
+const porte: Record<string, number> = {};
+function stampanteFinta(nome: string, porta = 0): Promise<number> {
   const srv = net.createServer((s) => {
-    if (!accese[nome]) { s.destroy(); return; }
     const pezzi: Buffer[] = [];
+    s.on("error", () => {});
     s.on("data", (d) => pezzi.push(d));
     s.on("end", () => { ricevute[nome].push(Buffer.concat(pezzi)); s.end(); });
   });
-  return new Promise((ok) => srv.listen(0, "127.0.0.1", () => ok((srv.address() as net.AddressInfo).port)));
+  server[nome] = srv;
+  return new Promise((ok) => srv.listen(porta, "127.0.0.1", () => ok((porte[nome] = (srv.address() as net.AddressInfo).port))));
 }
+const spegni = (nome: string) => new Promise((ok) => server[nome].close(ok));
+const accendi = (nome: string) => stampanteFinta(nome, porte[nome]);
 
 const base = (id: string, numero: number): Comanda => ({
   id, numero, numero_visibile: `C-${numero}`, canale: "cassa", tipo: "banco", stato: "ricevuto", creato_il: new Date().toISOString(),
@@ -67,11 +73,11 @@ ok(ricevute.cucina.length === 1 && ricevute.cassa.length === 1, "1) una copia pe
 ok(anteprimaTesto(new Uint8Array(ricevute.cucina[0])).includes("C-101") && anteprimaTesto(new Uint8Array(ricevute.cucina[0])).includes("copia cucina"), "1) la cucina ha la sua copia");
 ok(anteprimaTesto(new Uint8Array(ricevute.cassa[0])).includes("TOTALE"), "1) la cassa col totale");
 
-accese.cassa = false;
+await spegni("cassa");
 coda = [base(ID2, 102)];
 await aspetta(3500);
 ok(!segnate.includes(ID2) && ricevute.cucina.length === 2 && ricevute.cassa.length === 1, "2) cassa spenta: non si segna, la cucina l'ha presa una volta sola");
-accese.cassa = true;
+await accendi("cassa");
 ok(await finché(() => segnate.includes(ID2)), "2) riaccesa: esce e si segna");
 ok(ricevute.cucina.length === 2 && ricevute.cassa.length === 2, "2) la cucina non ha ristampato");
 

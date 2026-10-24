@@ -23,3 +23,11 @@
 @media (max-width: 600px) {
   .cassa-comanda button, .cassa-comanda select, .cassa-comanda input { min-height: 44px !important; }
 }
+
+/* critico giro 21: a 390 col pannello aperto INVIA IN CUCINA finiva sotto lo schermo (981 px su 844).
+   Il tasto era «sticky» da solo, ma da quando sta dentro .c-fondo può fermarsi solo dentro quel blocco:
+   adesso è il blocco intero (messaggi, totale, INVIA) a stare fermo in fondo al pannello che scorre,
+   come sul PC. */
+@media (max-width: 600px) {
+  .cassa-comanda.aperta .c-fondo { position: sticky; bottom: 0; background: #fff; z-index: 3; padding-top: 4px; box-shadow: 0 -6px 12px rgba(26,23,21,.08); }
+}

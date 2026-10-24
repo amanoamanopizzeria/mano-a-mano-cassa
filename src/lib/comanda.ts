@@ -15,6 +15,8 @@ export interface Comanda {
   pagamento: "contanti" | "pos" | null; costo_consegna: number; cliente: string | null; telefono: string | null;
   cliente_note?: string | null; paga_con?: number | null; pagato_online?: boolean; sconto?: number; codice_coupon?: string | null;
   modificato_il?: string | null; stampe?: number;
+  /** quanti ordini ha fatto il cliente, questo compreso (comanda_per_stampa, mig. 0048): «[N ORD.]» come 2Bit */
+  ordini_cliente?: number | null;
   righe_prima?: { id: string; id_riga_padre: string | null; descrizione: string; quantita: number; variazioni: Variazione[] | null }[] | null;
   tavolo: number | string | null; indirizzo: { via: string; civico: string | null; cap: string | null; citta: string | null; zona: string | null } | null;
   righe: RigaComanda[];
@@ -37,6 +39,8 @@ export interface RigaVista extends RigaComanda {
   figlie: RigaComanda[];
   /** «NUOVA » se tutta la riga è nuova rispetto alla prima stampa, «+1 (ora 2) » se è cresciuta, null se no. */
   segno: string | null;
+  /** quante in più rispetto alla prima stampa (0 se niente di nuovo) */
+  inPiu: number;
 }
 export interface ComandaVista {
   reparti: { nome: string; righe: RigaVista[] }[];
@@ -65,7 +69,7 @@ export function vistaComanda(c: Comanda): ComandaVista {
   const reparti: ComandaVista["reparti"] = [];
   for (const r of c.righe.filter((r) => r.destinazione !== "nessuna" && !r.id_riga_padre)) {
     const n = inPiu(r);
-    const riga: RigaVista = { ...r, figlie: figlieDi(r.id), segno: n <= 0 ? null : n >= r.quantita ? "NUOVA " : `+${n} (ora ${r.quantita}) ` };
+    const riga: RigaVista = { ...r, figlie: figlieDi(r.id), inPiu: Math.max(0, n), segno: n <= 0 ? null : n >= r.quantita ? "NUOVA " : `+${n} (ora ${r.quantita}) ` };
     const g = reparti.find((x) => x.nome === r.reparto);
     if (g) g.righe.push(riga); else reparti.push({ nome: r.reparto, righe: [riga] });
   }
