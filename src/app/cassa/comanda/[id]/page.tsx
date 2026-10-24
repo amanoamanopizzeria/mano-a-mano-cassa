@@ -89,7 +89,10 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
   for (const r of prima ?? []) contaPrima.set(firma(r), (contaPrima.get(firma(r)) ?? 0) + Number(r.quantita));
   const contaAdesso = new Map<string, number>();
   for (const r of c.righe.filter((r) => !r.id_riga_padre)) contaAdesso.set(firma(r), (contaAdesso.get(firma(r)) ?? 0) + Number(r.quantita));
-  const nuova = (r: RigaComanda) => !!prima && (contaAdesso.get(firma(r)) ?? 0) > (contaPrima.get(firma(r)) ?? 0);
+  // quante in più rispetto alla prima stampa: «NUOVA» se tutta la riga è nuova, «+1 (ora 2)» se è cresciuta
+  const inPiu = (r: RigaComanda) => (prima ? Math.max(0, (contaAdesso.get(firma(r)) ?? 0) - (contaPrima.get(firma(r)) ?? 0)) : 0);
+  const nuova = (r: RigaComanda) => inPiu(r) > 0;
+  const segnoNuova = (r: RigaComanda) => (inPiu(r) >= r.quantita ? "NUOVA " : `+${inPiu(r)} (ora ${r.quantita}) `);
   const tolte = (prima ?? []).filter((r) => (contaAdesso.get(firma(r)) ?? 0) < (contaPrima.get(firma(r)) ?? 0))
     .filter((r, i, a) => a.findIndex((x) => firma(x) === firma(r)) === i)
     .map((r) => ({ descrizione: r.descrizione, quante: (contaPrima.get(firma(r)) ?? 0) - (contaAdesso.get(firma(r)) ?? 0) }));
@@ -134,7 +137,7 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
               <div key={i} className={"riga" + (nuova(r) ? " nuova" : "")}>
                 <div className="q">{r.quantita}</div>
                 <div className="cosa">
-                  <div className="descr">{nuova(r) && <span className="segno">NUOVA </span>}{r.descrizione}</div>
+                  <div className="descr">{nuova(r) && <span className="segno">{segnoNuova(r)}</span>}{r.descrizione}</div>
                   {r.variazioni.filter((v) => v.tipo === "aggiunta").map((v, j) => <div key={"a" + j} className="con">CON {v.nome}</div>)}
                   {r.variazioni.filter((v) => v.tipo === "rimozione").map((v, j) => <div key={"s" + j} className="senza">SENZA {v.nome}</div>)}
                   {r.variazioni.filter((v) => v.tipo === "nota").map((v, j) => <div key={"n" + j} className="nota">{v.nome}</div>)}

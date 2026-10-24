@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
+import "./nuovo.css";
 import {
   aggiungiRiga, chiaveRiga, euro, figlieDaScelte, gruppiDi, gruppiPacchetto, gruppiPerCategoria, leggiMenu, menuCompleto, nuovaRiga, prezzoDi, prezzoRiga, righePerInvio, riprezzaRighe, totaleRighe, variantiPer,
   type CategoriaMenu, type GruppoCategoria, type PacchettoGruppo, type ProdottoMenu, type RigaFiglia, type RigaOrdine, type VarianteMenu,
@@ -82,7 +83,7 @@ function Cassa() {
   const [orari, setOrari] = useState<Orario[]>([]);
   // Modifica con ristampa (mig. 0038, come in Velocissimo): con ?modifica=<id> si riapre un ordine già
   // battuto, si cambiano le righe e la comanda si ristampa con la scritta MODIFICATA. Il tipo non cambia.
-  const [modifica, setModifica] = useState<{ id: string; numero: string; bloccata?: boolean } | null>(null);
+  const [modifica, setModifica] = useState<{ id: string; numero: string; bloccata?: boolean; sconto?: number; costo_consegna?: number } | null>(null);
   // giro 8 del grafico: sul telefono (≤ 600 px) la comanda è un pannello in fondo che si apre dalla maniglia;
   // sul PC e sul tablet non cambia niente (la classe non ha effetto).
   const [comandaAperta, setComandaAperta] = useState(false);
@@ -110,11 +111,11 @@ function Cassa() {
     if (!idMod) return;
     type RigaDb = { id: string; id_prodotto: string | null; descrizione: string; quantita: number; prezzo_unit: number; variazioni: Variazione[] | null; destinazione: "cucina" | "cassa" | "nessuna"; id_riga_padre: string | null };
     supabaseBrowser().from("ordine")
-      .select("id, numero, numero_visibile, tipo, note, stato, id_tavolo, id_indirizzo, cliente(id, nome, telefono), ordine_riga(id, id_prodotto, descrizione, quantita, prezzo_unit, variazioni, destinazione, id_riga_padre)")
+      .select("id, numero, numero_visibile, tipo, note, stato, id_tavolo, id_indirizzo, sconto, costo_consegna, cliente(id, nome, telefono), ordine_riga(id, id_prodotto, descrizione, quantita, prezzo_unit, variazioni, destinazione, id_riga_padre)")
       .eq("id", idMod).single()
       .then(({ data, error }) => {
         if (error || !data) { setErrore("Non trovo l'ordine da modificare."); return; }
-        const o = data as unknown as { id: string; numero: number; numero_visibile: string | null; tipo: Tipo; note: string | null; stato: string; id_tavolo: string | null; id_indirizzo: string | null; cliente: { id: string; nome: string | null; telefono: string } | null; ordine_riga: RigaDb[] };
+        const o = data as unknown as { id: string; numero: number; numero_visibile: string | null; tipo: Tipo; note: string | null; stato: string; id_tavolo: string | null; id_indirizzo: string | null; sconto: number | null; costo_consegna: number | null; cliente: { id: string; nome: string | null; telefono: string } | null; ordine_riga: RigaDb[] };
         if (!["ricevuto", "in_preparazione", "pronto"].includes(o.stato)) {
           // la pagina resta «in modifica» ma bloccata: un tocco su Invia non deve fare un ordine nuovo (critico giro 12)
           setModifica({ id: o.id, numero: o.numero_visibile ?? `#${o.numero}`, bloccata: true });
@@ -134,7 +135,7 @@ function Cassa() {
             variazioni: r.variazioni ?? [], destinazione: r.destinazione, ...(figlie.length > 0 ? { figlie } : {}),
           };
         });
-        setModifica({ id: o.id, numero: o.numero_visibile ?? `#${o.numero}` });
+        setModifica({ id: o.id, numero: o.numero_visibile ?? `#${o.numero}`, sconto: Number(o.sconto ?? 0), costo_consegna: Number(o.costo_consegna ?? 0) });
         setRighe(nuove); setTipo(o.tipo); setNote(o.note ?? ""); setIdTavolo(o.id_tavolo); setIdIndirizzo(o.id_indirizzo);
         if (o.cliente) setCliente({ id: o.cliente.id, nome: o.cliente.nome, telefono: o.cliente.telefono, indirizzo: null });
       });
@@ -684,7 +685,7 @@ function Cassa() {
           </div>
         )}
         {esito && (
-          <div role="status" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 12, background: "#eef7ea", border: "2px solid var(--ok)", color: "var(--ok)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
+          <div role="status" className="esito-invio" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 12, background: "#eef7ea", border: "2px solid var(--ok)", color: "var(--ok)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
             {esito}
           </div>
         )}
@@ -700,7 +701,9 @@ function Cassa() {
             {costoConsegna > 0 && <span className="muto" style={{ display: "block" }}>+ consegna {euro(costoConsegna)}</span>}
             {coupon && <span className="muto" style={{ display: "block" }}>− {coupon.nome} {euro(coupon.sconto)}</span>}
             {scontoManuale > 0 && !modifica && <span className="muto" style={{ display: "block" }}>− sconto {euro(scontoManuale)}</span>}
-            <span style={{ fontSize: 30, fontWeight: 800, color: "var(--vino)", fontFamily: "Oswald, sans-serif", lineHeight: 1.1 }}>{euro(righe.length === 0 ? 0 : Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - (modifica ? 0 : scontoManuale)))}</span>
+            {modifica && (modifica.sconto ?? 0) > 0 && <span className="muto" style={{ display: "block" }}>− sconto {euro(modifica.sconto ?? 0)}</span>}
+            {modifica && (modifica.costo_consegna ?? 0) > 0 && <span className="muto" style={{ display: "block" }}>+ consegna {euro(modifica.costo_consegna ?? 0)}</span>}
+            <span style={{ fontSize: 30, fontWeight: 800, color: "var(--vino)", fontFamily: "Oswald, sans-serif", lineHeight: 1.1 }}>{euro(righe.length === 0 ? 0 : modifica ? Math.max(0, totale + (modifica.costo_consegna ?? 0) - (modifica.sconto ?? 0)) : Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - scontoManuale))}</span>
           </span>
         </div>
         <button onClick={invia} className="primario c-invia" disabled={invio || righe.length === 0 || !!modifica?.bloccata || (!modifica && ((tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)))} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>

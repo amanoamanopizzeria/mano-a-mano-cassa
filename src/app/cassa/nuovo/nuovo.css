@@ -1,0 +1,7 @@
+/* /cassa/nuovo sul telefono, dopo il critico giro 13: le ultime tessere della categoria finivano
+   sotto il pannello chiuso (il padding inline della griglia vinceva sul CSS) e il messaggio verde
+   dell'invio stava dentro il pannello, dove non si vede mai. */
+@media (max-width: 600px) {
+  .cassa-nuovo .scorri { padding-bottom: 200px !important; }
+  .cassa-nuovo .esito-invio { position: fixed; top: 58px; left: 8px; right: 8px; z-index: 70; margin: 0 !important; box-shadow: 0 8px 22px rgba(26,23,21,.25); }
+}
