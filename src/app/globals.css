@@ -761,3 +761,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .capacita .c-turno { margin-bottom: 12px; }
 .capacita .c-fascia.spenta { opacity: .5; }
 .capacita .c-fascia .c-testa { display: flex; justify-content: space-between; }
+
+/* ===== giro 18 del grafico (24/10/2026): via gli stili in riga dalla barra d'accesso, da /cassa e dalla
+   sinistra di /cassa/nuovo ===== */
+/* La barra con email ed «Esci» di AuthGate, uguale su tutte le pagine. */
+.ag-barra { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 8px 16px; }
+.ag-barra button { min-height: 44px; }

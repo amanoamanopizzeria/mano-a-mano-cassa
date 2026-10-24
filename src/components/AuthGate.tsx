@@ -35,12 +35,9 @@ export default function AuthGate({ children, barra = true }: { children: React.R
   if (!pronto) return <main className="muto">Verifica accesso…</main>;
   return (
     <>
-      {barra && <div
-        className="muto"
-        style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "8px 16px" }}
-      >
+      {barra && <div className="muto ag-barra">
         <span>{email}</span>
-        <button onClick={esci} style={{ minHeight: 44 }}>Esci</button>
+        <button onClick={esci}>Esci</button>
       </div>}
       {children}
     </>
