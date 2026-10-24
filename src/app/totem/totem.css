@@ -213,3 +213,183 @@
 .t-avvio .sotto.chiuso { font-size: clamp(22px, 3vw, 34px); color: var(--nero); font-weight: 500; }
 .t-avvio .sotto.chiuso b { color: var(--vino); font-weight: 800; font-variant-numeric: tabular-nums; }
 .t-avvio .lapide.chiuso { font-size: clamp(14px, 2vw, 20px); margin-top: 3vh; }
+
+/* ===== grafico, giro 5 (24/10/2026): come l'app «A Mano A Mano Pugliese», per un totem =====
+   Edoardo: «più simile all'app, più bella, più visibile, più adatta a un totem».
+   Dall'app (docs/grafico/APP_RIFERIMENTO.md): fascia sabbia col logo, barra vino col titolo,
+   categorie come tab bianche sulla barra vino, lista a righe (nome maiuscolo, descrizione,
+   prezzo in grassetto, foto quadrata a destra su sabbia), pulsante unico sabbia in fondo
+   «[n] Vai al carrello  totale». Misure per 1080×1920 guardato da un metro: testo ≥ 20 px,
+   tasti ≥ 72 px. Sotto i 700 px e sui tablet coricati si stringe. */
+.totem { --sabbia: #c9a981; --sabbia-scura: #a88a64; --sabbia-chiara: #efe6d8; --fondo-barra: #efebe4; --testo2: #4b4640; background: #fff; }
+
+/* testata: fascia sabbia + barra vino */
+.t-sabbia { background: var(--sabbia); display: flex; align-items: center; justify-content: space-between; height: 96px; padding: 0 28px; flex-shrink: 0; }
+.t-sabbia img { height: 58px; }
+.t-sabbia .bollino { height: 72px; width: 72px; border-radius: 999px; background: #fff; padding: 4px; }
+.t-testata { background: var(--vino); min-height: 84px; padding: 0 20px; border: 0; }
+.t-testata .titolo { font-family: inherit; text-transform: uppercase; letter-spacing: .01em; font-weight: 800; font-size: 34px; color: #fff; }
+.t-testata .indietro { left: 8px; background: transparent; font-size: 26px; padding: 0 22px; height: 72px; border-radius: 12px; font-weight: 600; }
+.t-testata .indietro:active { background: rgba(255,255,255,.14); }
+
+/* categorie: tab sulla barra vino, la scelta piena e sottolineata */
+.t-cat-striscia { background: var(--vino); padding: 0 8px; gap: 0; border: 0; box-shadow: 0 6px 16px rgba(26,23,21,.12); border-top: 1px solid rgba(255,255,255,.18); }
+.t-cat-colonna { background: var(--vino); width: 240px; padding: 8px 0; border: 0; }
+.t-cat { width: auto; flex-direction: row; justify-content: center; padding: 0 22px; height: 80px; border-radius: 0; gap: 0; }
+.t-cat-colonna .t-cat { width: 100%; justify-content: flex-start; padding: 0 22px; margin: 0; }
+.t-cat .nome { font-family: inherit; font-size: 26px; font-weight: 700; letter-spacing: .01em; color: rgba(255,255,255,.62); white-space: nowrap; text-align: left; line-height: 1; }
+.t-cat.attiva, .t-cat.attiva:active { background: transparent; box-shadow: inset 0 -5px 0 #fff; }
+.t-cat-colonna .t-cat.attiva { box-shadow: inset 6px 0 0 #fff; background: rgba(255,255,255,.1); }
+.t-cat.attiva .nome { color: #fff; font-weight: 700; }
+.t-cat.attiva .nome::after { display: none; }
+
+/* titolo della sezione: centrato con la riga sotto */
+.t-titolo { justify-content: center; font-size: 36px; padding-bottom: 8px; margin: 4px 0 4px; border-bottom: 2px solid var(--nero); }
+.t-titolo small { font-size: 20px; }
+
+/* prodotti: la riga dell'app, con la foto grande a destra */
+.t-griglia { grid-template-columns: 1fr; gap: 0; }
+@media (orientation: landscape) { .t-griglia { grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); column-gap: 28px; } }
+.t-carta { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: stretch; padding: 22px 4px; background: transparent; border-radius: 0; box-shadow: none; overflow: visible; border-bottom: 1px solid var(--linea); }
+.t-carta:active { transform: none; background: var(--sabbia-chiara); }
+.t-carta .testo { display: flex; flex-direction: column; min-width: 0; }
+.t-carta .nome { padding: 0; font-size: 30px; letter-spacing: .02em; line-height: 1.1; color: var(--nero); }
+.t-carta .descr { padding: 0; margin-top: 8px; min-height: 0; font-size: 21px; line-height: 1.35; color: var(--testo2); -webkit-line-clamp: 3; }
+.t-carta .prezzo { margin-top: auto; padding: 14px 0 0; display: flex; align-items: center; justify-content: flex-start; gap: 14px; flex-wrap: wrap; }
+.t-carta .prezzo b { font-size: 30px; font-weight: 800; color: var(--nero); font-variant-numeric: tabular-nums; }
+.t-carta .prezzo b.vuoto { font-size: 20px; font-weight: 600; color: var(--grigio); }
+.t-etichetta { position: static; background: var(--vino); color: #fff; font-family: "Figtree", sans-serif; text-transform: none; letter-spacing: 0; font-size: 20px; font-weight: 700; padding: 4px 14px; border-radius: 999px; }
+.t-carta .fotobox { position: relative; width: 230px; height: 230px; flex: none; border-radius: 10px; overflow: hidden; background: var(--sabbia-chiara); }
+.t-carta .fotobox::after { display: none; }
+.t-carta .foto, .t-carta .t-manca { width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; object-fit: cover; }
+.t-carta .piu { position: absolute; right: 10px; bottom: 10px; width: 72px; height: 72px; font-size: 44px; font-weight: 600; background: var(--vino); color: #fff; box-shadow: 0 6px 16px rgba(0,0,0,.3); }
+.t-carta .nel-carrello { top: 10px; right: 10px; font-size: 22px; height: 44px; min-width: 44px; padding: 0 12px; }
+
+/* barre in fondo: grigio chiaro come l'app, il pulsante sabbia */
+.t-barra { background: var(--fondo-barra); color: var(--nero); border-top: 0; padding: 16px 24px; box-shadow: 0 -8px 24px rgba(26,23,21,.1); }
+.t-barra .tot small { font-size: 20px; opacity: 1; color: var(--grigio); }
+.t-barra .tot b { font-size: 36px; }
+.t-vai { flex: 1; min-width: 0; min-height: 104px; display: flex; align-items: center; gap: 20px; padding: 0 28px; background: var(--sabbia); color: var(--nero); border-radius: 8px; text-align: left; box-shadow: 0 6px 18px rgba(168,138,100,.35); }
+.t-vai:active { transform: scale(.99); }
+.t-vai .conto { flex: none; min-width: 60px; height: 60px; padding: 0 10px; border-radius: 8px; background: var(--sabbia-scura); color: #fff; font-size: 30px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+.t-vai .etich { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.t-vai .etich > span { font-family: inherit; text-transform: uppercase; letter-spacing: .01em; font-weight: 800; font-size: 32px; line-height: 1.1; }
+.t-vai .etich small { font-size: 20px; color: #3d342a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.t-vai b { flex: none; font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.t-vai:disabled { background: #e6dccd; box-shadow: none; }
+.t-vai:disabled .conto { background: #cdbfa9; }
+.t-b-oro { background: var(--sabbia); color: var(--nero); font-size: 30px; min-height: 88px; padding: 0 48px; border-radius: 8px; box-shadow: 0 6px 18px rgba(168,138,100,.35); }
+.t-b-oro:disabled { opacity: 1; background: #e6dccd; box-shadow: none; color: var(--grigio); }
+.t-b-vino { font-size: 30px; min-height: 88px; padding: 0 44px; border-radius: 8px; }
+.t-b-ghost { background: #fff; color: var(--vino); border: 2px solid var(--vino) !important; font-size: 24px; min-height: 88px; padding: 0 26px; border-radius: 8px; font-weight: 700; }
+.t-b-linea { font-size: 24px; min-height: 88px; padding: 0 28px; border-radius: 8px; }
+
+/* contatore: i tondi grigi dell'app */
+.t-cont { gap: 16px; }
+.t-cont button { width: 72px; height: 72px; font-size: 36px; background: #ececec; border: 0 !important; color: var(--nero); }
+.t-cont button.piu { background: var(--vino); color: #fff; }
+.t-cont span { font-size: 32px; min-width: 44px; }
+.t-cont.grande button { width: 84px; height: 84px; font-size: 42px; }
+.t-cont.grande span { font-size: 44px; }
+
+/* scheda prodotto: come «Dettagli» dell'app, a tutta larghezza */
+.t-scheda { max-width: 1080px; height: 94dvh; }
+.t-scheda .corpo { padding: 0 36px 28px; }
+.t-scheda .corpo > div { max-width: 880px !important; }
+.t-scheda .fotobox-grande { margin: 0 -36px; background: var(--sabbia-chiara); }
+.t-scheda .foto-grande { height: 34vh; }
+.t-scheda h2 { font-size: 46px; margin: 22px 0 8px; }
+.t-scheda .descr { font-size: 24px; max-width: 820px; color: var(--testo2); }
+.t-scheda .prezzo { font-size: 34px; color: var(--nero); background: var(--sabbia-chiara); border-color: var(--sabbia); }
+.t-scheda h3 { font-size: 30px; max-width: 880px; margin: 36px auto 14px; padding-bottom: 8px; border-bottom: 2px solid var(--nero); }
+.t-scheda h3 .spunta { width: 40px !important; height: 40px !important; font-size: 22px !important; }
+.t-scheda h3 small { font-size: 22px; }
+.t-scheda .lapide { font-size: 22px !important; }
+.t-gruppo { text-align: left; color: var(--nero); font-size: 24px; letter-spacing: .06em; margin: 26px 0 4px; }
+.t-opz { min-height: 84px; padding: 0 6px; font-size: 24px; gap: 16px; }
+.t-opz.on { background: var(--sabbia-chiara); }
+.t-opz .extra { order: 2; font-size: 22px; color: var(--testo2); }
+.t-opz .spunta { order: 3; width: 60px; height: 60px; border: 0; background: #ececec; color: #fff; font-size: 28px; font-weight: 700; }
+.t-opz .spunta:empty::before { content: "+"; color: var(--nero); font-size: 34px; font-weight: 600; }
+.t-opz.on .spunta { background: var(--vino); }
+.t-scheda .piede { padding: 18px 24px; gap: 16px; background: var(--fondo-barra); border-top: 0; }
+.t-scheda .piede .t-b-vino { background: var(--sabbia); color: var(--nero); font-size: 30px !important; }
+.t-scheda .piede .t-b-linea { font-size: 24px !important; }
+
+/* carrello */
+.t-riga { padding: 18px 20px; gap: 20px; border-radius: 12px; }
+.t-riga .foto, .t-riga .t-manca { width: 140px; height: 140px; border-radius: 10px; aspect-ratio: auto; }
+.t-riga .nome { font-size: 28px; }
+.t-riga .var { font-size: 20px; color: var(--testo2); }
+.t-riga .prezzo { font-size: 26px; color: var(--nero); }
+.t-vuoto { font-size: 26px; }
+
+/* nome e pagamento */
+.t-nome h1 { font-size: 48px !important; }
+.t-nome > p { font-size: 24px !important; }
+.t-nome .campo { font-size: 48px; min-height: 96px; width: min(100%, 760px); }
+.t-tastiera { width: min(100%, 980px); gap: 10px; }
+.t-tastiera .fila { gap: 8px; }
+.t-tastiera button { height: 92px; font-size: 34px; border-radius: 10px; }
+.t-tastiera button.spazio { font-size: 24px; }
+.t-paga { width: min(100%, 900px); }
+.t-paga button { font-size: 36px; }
+.t-paga button small { font-size: 22px; }
+.t-paga ~ div { max-width: 820px !important; }
+.t-paga ~ div > div:not(.t-gruppo) { font-size: 24px !important; }
+.t-nome .t-paga ~ button { min-width: 420px !important; }
+
+/* fatto e avvio */
+.t-fatto h1 { font-size: 56px; }
+.t-fatto > p { font-size: 28px !important; max-width: 760px !important; }
+.t-fatto .numero small { font-size: 22px; }
+.t-fatto .numero b { font-size: 88px; }
+.t-avvio .lapide { font-size: clamp(14px, 2.2vw, 26px); }
+.t-avvio .lapide.chiuso { font-size: clamp(16px, 2.6vw, 30px); }
+
+/* tablet coricato e basso: testate più strette, il resto uguale */
+@media (orientation: landscape) and (max-height: 900px) {
+  .t-sabbia { height: 64px; } .t-sabbia img { height: 40px; } .t-sabbia .bollino { height: 52px; width: 52px; }
+  .t-testata { min-height: 64px; } .t-testata .indietro { height: 56px; }
+  .t-vai { min-height: 84px; }
+  .t-nome .t-paga button { aspect-ratio: 1.6; }
+}
+
+/* telefono (prove a 390): stesse forme, misure da telefono */
+@media (max-width: 700px) {
+  .t-sabbia { height: 60px; padding: 0 16px; } .t-sabbia img { height: 36px; } .t-sabbia .bollino { height: 46px; width: 46px; }
+  .t-testata { min-height: 56px; } .t-testata .titolo { font-size: 22px; } .t-testata .indietro { font-size: 18px; height: 48px; padding: 0 12px; }
+  .t-cat { height: 56px; padding: 0 14px; } .t-cat .nome { font-size: 18px; }
+  .t-titolo { font-size: 24px; } .t-titolo small { font-size: 14px; }
+  .t-carta { gap: 14px; padding: 16px 0; }
+  .t-carta .nome { font-size: 19px; } .t-carta .descr { font-size: 15px; } .t-carta .prezzo b { font-size: 20px; } .t-etichetta { font-size: 14px; padding: 2px 10px; }
+  .t-carta .fotobox { width: 116px; height: 116px; } .t-carta .piu { width: 44px; height: 44px; font-size: 28px; right: 6px; bottom: 6px; }
+  .t-carta .nel-carrello { font-size: 15px; height: 30px; min-width: 30px; top: 6px; right: 6px; }
+  .t-barra { padding: 10px 12px; gap: 10px; } .t-barra .tot small { font-size: 14px; } .t-barra .tot b { font-size: 22px; }
+  .t-vai { min-height: 68px; padding: 0 14px; gap: 12px; } .t-vai .conto { min-width: 40px; height: 40px; font-size: 20px; }
+  .t-vai .etich > span { font-size: 20px; } .t-vai .etich small { font-size: 14px; } .t-vai b { font-size: 20px; }
+  .t-b-oro, .t-b-vino { font-size: 20px; min-height: 60px; padding: 0 20px; } .t-b-ghost, .t-b-linea { font-size: 16px; min-height: 60px; padding: 0 14px; }
+  .t-cont button { width: 48px; height: 48px; font-size: 26px; } .t-cont span { font-size: 22px; min-width: 30px; }
+  .t-cont.grande button { width: 60px; height: 60px; font-size: 30px; } .t-cont.grande span { font-size: 30px; }
+  .t-scheda .corpo { padding: 0 18px 20px; } .t-scheda .fotobox-grande { margin: 0 -18px; }
+  .t-scheda h2 { font-size: 28px; } .t-scheda .descr { font-size: 17px; } .t-scheda .prezzo { font-size: 24px; }
+  .t-scheda h3 { font-size: 21px; } .t-scheda h3 small { font-size: 16px; } .t-scheda h3 .spunta { width: 30px !important; height: 30px !important; font-size: 16px !important; }
+  .t-scheda .lapide { font-size: 15px !important; }
+  .t-gruppo { font-size: 17px; } .t-opz { min-height: 56px; font-size: 18px; } .t-opz .extra { font-size: 15px; }
+  .t-opz .spunta { width: 40px; height: 40px; font-size: 18px; } .t-opz .spunta:empty::before { font-size: 24px; }
+  .t-scheda .piede { padding: 12px; gap: 10px; } .t-scheda .piede .t-b-vino { font-size: 19px !important; } .t-scheda .piede .t-b-linea { font-size: 16px !important; }
+  .t-riga { padding: 12px; gap: 12px; } .t-riga .foto, .t-riga .t-manca { width: 72px; height: 72px; } .t-riga .nome { font-size: 18px; } .t-riga .var { font-size: 14px; } .t-riga .prezzo { font-size: 17px; }
+  .t-nome h1 { font-size: 30px !important; } .t-nome > p { font-size: 17px !important; }
+  .t-nome .campo { font-size: 30px; min-height: 64px; }
+  .t-tastiera button { height: 52px; font-size: 20px; } .t-tastiera button.spazio { font-size: 15px; }
+  .t-paga button { font-size: 22px; } .t-paga button small { font-size: 14px; } .t-paga ~ div > div:not(.t-gruppo) { font-size: 17px !important; }
+  .t-nome .t-paga ~ button { min-width: 0 !important; width: 100%; }
+  .t-fatto h1 { font-size: 36px; } .t-fatto > p { font-size: 20px !important; } .t-fatto .numero b { font-size: 56px; } .t-fatto .numero small { font-size: 14px; }
+}
+
+/* Il carattere come l'app (giro 6): Figtree ovunque, in grassetto dove l'app è in grassetto.
+   Oswald resta solo nella pennellata dell'avvio («Ordina qui» / «Siamo chiusi») e nella lapide sotto. */
+.totem h1, .totem h2, .totem h3, .totem .oswald, .t-titolo, .t-carta .nome, .t-riga .nome, .t-b-oro, .t-b-vino, .t-gruppo,
+.t-fatto .numero small, .t-paga button, .t-etichetta, .t-cat .nome, .t-testata .titolo { font-family: "Figtree", -apple-system, sans-serif; letter-spacing: .01em; font-weight: 800; }
+.t-gruppo, .t-fatto .numero small { font-weight: 700; }
+.t-ordina, .t-avvio .lapide { font-family: "Oswald", sans-serif; }

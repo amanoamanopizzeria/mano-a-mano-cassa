@@ -224,7 +224,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
   if (passo === "carrello") {
     return (
       <div className="schermo totem">
-        <Testata indietro={() => setPasso("menu")} />
+        <Testata indietro={() => setPasso("menu")} titolo="Il tuo ordine" />
         <div className="scorri t-entra" style={{ flex: 1, padding: "18px 22px" }}>
           <h1 className="t-titolo">Il tuo ordine <small>{articoli} {articoli === 1 ? "articolo" : "articoli"}</small></h1>
           {carrello.length === 0 && <div className="t-vuoto"><img src="/brand/bollino.png" alt="" /><span>Il carrello è vuoto.</span></div>}
@@ -255,7 +255,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
   if (passo === "nome") {
     return (
       <div className="schermo totem">
-        <Testata indietro={() => setPasso("carrello")} />
+        <Testata indietro={() => setPasso("carrello")} titolo="Il tuo nome" />
         <div className="t-nome t-entra">
           <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Come ti chiami?</h1>
           <p style={{ color: "var(--grigio)", fontSize: 19, margin: "0 0 18px" }}>Ti chiamiamo con questo nome quando l&apos;ordine è pronto.</p>
@@ -273,7 +273,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
   if (passo === "pagamento") {
     return (
       <div className="schermo totem">
-        <Testata indietro={() => setPasso("nome")} />
+        <Testata indietro={() => setPasso("nome")} titolo="Pagamento" />
         <div className="t-nome t-entra">
           <h1 style={{ fontSize: 36, margin: "0 0 6px" }}>Come vuoi pagare?</h1>
           <p style={{ color: "var(--grigio)", fontSize: 19, margin: "0 0 26px" }}>Si paga alla cassa, quando ritiri. Totale <b style={{ color: "var(--vino)" }}>{euro(totale)}</b>.</p>
@@ -308,7 +308,6 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
     <nav className={verticale ? "t-cat-striscia" : "t-cat-colonna scorri"}>
       {categorie.map((c) => (
         <button key={c.id} onClick={() => setCategoria(c.id)} className={"t-cat" + (c.id === categoria ? " attiva" : "")}>
-          <Foto p={prodotti.find((p) => p.id_categoria === c.id && p.foto_url) ?? prodotti.find((p) => p.id_categoria === c.id)} classe="tondo" tondo />
           <span className="nome">{c.nome}</span>
         </button>
       ))}
@@ -317,26 +316,27 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
 
   return (
     <div className="schermo totem">
-      <Testata annulla={ricomincia} />
+      <Testata annulla={ricomincia} titolo="Ordina" />
       <div style={{ flex: 1, display: "flex", flexDirection: verticale ? "column" : "row", minHeight: 0 }}>
         {strisciaCategorie}
         <section key={categoria} className="scorri t-entra" style={{ flex: 1, padding: verticale ? "18px 22px 24px" : "18px 24px" }}>
           <h1 className="t-titolo">{catCorrente?.nome} <small>{inCategoria.length} {inCategoria.length === 1 ? "proposta" : "proposte"}</small></h1>
-          <div className="t-griglia" style={{ gridTemplateColumns: verticale ? "repeat(3, 1fr)" : "repeat(auto-fill, minmax(210px, 1fr))" }}>
+          <div className="t-griglia">
             {inCategoria.map((p) => {
               const nel = carrello.filter((r) => r.id_prodotto === p.id).reduce((s, r) => s + r.quantita, 0);
               return (
                 <button key={p.id} onClick={() => setAperto(p)} className="t-carta">
+                  <div className="testo">
+                    <div className="nome">{p.nome}</div>
+                    <div className="descr">{p.descrizione ?? ""}</div>
+                    <div className="prezzo">
+                      <b className={p.prezzo > 0 ? "" : "vuoto"}>{p.prezzo > 0 ? euro(p.prezzo) : "alla cassa"}</b>
+                      {catCorrente && /novit/i.test(catCorrente.nome) && <span className="t-etichetta">! Novità</span>}
+                    </div>
+                  </div>
                   <div className="fotobox">
                     <Foto p={p} classe="foto" />
-                    {catCorrente && /novit/i.test(catCorrente.nome) && <span className="t-etichetta">Novità</span>}
                     {nel > 0 && <span className="nel-carrello">×{nel}</span>}
-                    <span className={"bollo" + (p.prezzo > 0 ? "" : " vuoto")}>{p.prezzo > 0 ? euro(p.prezzo) : "alla cassa"}</span>
-                  </div>
-                  <div className="nome">{p.nome}</div>
-                  <div className="descr">{p.descrizione ?? ""}</div>
-                  <div className="prezzo">
-                    <span>Tocca per aggiungere</span>
                     <span className="piu">+</span>
                   </div>
                 </button>
@@ -346,9 +346,15 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
         </section>
       </div>
 
-      <div className="t-barra">
-        <div className="tot"><small>Il tuo ordine · {articoli} {articoli === 1 ? "articolo" : "articoli"}</small><b>{euro(totale)}</b></div>
-        <button onClick={() => setPasso("carrello")} disabled={carrello.length === 0} className="t-b-oro">Vedi ordine{articoli > 0 && <span className="conto">{articoli}</span>}</button>
+      <div className="t-barra t-barra-app">
+        <button onClick={() => setPasso("carrello")} disabled={carrello.length === 0} className="t-vai">
+          <span className="conto">{articoli}</span>
+          <span className="etich">
+            <span>{articoli === 0 ? "Il tuo ordine" : "Vedi ordine"}</span>
+            <small>{articoli === 0 ? "Tocca un prodotto per aggiungerlo" : carrello.map((r) => (r.quantita > 1 ? `${r.quantita}× ` : "") + r.descrizione).join(" · ")}</small>
+          </span>
+          <b>{euro(totale)}</b>
+        </button>
       </div>
 
       {aperto && (
@@ -482,16 +488,20 @@ function Contatore({ n, meno, piu, grande }: { n: number; meno: () => void; piu:
   );
 }
 
-/** La fascia vino con il logo, come l'app: «← Menù» a sinistra quando si può tornare, «Annulla» quando si ricomincia. */
-function Testata({ indietro, annulla }: { indietro?: () => void; annulla?: () => void }) {
+/** Come l'app: la fascia sabbia col nostro logo, sotto la barra vino col titolo del passo;
+ *  «‹ Menù» a sinistra quando si può tornare, «Annulla» quando si ricomincia. */
+function Testata({ indietro, annulla, titolo }: { indietro?: () => void; annulla?: () => void; titolo: string }) {
   return (
     <>
-      <div className="t-testata">
-        {indietro && <button className="indietro" onClick={indietro}>← Menù</button>}
-        {annulla && <button className="indietro" onClick={annulla}>Annulla</button>}
-        <img src="/brand/logo-amanoamano-chiaro.png" alt="A Mano A Mano" />
+      <div className="t-sabbia">
+        <img src="/brand/logo-amanoamano.png" alt="A Mano A Mano" />
+        <img src="/brand/bollino.png" alt="" className="bollino" />
       </div>
-      <div className="t-oro-linea" />
+      <div className="t-testata">
+        {indietro && <button className="indietro" onClick={indietro}>‹ Menù</button>}
+        {annulla && <button className="indietro" onClick={annulla}>Annulla</button>}
+        <span className="titolo">{titolo}</span>
+      </div>
     </>
   );
 }
