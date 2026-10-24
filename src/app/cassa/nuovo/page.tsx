@@ -661,7 +661,7 @@ function Cassa() {
         )}
         {pagamento === "contanti" && tipo === "domicilio" && Number(pagaCon.replace(",", ".")) > totale + costoConsegna && (
           <div style={{ margin: "-2px 6px 6px", fontSize: 14, fontWeight: 700 }}>
-            Resto da portare: {euro(Number(pagaCon.replace(",", ".")) - totale - costoConsegna)}
+            Resto da portare: {euro(Number(pagaCon.replace(",", ".")) - Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - scontoManuale))}
           </div>
         )}
         <div style={{ display: "flex", gap: 4, margin: "0 6px 6px", alignItems: "center" }}>
@@ -685,6 +685,8 @@ function Cassa() {
             {errore}
           </div>
         )}
+        {/* critico giro 18: il messaggio dell'invio e «scegli Contanti o POS» finivano sotto il blocco fisso: stanno nel blocco */}
+        <div className="c-fondo">
         {esito && (
           <div role="status" className="esito-invio" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 12, background: "#eef7ea", border: "2px solid var(--ok)", color: "var(--ok)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
             {esito}
@@ -714,6 +716,7 @@ function Cassa() {
         <button onClick={invia} className="primario c-invia" disabled={invio || righe.length === 0 || !!modifica?.bloccata || (!modifica && ((tipo === "tavolo" && !idTavolo) || (tipo === "banco" && !pagamento) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)))} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
           {invio ? (modifica ? "Salvo…" : "Invio…") : modifica ? "Salva e ristampa" : "Invia in cucina"}
         </button>
+        </div>
       </aside>
     </div>
   );

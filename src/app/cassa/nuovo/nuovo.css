@@ -5,3 +5,13 @@
   .cassa-nuovo .scorri { padding-bottom: 200px !important; }
   .cassa-nuovo .esito-invio { position: fixed; top: 58px; left: 8px; right: 8px; z-index: 70; margin: 0 !important; box-shadow: 0 8px 22px rgba(26,23,21,.25); }
 }
+
+/* critico giro 18: sul PC il blocco in fondo (messaggi, totale, INVIA) è uno solo e sta fermo in fondo
+   alla colonna che scorre; i tasti della comanda (Adesso, Contanti, POS, Applica, Svuota…) non scendono
+   sotto i 44 px nemmeno con lo stile in riga. */
+@media (min-width: 601px) {
+  .cassa-comanda .c-fondo { position: sticky; bottom: 0; background: #fff; z-index: 2; padding-top: 4px; }
+  .cassa-comanda .c-totale { position: static; }
+  .cassa-comanda .c-invia { position: static; }
+  .cassa-comanda button { min-height: 44px !important; }
+}
