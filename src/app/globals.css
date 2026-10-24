@@ -213,14 +213,14 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .f-pill.lente { background: var(--vino-chiaro); color: var(--vino); }
 
 /* Fasce (24/10/2026): −/+ sulla riga, il turno in testa, le prossime consegne con chi le porta */
-.f-passo { width: 36px; height: 36px; padding: 0; border-radius: 999px; font-size: 20px; font-weight: 700; line-height: 1; margin: 0 4px; vertical-align: middle; }
+.f-passo { width: 44px; height: 44px; padding: 0; border-radius: 999px; font-size: 22px; font-weight: 700; line-height: 1; margin: 0 3px; vertical-align: middle; }
 .f-turno { font-size: 15px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--oro); color: var(--testo); text-decoration: none; }
 .f-turno b { color: var(--vino); }
 .f-prossime { margin-top: 12px; }
 .f-prossime h2 { margin: 0 0 6px; font-size: 18px; }
 .f-prossime h2 small { color: var(--muto); font-weight: 400; }
-.f-cons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 6px 0; border-top: 1px solid var(--bordo); font-size: 15px; }
-.f-cons .f-ora { font-variant-numeric: tabular-nums; min-width: 48px; }
+.f-cons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--bordo); font-size: 16px; }
+.f-cons .f-ora { font-variant-numeric: tabular-nums; min-width: 52px; font-size: 18px; color: var(--vino); }
 .f-cons .f-via { flex: 1; min-width: 140px; }
 .f-cons .f-chi { padding: 2px 10px; border-radius: 999px; font-size: 14px; background: var(--bordo); }
 .f-cons.da_assegnare .f-chi { background: var(--oro); color: var(--testo); }
@@ -280,3 +280,17 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .cliente-pagina .c-lista li b { font-variant-numeric: tabular-nums; color: var(--vino); }
 .cliente-pagina .mappa-link { min-height: 40px; display: inline-flex; align-items: center; padding: 0 14px; }
 .cliente-pagina textarea { min-height: 72px; font-size: 15px; }
+
+/* /cassa/fasce (giro 7): sul telefono la tabella non scorre di lato. Sotto i 620 px il − e il +
+   vanno sotto la pillola, nella stessa cella: stessi tre tasti, stesso tocco, niente da trascinare. */
+.fasce-pagina .f-pill { font-size: 14px; padding: 4px 10px; }
+@media (max-width: 620px) {
+  .fasce-pagina .f-col-ora { width: 58px !important; padding-left: 8px !important; padding-right: 4px !important; font-size: 16px !important; }
+  .fasce-pagina .f-col-ord { width: 54px !important; padding: 4px 2px !important; }
+  .fasce-pagina .f-cella { white-space: normal !important; padding: 6px 2px !important; }
+  .fasce-pagina .f-cella { display: table-cell; }
+  .fasce-pagina .f-cella > button { margin: 0; }
+  .fasce-pagina .f-cella > button:nth-child(2) { display: block; width: 100%; min-width: 0; margin: 0 auto 4px; }
+  .fasce-pagina .f-cella > .f-passo { display: inline-block; width: 44px; margin: 0 2px; }
+  .fasce-pagina .f-legenda { font-size: 13px; }
+}
