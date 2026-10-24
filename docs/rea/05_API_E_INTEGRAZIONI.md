@@ -80,7 +80,7 @@ Il form «GOOGLE» è collegato a Reserve with Google; il form «PRENOTAZIONI» 
 Online: **Nexi** (XPay) dall'app e dal sito («PAGATA CON NEXI»). Alla consegna: contanti (chiede «con quanto paghi»); il POS alla consegna è configurato ma spento. Al ritiro: contanti alla cassa, bancomat alla cassa, online. In negozio il POS bancario non è collegato alla cassa: si batte sul POS e si stampa lo scontrino scegliendo «POS».
 
 ## 5.7 Push, email, WhatsApp
-Push dall'app (Firebase, titolo + messaggio + `[nome]`), 12 notifiche automatiche a eventi, email di prenotazione, coupon via WhatsApp (categoria COUPON WHATSAPP, «NON CUCINO» 50 ordini) e Active Campaign (categoria dedicata). Boost CRM esterno.
+Push dall'app (Firebase su Android e APNs su iOS tramite il server di Velocissimo, titolo + messaggio + `[nome]`; per stato ordine e chi le può mandare: `11_PUSH_E_AVVISI_AL_CLIENTE.md`), 12 notifiche automatiche a eventi, email di prenotazione, coupon via WhatsApp (categoria COUPON WHATSAPP, «NON CUCINO» 50 ordini) e Active Campaign (categoria dedicata). Boost CRM esterno.
 
 ## 5.8 Cosa ne esce per la cassa nuova
 1. **Le vendite di Velocissimo si leggono dall'API** (`/vendite`, una chiamata per giornata, 28 ore): mano-a-mano-os può smettere di importare il CSV a mano, e la cassa nuova deve esporre la stessa forma di riga quando prenderà il posto di Velocissimo (così l'OS non cambia).

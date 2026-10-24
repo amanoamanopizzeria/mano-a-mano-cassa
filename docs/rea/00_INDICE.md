@@ -1,6 +1,6 @@
 # REA — Reverse engineering del sistema Velocissimo / 2Bit di A Mano a Mano Pugliese
 
-*Fatto il 22–23/10/2026. Edoardo: «è un REA, non da zero: l'app iOS/Android e il sistema nostro esistente sono la base» e «facciamolo fatto bene, da 10». Clean-room sul codice (niente codice 2Bit o Velocissimo), non sul comportamento: ogni regola che oggi il cliente, lo staff e i rider conoscono va ricostruita uguale nella cassa nuova, e poi migliorata.*
+*Fatto il 22–24/10/2026 (08–12 il 24/10: «studia tutto, tutto il codice» — Edoardo). Edoardo: «è un REA, non da zero: l'app iOS/Android e il sistema nostro esistente sono la base» e «facciamolo fatto bene, da 10». Clean-room sul codice (niente codice 2Bit o Velocissimo), non sul comportamento: ogni regola che oggi il cliente, lo staff e i rider conoscono va ricostruita uguale nella cassa nuova, e poi migliorata.*
 
 ## Come è stato fatto
 
@@ -21,10 +21,15 @@
 | `05_API_E_INTEGRAZIONI.md` | Le tre API (pluto-server, ping-executer, **Public API v1** con i 15 endpoint: vendite, borsello, Ordering API), Deliverect, Centralissimo, Reserve with Google, Nexi, push |
 | `06_DATI.md` | Entità per entità: Velocissimo → tabella nostra → cosa manca; le **141 variazioni coi prezzi**; la vista vendite per mano-a-mano-os |
 | `07_GAP.md` | **La lista dei lavori** in ordine, con la migrazione che li fa (0021 → 0026), cosa resta fuori apposta, cosa si chiede a Edoardo |
+| `08_APP_E_INGRESSO_ORDINI.md` | L'app nei due store (iOS a nome **Vi.Ru**, Android a nome **Velocissimo**), il percorso d'ordine **chiamata per chiamata** con la forma dei dati, tutti gli endpoint del JavaScript, la Public API riletta per intero, **le sei strade** per portare gli ordini dell'app nella cassa nuova con la raccomandazione |
+| `09_CASSA_2BIT_A_FONDO.md` | Vecchia 2Bit contro Velocissimo POS nuovo; il video ascoltato per intero, funzione per funzione (fasce, ordini, rider, sala, soldi, stampa) contro la nostra cassa, coi minutaggi |
+| `10_COSA_MANCA_PER_SOSTITUIRLO.md` | **La lista finale**: 20 lavori in tre gruppi (la serata, i clienti dell'app, il resto), ciascuno con fonte Velocissimo, cosa abbiamo e cosa manca; le domande per Edoardo |
+| `11_PUSH_E_AVVISI_AL_CLIENTE.md` | Le push: Firebase/APNs tramite il server di Velocissimo, i testi per stato configurati nel back-office, perché la nostra cassa non le può far partire, quando il permesso del cliente si conserva (aggiornamento della stessa app) |
+| `12_TOTEM.md` | Il totem: la web-app in modalità totem, registrazione, mangia qui/porta via, nome a video, POS Ingenico/Viva, numero comanda e stampa dal Velocissimo POS sulla rete locale (porta 37150) |
 | `dati/prodotti_nomi_ricette.md` | I 177 prodotti: id, codice, nome, pagina catalogo, ricetta, descrizione |
 | `dati/prodotti_listini.md` | I tre listini per prodotto e il food cost |
 
-## Le dieci cose da sapere a memoria
+## Le dodici cose da sapere a memoria
 
 1. **Tre listini**: L1 app/sito/banco/asporto (Margherita 7,20), L2 sala/tavoli (8,50: Edoardo l'ha controllato sul menù del QR il 22/10), L3 piattaforme/Deliverect (7,90). Il tipo d'ordine e il canale decidono il listino.
 2. **Le variazioni stanno sulla categoria**, con min/max/max gratis: 5 gruppi sulle pizze, 4 sulle pucce, 4 + salse sui burger, nulla su fritti/bevande/dolci; i menu hanno gruppi di scelta obbligatori a 0 €. Un extra una volta per riga; «senza» gratis solo sugli ingredienti della ricetta.
@@ -36,3 +41,5 @@
 8. **Coupon e premi contano**: ~10 coupon al giorno, «Benvenuto da …» per canale di acquisizione, settimanali lun–gio, 3 premi a punti riscattati centinaia di volte.
 9. **Il rider si assegna da solo** la prima comanda e tiene un borsello (prelievi − depositi = contanti in mano).
 10. **Le vendite si leggono dall'API** (`/vendite`, una giornata per chiamata, 28 ore): la cassa nuova deve esporre la stessa riga, così mano-a-mano-os non cambia.
+11. **Gli ordini dell'app nascono nel cloud di Velocissimo** e non c'è un modo pulito per riceverli: nessun webhook, nessuna lista ordini nell'API. La strada è che app e sito parlino con noi; Velocissimo resta acceso accanto solo come ponte (`08` §8.4).
+12. **Le push le manda Velocissimo**, a ogni cambio di stato fatto dentro Velocissimo. Il permesso del cliente si conserva solo se la nostra app arriva come **aggiornamento della stessa app** (`11` §11.5).

@@ -42,3 +42,23 @@ C'è: ordini con righe e variazioni, tavoli, capacità per fasce di 15 min (pizz
 2. I **punti per euro** e il **costo in punti** dei tre premi (si leggono nell'app nativa o nel back-office: li cerco io, lo chiedo solo se non li trovo).
 3. Credenziali **Deliverect** e `SUPABASE_SERVICE_ROLE_KEY` su Vercel.
 4. Le foto del **centralino**.
+
+## 7.5 Dopo il REA approfondito (24/10/2026): i lavori nuovi, per importanza
+
+Il REA è stato rifatto a fondo (capitoli `08`–`12`): app chiamata per chiamata, push, totem,
+video per intero, Public API per intero. La lista completa con le fonti è
+**`10_COSA_MANCA_PER_SOSTITUIRLO.md`**; qui i lavori che il §7.2 non aveva, nell'ordine:
+
+| # | Lavoro nuovo | Perché | Dove |
+|---|---|---|---|
+| 19 | **Agente di stampa in negozio** (ESC/POS, coda realtime, stampa all'arrivo di ogni ordine, «RISTAMPA», fine carta) | senza, un ordine da app/sito/totem/piattaforma di sera non lo vede nessuno; il §7.2 n. 16 lo metteva in fondo: va in cima | `10` n. 1, `09` §9.2 Stampa, `12` §12.4 |
+| 20 | **Preordini che non stampano** finché non è ora; minuti al ritardo in lista | Velocissimo ha l'area preordini per stato | `10` n. 3 |
+| 21 | **Assegna il rider dalla mappa** della cassa | video 18:52; oggi la mappa mostra e basta | `10` n. 4 |
+| 22 | **Fascia piena = «piena»**, non sparita | video 22:31, `soldOut` del checkout | `10` n. 5 |
+| 23 | **Pagina d'ordine nostra per il sito** + `/api/ordini` col contratto dell'Ordering API (prezzi dal server) | è la prima fonte di ordini app che si sposta senza chiedere niente a nessuno | `10` n. 6–7, `08` §8.4 strada E |
+| 24 | **Avvisi per stato** (testi modificabili, `dispositivo_cliente`, FCM/APNs o web push) sulla coda `notifica_cliente` | Edoardo: avvisi dentro l'app, non WhatsApp; Velocissimo li manda per stato | `10` n. 9, `11` |
+| 25 | **App nativa come aggiornamento della stessa app** (iOS Vi.Ru; Android da trasferire) | è l'unico modo di tenere installazioni e permesso delle notifiche | `10` n. 10, `08` §8.6, `11` §11.5 |
+| 26 | Totem: mangia qui/porta via, attesa stimata, POS sul totem | il totem Velocissimo lo fa | `10` n. 13, `12` §12.5 |
+
+Il §7.2 resta valido per quello che c'era; lo **scontrino fiscale** (n. 16 lì) sale subito
+dopo la stampa (`10` n. 2). Domande nuove per Edoardo: `10` §E.
