@@ -90,53 +90,53 @@ function Capacita() {
       <h1>Capacità — quarti d&apos;ora</h1>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
-      <div className="carta" style={{ marginBottom: 12 }}>
-        <label>
-          Giorno{" "}
+      <div className="carta c-turno" style={{ marginBottom: 12 }}>
+        <label className="c-campo">
+          <span>Giorno</span>
           <input type="date" value={giorno} onChange={(e) => setGiorno(e.target.value)} />
         </label>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 10, alignItems: "end" }}>
-          <label>
-            Pizzaioli
-            <input type="number" min={0} value={pizzaioli} onChange={(e) => setPizzaioli(Number(e.target.value))} style={{ width: 80 }} />
+        <div className="c-fila">
+          <label className="c-campo">
+            <span>Pizzaioli</span>
+            <input type="number" min={0} value={pizzaioli} onChange={(e) => setPizzaioli(Number(e.target.value))} />
           </label>
-          <label>
-            Rider
-            <input type="number" min={0} value={rider} onChange={(e) => setRider(Number(e.target.value))} style={{ width: 80 }} />
+          <label className="c-campo">
+            <span>Rider</span>
+            <input type="number" min={0} value={rider} onChange={(e) => setRider(Number(e.target.value))} />
           </label>
-          <button className="primario" onClick={salvaTurni}>
-            {salvato ? "Salvato" : "Salva turni"}
+          <button className={"primario c-salva" + (salvato ? " fatto" : "")} onClick={salvaTurni} aria-live="polite">
+            {salvato ? "✓ Salvato" : "Salva turni"}
           </button>
         </div>
-        <p className="muto" style={{ marginTop: 8 }}>
-          {ereditato && <>Turno non impostato per questo giorno: vale quello del {new Date(ereditato + "T12:00").toLocaleDateString("it-IT", { day: "numeric", month: "long" })} finché non salvi. </>}
-          Ogni quarto d&apos;ora: fino a {fasce[0]?.pizze_max ?? 0} pizze e {rider} consegne (un rider per consegna).
+        {ereditato && <p className="muto c-eredita">Turno non impostato per questo giorno: vale quello del {new Date(ereditato + "T12:00").toLocaleDateString("it-IT", { day: "numeric", month: "long" })} finché non salvi.</p>}
+        <p className="c-frase">
+          Ogni quarto d&apos;ora: fino a <b>{fasce[0]?.pizze_max ?? 0}</b> pizze e <b>{rider}</b> consegne <small>(un rider per consegna)</small>
         </p>
       </div>
 
-      <div className="griglia">
+      <div className="griglia c-griglia">
         {fasce.map((f) => {
           const pienoProd = f.pizze_max > 0 && f.pizze_occupate >= f.pizze_max;
           const pienoCons = f.consegne_max > 0 && f.consegne_occupate >= f.consegne_max;
           return (
-            <div key={f.ora} className="carta" style={{ opacity: f.pizze_max === 0 && f.consegne_max === 0 ? 0.5 : 1 }}>
+            <div key={f.ora} className={"carta c-fascia" + (pienoProd || pienoCons || f.bloccata_produzione || f.bloccata_consegne ? " piena" : "")} style={{ opacity: f.pizze_max === 0 && f.consegne_max === 0 ? 0.5 : 1 }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <strong style={{ fontSize: 18, fontVariantNumeric: "tabular-nums" }}>{f.ora.slice(0, 5)}</strong>
+                <strong className="ora">{f.ora.slice(0, 5)}</strong>
                 {(pienoProd || pienoCons || f.bloccata_produzione || f.bloccata_consegne) && (
                   <span className="badge ricevuto" title="SOLD OUT">
                     {f.bloccata_produzione ? "BLOCCATO" : f.bloccata_consegne ? "NO CONSEGNE" : pienoProd ? "PIZZE FINITE" : "RIDER PIENI"}
                   </span>
                 )}
               </div>
-              <div className="muto">
-                Pizze {f.pizze_occupate} / {f.pizze_max}
+              <div className="c-conta">
+                Pizze <b>{f.pizze_occupate}</b> / {f.pizze_max}
                 {f.bloccata_produzione && " · bloccata"}
               </div>
-              <div className="muto">
-                Consegne {f.consegne_occupate} / {f.consegne_max}
+              <div className="c-conta">
+                Consegne <b>{f.consegne_occupate}</b> / {f.consegne_max}
                 {f.bloccata_consegne && " · bloccata"}
               </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+              <div className="c-azioni">
                 <button className={f.bloccata_produzione ? "primario" : "blocco"} onClick={() => alterna(f.ora, "produzione", f.bloccata_produzione)}>
                   {f.bloccata_produzione ? "✕ Pizze bloccate · sblocca" : "Blocca pizze"}
                 </button>

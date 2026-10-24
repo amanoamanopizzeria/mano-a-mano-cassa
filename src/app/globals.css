@@ -428,3 +428,32 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
   .riepilogo .r-cassa .secondari { grid-template-columns: repeat(2, 1fr); }
   .riepilogo .r-cassa .secondari .carta.numero strong { font-size: 26px; }
 }
+
+/* /cassa/capacita: il turno del giorno con pizzaioli e rider in grande, la frase «fino a N pizze e M
+   consegne» coi numeri in vino, il «Salvato» che diventa verde con la spunta; le carte dei quarti d'ora
+   con l'ora in Oswald, i conti leggibili e i tasti da 44 px; piena o bloccata ha il filo oro. */
+.capacita .c-turno { padding: 14px 16px; }
+.capacita .c-campo { display: inline-flex; flex-direction: column; gap: 4px; }
+.capacita .c-campo > span { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 13px; color: var(--muto); }
+.capacita .c-campo input { min-height: 48px; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.capacita .c-campo input[type="number"] { width: 96px; text-align: center; font-size: 26px; font-family: "Oswald", sans-serif; font-weight: 600; }
+.capacita .c-fila { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; align-items: flex-end; }
+.capacita .c-salva { min-height: 48px; font-size: 16px; padding: 0 22px; transition: background .2s; }
+.capacita .c-salva.fatto { background: var(--ok); border-color: var(--ok); color: #fff; box-shadow: 0 0 0 4px rgba(46,125,50,.25); }
+.capacita .c-eredita { margin: 10px 0 0; font-size: 14px; }
+.capacita .c-frase { margin: 12px 0 0; padding: 10px 14px; border-radius: 12px; background: var(--oro-velo); border: 1px solid var(--oro-chiaro); font-size: 16px; line-height: 1.4; }
+.capacita .c-frase b { font-family: "Oswald", sans-serif; font-size: 26px; font-weight: 600; color: var(--vino); font-variant-numeric: tabular-nums; vertical-align: -2px; margin: 0 2px; }
+.capacita .c-frase small { font-size: 14px; color: var(--muto); }
+.capacita .c-griglia { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.capacita .c-fascia { padding: 10px 12px; }
+.capacita .c-fascia.piena { border-color: var(--oro); box-shadow: inset 4px 0 0 var(--oro), var(--ombra); }
+.capacita .c-fascia .ora { font-family: "Oswald", sans-serif; font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+.capacita .c-fascia .badge { font-size: 13px; }
+.capacita .c-conta { font-size: 15px; color: var(--muto); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.capacita .c-conta b { color: var(--testo); font-size: 17px; }
+.capacita .c-azioni { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.capacita .c-azioni button { flex: 1 1 auto; min-height: 44px; font-size: 14px; padding: 0 10px; white-space: nowrap; }
+@media (max-width: 620px) {
+  .capacita .c-griglia { grid-template-columns: repeat(2, 1fr); }
+  .capacita .c-azioni button { font-size: 13px; padding: 0 6px; }
+}
