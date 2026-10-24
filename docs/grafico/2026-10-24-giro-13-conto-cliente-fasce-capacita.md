@@ -31,7 +31,7 @@ riquadro oro da 17 con l'etichetta «NOTE FISSE» prima di «Prendi l'ordine»
 (rosso se black list). Stesse chiamate, stessi campi. 1 schermata, 0 testi
 < 13, 0 tasti < 40 prima e dopo.
 
-## 3. `/cassa/fasce` a 1024 — `3a7bebe` (commit vuoto per un rebase a metà; il CSS è in `fd71976`) e `97e…` (il `!important` della pillola)
+## 3. `/cassa/fasce` a 1024 — `3a7bebe` (commit vuoto per un rebase a metà; il CSS è in `fd71976`) e `2039991` (il `!important` della pillola)
 
 Dai 900 px: ora 22 (era 18), pillola Oswald 20 da 96×44 (era 16, 40 px: la
 prima regola perdeva contro lo stile in riga, corretta nel commit del
