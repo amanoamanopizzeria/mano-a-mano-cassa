@@ -630,3 +630,18 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 @media (min-width: 900px) { .borsello .b-mov .chi .muto { display: inline; margin-left: 8px; } }
 /* /cassa: gli ordini di ieri e prima stanno chiusi (critico giro 16) */
 .lista-ordini .vecchi { display: block; margin: 0 0 12px; min-height: 40px; padding: 6px 14px; border-radius: 999px; background: #fff; border: 1px solid var(--bordo); color: var(--muto); font-size: 14px; }
+
+/* ===== giro 15 del grafico (24/10/2026) ===== */
+/* /cassa/nuovo a 390, pannello chiuso: maniglia, Contanti/POS/Già pagato, totale e Invia in cucina al marchio
+   (e il messaggio verde dell'invio a due righe): tutto insieme non supera un terzo dello schermo. */
+@media (max-width: 600px) {
+  .cassa-comanda:not(.aperta) { max-height: 34dvh; }
+  .cassa-comanda .c-paga { gap: 6px !important; margin: 6px 6px 0 !important; }
+  .cassa-comanda .c-paga button { flex: 1 1 0; min-width: 0; min-height: 44px !important; padding: 0 6px !important; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 15px !important; white-space: nowrap; }
+  .cassa-comanda .c-paga button:not(.primario) { background: #fff; border: 1.5px solid var(--oro-chiaro); color: var(--vino); }
+  .cassa-comanda .c-paga input { min-height: 44px !important; flex: 1 1 90px !important; }
+  .cassa-comanda .esito-invio { margin: 6px 6px 0 !important; padding: 6px 10px !important; font-size: 14px !important; line-height: 1.3 !important; border-width: 0 0 0 5px !important; border-radius: 8px !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .cassa-comanda .c-totale { padding: 4px 6px 2px !important; }
+  .cassa-comanda .c-totale button { min-height: 44px !important; }
+  .cassa-comanda .c-invia { margin: 4px 6px 6px !important; padding: 12px !important; min-height: 54px; }
+}
