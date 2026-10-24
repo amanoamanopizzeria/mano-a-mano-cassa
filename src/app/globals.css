@@ -402,3 +402,29 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
   .sala .conto .totale { border-top: 2px solid #000; font-size: 14px; color: #000; }
   .sala .conto .totale strong { font-size: 26px; color: #000; }
 }
+
+/* ===== giro 10 del grafico (24/10/2026) ===== */
+/* /cassa/riepilogo, il blocco «Cassa»: la cifra che conta a fine serata (i contanti in cassa) in una
+   carta vino grande a sinistra; le altre sei in piccolo a destra; i contanti in mano ai rider in una
+   lista. «Ancora aperti» si colora d'oro quando c'è qualcosa da chiudere. */
+.riepilogo .r-cassa { display: grid; grid-template-columns: minmax(240px, 1fr) 2fr; gap: 12px; align-items: start; }
+.riepilogo .r-cassa .principale { padding: 16px 18px; min-height: 100%; display: flex; flex-direction: column; justify-content: center; border: 2px solid var(--vino); background: var(--vino-chiaro); }
+.riepilogo .r-cassa .principale .eti { font-size: 15px; color: var(--vino); }
+.riepilogo .r-cassa .principale strong { font-size: 56px; color: var(--vino); line-height: 1; margin-top: 4px; }
+.riepilogo .r-cassa .principale small { font-family: "Figtree", sans-serif; font-size: 14px; color: var(--muto); margin-top: 8px; }
+.riepilogo .r-cassa .secondari { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.riepilogo .r-cassa .secondari .carta.numero { padding: 10px 12px; }
+.riepilogo .r-cassa .secondari .carta.numero .eti { font-size: 13px; }
+.riepilogo .r-cassa .secondari .carta.numero strong { font-size: 28px; }
+.riepilogo .r-cassa .secondari .carta.numero.aperti { border-color: var(--oro); background: var(--oro-velo); }
+.riepilogo .r-cassa .secondari .carta.numero.aperti strong { color: var(--oro); }
+.riepilogo .r-cassa .in-mano { grid-column: 1 / -1; padding: 12px 16px; }
+.riepilogo .r-cassa .in-mano .eti { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 13px; color: var(--muto); margin-bottom: 4px; }
+.riepilogo .r-cassa .in-mano .riga { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid var(--bordo); font-size: 16px; }
+.riepilogo .r-cassa .in-mano .riga strong { font-family: "Oswald", sans-serif; font-size: 24px; font-weight: 600; color: var(--vino); font-variant-numeric: tabular-nums; }
+@media (max-width: 620px) {
+  .riepilogo .r-cassa { grid-template-columns: 1fr; gap: 8px; }
+  .riepilogo .r-cassa .principale strong { font-size: 48px; }
+  .riepilogo .r-cassa .secondari { grid-template-columns: repeat(2, 1fr); }
+  .riepilogo .r-cassa .secondari .carta.numero strong { font-size: 26px; }
+}

@@ -95,15 +95,22 @@ function Riepilogo() {
 
       <h2>Cassa</h2>
       {incassato ? (
-        <div className="griglia r-cima">
-          <div className="carta numero vino"><div className="eti">In cassa · contanti</div><strong>{eur(Number(incassato.contantiInCassa))}</strong></div>
-          <div className="carta numero"><div className="eti">In cassa · POS</div><strong>{eur(Number(incassato.posInCassa))}</strong></div>
-          <div className="carta numero"><div className="eti">Ai rider · contanti</div><strong>{eur(Number(incassato.contantiAiRider))}</strong></div>
-          <div className="carta numero"><div className="eti">Ai rider · POS</div><strong>{eur(Number(incassato.posAiRider))}</strong></div>
-          <div className="carta numero"><div className="eti">Online nostro</div><strong>{eur(Number(incassato.onlineNostro))}</strong></div>
-          {Number(incassato.piattaforme) > 0 && <div className="carta numero"><div className="eti">Piattaforme</div><strong>{eur(Number(incassato.piattaforme))}</strong></div>}
-          <div className="carta numero"><div className="eti">Ancora aperti</div><strong>{eur(Number(incassato.ancoraAperti))}</strong></div>
-          {riderDaSaldare.map((r) => <div key={r.nome} className="carta numero"><div className="eti">In mano a {r.nome}</div><strong>{eur(r.da_saldare)}</strong></div>)}
+        <div className="r-cassa">
+          <div className="carta numero vino principale"><div className="eti">In cassa · contanti</div><strong>{eur(Number(incassato.contantiInCassa))}</strong><small>quello che conti a fine serata</small></div>
+          <div className="secondari">
+            <div className="carta numero"><div className="eti">In cassa · POS</div><strong>{eur(Number(incassato.posInCassa))}</strong></div>
+            <div className="carta numero"><div className="eti">Ai rider · contanti</div><strong>{eur(Number(incassato.contantiAiRider))}</strong></div>
+            <div className="carta numero"><div className="eti">Ai rider · POS</div><strong>{eur(Number(incassato.posAiRider))}</strong></div>
+            <div className="carta numero"><div className="eti">Online nostro</div><strong>{eur(Number(incassato.onlineNostro))}</strong></div>
+            {Number(incassato.piattaforme) > 0 && <div className="carta numero"><div className="eti">Piattaforme</div><strong>{eur(Number(incassato.piattaforme))}</strong></div>}
+            <div className={"carta numero" + (Number(incassato.ancoraAperti) > 0 ? " aperti" : "")}><div className="eti">Ancora aperti</div><strong>{eur(Number(incassato.ancoraAperti))}</strong></div>
+          </div>
+          {riderDaSaldare.length > 0 && (
+            <div className="carta in-mano">
+              <div className="eti">In mano ai rider</div>
+              {riderDaSaldare.map((r) => <div key={r.nome} className="riga"><span>{r.nome}</span><strong>{eur(r.da_saldare)}</strong></div>)}
+            </div>
+          )}
         </div>
       ) : <p className="muto">Leggo la cassa…</p>}
 
