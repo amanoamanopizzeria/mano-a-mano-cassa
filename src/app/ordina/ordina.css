@@ -194,6 +194,7 @@
 .o-fatto .cerchio { width: 72px; height: 72px; border-radius: 999px; background: var(--ok); color: #fff; display: inline-flex; align-items: center; justify-content: center; margin: 4px 0 8px; box-shadow: 0 4px 14px rgba(46,125,79,.3); }
 .o-fatto .cerchio.no { background: var(--vino); font-size: 36px; font-weight: 800; box-shadow: 0 4px 14px rgba(141,5,54,.3); }
 .o-fatto .cerchio svg { width: 40px; height: 40px; stroke: #fff; stroke-width: 6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.o-fatto .lapide { font-family: Oswald, sans-serif; font-weight: 500; font-size: 13px; letter-spacing: .18em; text-transform: uppercase; color: var(--sabbia-scura); margin-top: 2px; }
 .o-fatto h1 { font-family: Oswald, sans-serif; font-weight: 600; font-size: 30px; line-height: 1.1; text-transform: uppercase; letter-spacing: .03em; margin: 6px 0 4px; }
 .o-fatto .numero { display: inline-flex; flex-direction: column; background: var(--sabbia-chiara); border: 1.5px solid var(--sabbia); border-radius: 6px; padding: 10px 32px 8px; margin: 12px 0 10px; }
 .o-fatto .numero small { color: var(--testo2); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }

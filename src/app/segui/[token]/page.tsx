@@ -102,7 +102,7 @@ export default function Segui({ params }: { params: Promise<{ token: string }> }
           <img src="/brand/logo-amanoamano.png" alt="A Mano A Mano Pugliese" />
           <img src="/brand/bollino.png" alt="" className="bollino" />
         </div>
-        <div className="sg-vino"><h1>{s?.numero ? `Ordine ${s.numero}` : "Il tuo ordine"}</h1></div>
+        <div className="sg-vino"><h1>{s?.numero ? `Ordine ${s.numero}` : "Il tuo ordine"}</h1><span className="sg-lapide">A Mano A Mano · Pugliese</span></div>
       </header>
       <div className="sg-corpo">
 
@@ -153,6 +153,10 @@ const CSS = `
 .sg-sabbia .bollino { height: 34px; width: 34px; border-radius: 999px; background: #fff; padding: 2px; }
 .sg-vino { background: var(--vino); color: #fff; min-height: 44px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
 .sg h1 { margin: 0; font-size: 17px; font-weight: 700; }
+.sg-vino { flex-direction: column; gap: 1px; padding: 6px 0; }
+.sg-lapide { font-family: Oswald, sans-serif; font-weight: 500; font-size: 13px; letter-spacing: .18em; text-transform: uppercase; opacity: .85; }
+.sg-errore { display: flex; align-items: center; gap: 12px; }
+.sg-errore::before { content: "!"; flex: none; width: 36px; height: 36px; border-radius: 999px; background: var(--vino); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; }
 .sg-corpo { padding: 14px 16px 28px; max-width: 760px; margin: 0 auto; box-sizing: border-box; }
 .sg-grande { margin-top: 4px; font-family: Oswald, sans-serif; font-weight: 600; font-size: 30px; line-height: 1.1; text-transform: uppercase; letter-spacing: .02em; color: var(--vino); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .sg-grande.consegnata { color: var(--ok); }

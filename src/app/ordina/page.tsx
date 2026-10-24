@@ -267,6 +267,7 @@ export default function Ordina() {
         <div className="o-corpo o-fatto o-entra">
           <img src="/brand/bollino.png" alt="" className="bollino" />
           <div className={"cerchio" + (esito.ok ? "" : " no")}>{esito.ok ? <svg viewBox="0 0 64 64" aria-hidden><path d="M14 34 L27 47 L50 18" /></svg> : "!"}</div>
+          <div className="lapide">A Mano A Mano · Pugliese</div>
           <h1>{esito.titolo}</h1>
           {esito.numero && <div className="numero"><small>Il tuo ordine</small><b>{esito.numero}</b></div>}
           <p>{esito.testo}</p>
