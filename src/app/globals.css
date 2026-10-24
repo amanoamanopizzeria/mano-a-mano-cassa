@@ -610,3 +610,20 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .rider .r-insieme { margin-top: 6px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--vino); color: #fff; font-size: 15px; font-weight: 600; line-height: 1.2; }
 .rider .r-insieme::before { content: "⇄"; font-size: 17px; }
 .rider .r-insieme b { font-family: "Oswald", sans-serif; font-size: 17px; font-weight: 600; letter-spacing: .02em; }
+/* /cassa/rider: le voci del borsello a righe (etichetta a sinistra, cifra a destra) a 390 e in fila a 1024;
+   i movimenti con nome e tipo sulla prima riga e il verso sulla seconda. */
+.borsello .b-voci { display: grid; grid-template-columns: 1fr; gap: 0; margin-top: 10px; border-top: 1px solid var(--bordo); }
+.borsello .b-voci > span { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--bordo); font-size: 15px; }
+.borsello .b-voci em { font-style: normal; color: var(--muto); }
+.borsello .b-voci b { font-size: 17px; font-weight: 700; }
+@media (min-width: 900px) {
+  .borsello .b-voci { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 14px; border-top: none; }
+  .borsello .b-voci > span { flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 0 4px; border-bottom: none; }
+  .borsello .b-voci em { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; font-family: "Oswald", sans-serif; font-weight: 500; }
+  .borsello .b-voci b { font-size: 20px; font-family: "Oswald", sans-serif; font-weight: 600; }
+}
+.borsello .b-mov { align-items: flex-start; }
+.borsello .b-mov .ora { font-size: 15px; padding-top: 2px; }
+.borsello .b-mov .chi b { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .03em; font-size: 17px; font-weight: 600; }
+.borsello .b-mov .chi .muto { display: block; font-size: 14px; margin-top: 2px; }
+@media (min-width: 900px) { .borsello .b-mov .chi .muto { display: inline; margin-left: 8px; } }

@@ -95,10 +95,10 @@ function RiderCassa() {
               <span className="b-mano"><span className="cifra">{euro(r.in_mano)}</span><span className="muto">in mano</span></span>
             </div>
             <div className="b-voci">
-              {r.in_corso > 0 && <span><b>{r.in_corso}</b> in corso</span>}
-              <span><b>{r.n_da_saldare}</b> da saldare <b>{euro(r.da_saldare)}</b></span>
-              <span>fondo e prelievi <b>{euro(r.prelievi)}</b></span>
-              <span>depositi <b>{euro(r.depositi)}</b></span>
+              {r.in_corso > 0 && <span><em>in corso</em><b>{r.in_corso}</b></span>}
+              <span><em>da saldare{r.n_da_saldare > 0 && <> ({r.n_da_saldare})</>}</em><b>{euro(r.da_saldare)}</b></span>
+              <span><em>fondo e prelievi</em><b>{euro(r.prelievi)}</b></span>
+              <span><em>depositi</em><b>{euro(r.depositi)}</b></span>
             </div>
             {aperto === r.id ? (
               <div className="b-modulo">
@@ -127,7 +127,7 @@ function RiderCassa() {
       {movimenti.map((m) => (
         <div key={m.id} className="b-mov">
           <span className="ora">{new Date(m.creato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</span>
-          <span className="chi"><b>{rider.find((r) => r.id === m.id_rider)?.nome ?? "?"}</b> · {m.fondo_cassa ? "fondo" : m.tipo} <span className="muto">({m.tipo === "deposito" ? "dal rider alla cassa" : "dalla cassa al rider"})</span>{m.note ? ` · ${m.note}` : ""}</span>
+          <span className="chi"><b>{rider.find((r) => r.id === m.id_rider)?.nome ?? "?"}</b> · {m.fondo_cassa ? "fondo" : m.tipo}<span className="muto">{m.tipo === "deposito" ? "dal rider alla cassa" : "dalla cassa al rider"}{m.note ? ` · ${m.note}` : ""}</span></span>
           <span className={"cifra " + (m.tipo === "deposito" ? "dep" : "prel")}>{m.tipo === "deposito" ? "+" : "−"} {euro(m.importo)}</span>
         </div>
       ))}
