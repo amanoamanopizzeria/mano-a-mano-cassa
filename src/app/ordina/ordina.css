@@ -190,7 +190,7 @@
    titolo Oswald, numero d'ordine grande su sabbia chiara, riepilogo come una sezione col filo,
    «Segui la consegna» sabbia da 52 px e «Nuovo ordine» a filo vino della stessa altezza. */
 .o-fatto { text-align: center; padding-top: 12px; padding-bottom: 32px; }
-.o-fatto .bollino { width: 96px; }
+.o-fatto .bollino { width: 96px; display: block; margin: 0 auto 4px; }
 .o-fatto .cerchio { width: 72px; height: 72px; border-radius: 999px; background: var(--ok); color: #fff; display: inline-flex; align-items: center; justify-content: center; margin: 4px 0 8px; box-shadow: 0 4px 14px rgba(46,125,79,.3); }
 .o-fatto .cerchio.no { background: var(--vino); font-size: 36px; font-weight: 800; box-shadow: 0 4px 14px rgba(141,5,54,.3); }
 .o-fatto .cerchio svg { width: 40px; height: 40px; stroke: #fff; stroke-width: 6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
