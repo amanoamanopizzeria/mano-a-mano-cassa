@@ -192,6 +192,7 @@ function Cassa() {
                 <div className="azioni">
                   <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
                   <button onClick={() => stampa(o.id)}>Stampa ora</button>
+                  <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>
                   <button onClick={() => cambiaStato(o.id, "annullato")} className={daConfermare === o.id ? "primario" : ""} style={{ marginLeft: "auto" }}>{daConfermare === o.id ? "Sicuro? Tocca ancora" : "Annullato"}</button>
                 </div>
               </article>
@@ -230,6 +231,7 @@ function Cassa() {
             <div className="azioni">
               <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
               <button onClick={() => stampa(o.id)} disabled={inStampa.includes(o.id)}>{inStampa.includes(o.id) ? "Stampo…" : "Stampa"}</button>
+              {(o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto") && <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>}
               {TRANSIZIONI_ORDINE[o.stato].map((s) => (
                 <button
                   key={s}

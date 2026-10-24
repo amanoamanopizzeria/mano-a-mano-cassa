@@ -21,6 +21,7 @@ interface Comanda {
   creato_il: string; ora_consegna: string | null; totale: number; note: string | null;
   pagamento: "contanti" | "pos" | null; costo_consegna: number; cliente: string | null; telefono: string | null;
   cliente_note?: string | null; paga_con?: number | null; pagato_online?: boolean; sconto?: number; codice_coupon?: string | null;
+  modificato_il?: string | null; stampe?: number;
   tavolo: number | null; indirizzo: { via: string; civico: string | null; cap: string | null; citta: string | null; zona: string | null } | null;
   righe: RigaComanda[];
 }
@@ -91,6 +92,7 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
       <article className="comanda">
         <header>
           <div className="numero">{c.numero_visibile ?? `#${c.numero}`}</div>
+          {c.modificato_il && <div className="modificata">MODIFICATA · RISTAMPA {ora(c.modificato_il)}</div>}
           <div className="tipo">{TIPO[c.tipo] ?? c.tipo}{c.tavolo != null && ` ${c.tavolo}`}</div>
           <div className="quando">
             {c.ora_consegna ? quando(c.ora_consegna) : <>subito</>} · ricevuto {ora(c.creato_il)} · {CANALE[c.canale] ?? c.canale}

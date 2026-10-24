@@ -63,7 +63,7 @@ export default function Ordina() {
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
-  const [pagamento, setPagamento] = useState<Pagamento | null>("contanti");
+  const [pagamento, setPagamento] = useState<Pagamento | null>(null);
   const [invio, setInvio] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
   const [esito, setEsito] = useState<Esito | null>(null);
@@ -283,7 +283,7 @@ export default function Ordina() {
             </div>
           )}
           {esito.segui && <><p>Quando il rider parte, lo segui sulla mappa.</p><a href={esito.segui} className="segui">Segui la consegna</a></>}
-          <button className="o-b-linea o-b-largo" onClick={() => { setEsito(null); setFascia(null); setPagamento("contanti"); setNote(""); setGiorno(giornoRoma(new Date())); vai("tipo"); }}>Nuovo ordine</button>
+          <button className="o-b-linea o-b-largo" onClick={() => { setEsito(null); setFascia(null); setPagamento(null); setNote(""); setGiorno(giornoRoma(new Date())); vai("tipo"); }}>Nuovo ordine</button>
         </div>
       </div>
     );

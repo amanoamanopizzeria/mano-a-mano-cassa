@@ -76,6 +76,9 @@ function Cassa() {
   const [nomeCliente, setNomeCliente] = useState("");         // chi ritira, quando non c'è una scheda cliente (critico giro 10: C-24 senza nome)
   const [ora, setOra] = useState<string>("");                // "HH:MM"
   const [orari, setOrari] = useState<Orario[]>([]);
+  // Modifica con ristampa (mig. 0038, come in Velocissimo): con ?modifica=<id> si riapre un ordine già
+  // battuto, si cambiano le righe e la comanda si ristampa con la scritta MODIFICATA. Il tipo non cambia.
+  const [modifica, setModifica] = useState<{ id: string; numero: string } | null>(null);
 
   // La comanda battuta resta anche se si va a Dati cliente e si torna (critico giro 5: «cancella la comanda»).
   const BOZZA = "cassa:bozza";
@@ -86,11 +89,44 @@ function Cassa() {
     } catch {}
   }, []);
   useEffect(() => {
+    if (modifica || new URLSearchParams(window.location.search).get("modifica")) return;
     try {
       if (righe.length === 0) sessionStorage.removeItem(BOZZA);
       else sessionStorage.setItem(BOZZA, JSON.stringify({ righe, tipo, note, quando: Date.now() }));
     } catch {}
-  }, [righe, tipo, note]);
+  }, [righe, tipo, note, modifica]);
+
+  // L'ordine da modificare: righe (figlie dei menu comprese: in tabella la loro quantità è già moltiplicata
+  // per quella del padre, qui si ridivide), tipo, note e cliente. La bozza eventuale si lascia stare.
+  useEffect(() => {
+    const idMod = new URLSearchParams(window.location.search).get("modifica");
+    if (!idMod) return;
+    type RigaDb = { id: string; id_prodotto: string | null; descrizione: string; quantita: number; prezzo_unit: number; variazioni: Variazione[] | null; destinazione: "cucina" | "cassa" | "nessuna"; id_riga_padre: string | null };
+    supabaseBrowser().from("ordine")
+      .select("id, numero, numero_visibile, tipo, note, stato, id_tavolo, id_indirizzo, cliente(id, nome, telefono), ordine_riga(id, id_prodotto, descrizione, quantita, prezzo_unit, variazioni, destinazione, id_riga_padre)")
+      .eq("id", idMod).single()
+      .then(({ data, error }) => {
+        if (error || !data) { setErrore("Non trovo l'ordine da modificare."); return; }
+        const o = data as unknown as { id: string; numero: number; numero_visibile: string | null; tipo: Tipo; note: string | null; stato: string; id_tavolo: string | null; id_indirizzo: string | null; cliente: { id: string; nome: string | null; telefono: string } | null; ordine_riga: RigaDb[] };
+        if (!["ricevuto", "in_preparazione", "pronto"].includes(o.stato)) { setErrore(`L'ordine ${o.numero_visibile ?? "#" + o.numero} è ${o.stato}: non si modifica più, si annulla e si rifà.`); return; }
+        const padri = o.ordine_riga.filter((r) => !r.id_riga_padre);
+        const nuove: RigaOrdine[] = padri.map((r) => {
+          const q = Number(r.quantita) || 1;
+          const figlie = o.ordine_riga.filter((x) => x.id_riga_padre === r.id).map((x) => ({
+            id_prodotto: x.id_prodotto ?? "", descrizione: x.descrizione, quantita: Math.max(1, Math.round(Number(x.quantita) / q)),
+            prezzo_unit: Number(x.prezzo_unit), variazioni: x.variazioni ?? [], destinazione: x.destinazione,
+          }));
+          return {
+            chiave: chiaveRiga(r.id_prodotto ?? r.descrizione, r.variazioni ?? [], figlie) + ":" + r.id,
+            id_prodotto: r.id_prodotto ?? "", descrizione: r.descrizione, quantita: q, prezzo_unit: Number(r.prezzo_unit),
+            variazioni: r.variazioni ?? [], destinazione: r.destinazione, ...(figlie.length > 0 ? { figlie } : {}),
+          };
+        });
+        setModifica({ id: o.id, numero: o.numero_visibile ?? `#${o.numero}` });
+        setRighe(nuove); setTipo(o.tipo); setNote(o.note ?? ""); setIdTavolo(o.id_tavolo); setIdIndirizzo(o.id_indirizzo);
+        if (o.cliente) setCliente({ id: o.cliente.id, nome: o.cliente.nome, telefono: o.cliente.telefono, indirizzo: null });
+      });
+  }, []);
 
   useEffect(() => {
     const tel = new URLSearchParams(window.location.search).get("telefono");
@@ -315,7 +351,20 @@ function Cassa() {
 
   function svuota() { setRighe([]); setSelezionata(null); setModoVarianti(false); setDigitato(""); setNote(""); setNomeCliente(""); setEsito(null); setErrore(null); setMenuAperto(null); setFigliaSel(null); setCoupon(null); setCodiceCoupon(""); setErroreCoupon(null); }
 
+  async function salvaModifica() {
+    if (!modifica) return;
+    setErrore(null); setInvio(true);
+    const { data, error } = await supabaseBrowser().rpc("ordine_modifica", { p_id: modifica.id, p_righe: righePerInvio(righe), p_note: note || null });
+    setInvio(false);
+    if (error) { setErrore("Non sono riuscito a salvare la modifica: " + error.message); return; }
+    const r = data as { esito: string; stato?: string };
+    if (r.esito === "modificato") { window.location.href = `/cassa/comanda/${modifica.id}?stampa=1`; return; }
+    if (r.esito === "stato_non_modificabile") setErrore(`L'ordine è ${r.stato}: non si modifica più, si annulla e si rifà.`);
+    else setErrore("Modifica non salvata (" + r.esito + ").");
+  }
+
   async function invia() {
+    if (modifica) return salvaModifica();
     setErrore(null); setInvio(true);
     const pOra = giorno && ora ? new Date(`${giorno}T${ora}:00`).toISOString() : null;
     const { data, error } = await supabaseBrowser().rpc("ordine_da_cassa3", {
@@ -463,9 +512,16 @@ function Cassa() {
 
       {/* ===== Destra: comanda, tastierino, invio ===== */}
       <aside className="cassa-comanda" style={{ display: "flex", flexDirection: "column", background: "#fff", borderLeft: "1px solid var(--bordo)", boxShadow: "-6px 0 18px rgba(26,23,21,.05)" }}>
+        {modifica && (
+          <div style={{ margin: "6px 6px 0", padding: "8px 12px", borderRadius: 12, background: "var(--oro)", color: "var(--testo)", fontSize: 14, display: "flex", gap: 8, alignItems: "center" }}>
+            <b style={{ fontFamily: "Oswald, sans-serif", textTransform: "uppercase", letterSpacing: ".04em" }}>Modifica {modifica.numero}</b>
+            <span style={{ flex: 1 }}>le righe qui sotto sostituiscono la comanda, che si ristampa</span>
+            <Link href="/cassa" style={{ textDecoration: "none" }}><button style={{ padding: "2px 10px", minHeight: 32 }}>Lascia stare</button></Link>
+          </div>
+        )}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 4, padding: 6 }}>
           {TIPI.map((t) => (
-            <button key={t.v} onClick={() => cambiaTipo(t.v)} className={tipo === t.v ? "primario" : ""} style={{ padding: "10px 2px", fontSize: 14, whiteSpace: "nowrap", minHeight: 44 }}>{t.t}</button>
+            <button key={t.v} onClick={() => cambiaTipo(t.v)} disabled={!!modifica && tipo !== t.v} className={tipo === t.v ? "primario" : ""} style={{ padding: "10px 2px", fontSize: 14, whiteSpace: "nowrap", minHeight: 44 }}>{t.t}</button>
           ))}
         </div>
         {cliente && (
@@ -615,8 +671,8 @@ function Cassa() {
             <span style={{ fontSize: 30, fontWeight: 800, color: "var(--vino)", fontFamily: "Oswald, sans-serif", lineHeight: 1.1 }}>{euro(righe.length === 0 ? 0 : Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0)))}</span>
           </span>
         </div>
-        <button onClick={invia} className="primario" disabled={invio || righe.length === 0 || (tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
-          {invio ? "Invio…" : "Invia in cucina"}
+        <button onClick={invia} className="primario" disabled={invio || righe.length === 0 || (!modifica && ((tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)))} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
+          {invio ? (modifica ? "Salvo…" : "Invio…") : modifica ? "Salva e ristampa" : "Invia in cucina"}
         </button>
       </aside>
     </div>
