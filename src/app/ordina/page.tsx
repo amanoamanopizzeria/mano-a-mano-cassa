@@ -457,7 +457,7 @@ export default function Ordina() {
       </nav>
       <div className="o-corpo o-entra" key={categoria}>
         {prodotti.length === 0 && <div className="o-nota">Carico il menù…</div>}
-        <div className="o-sez">{catCorrente?.nome}</div>
+        <div className="o-sez o-sez-cat">{catCorrente?.nome}</div>
         <div className="o-lista">
           {inCategoria.map((p) => {
             const nel = carrello.filter((r) => r.id_prodotto === p.id).reduce((s, r) => s + r.quantita, 0);

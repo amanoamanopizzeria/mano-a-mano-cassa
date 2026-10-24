@@ -79,9 +79,11 @@
 .o-carta .testo { display: flex; flex-direction: column; min-width: 0; }
 .o-carta .nome { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 20px; line-height: 1.1; text-transform: uppercase; letter-spacing: .01em; }
 .o-carta .descr { font-size: 14px; line-height: 1.35; color: var(--testo2); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.o-carta .prezzo { margin-top: auto; padding-top: 8px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; font-size: 19px; font-weight: 800; color: var(--nero); font-variant-numeric: tabular-nums; }
-.o-carta .prezzo > span:first-child { order: 2; }
-.o-etichetta { background: var(--vino); color: #fff; font-size: 13px; font-weight: 700; padding: 2px 9px; border-radius: 999px; order: 1; margin-right: auto; }
+/* giro 20: come nell'app, il prezzo sta in basso a SINISTRA della colonna di testo, con la pillola
+   «! Novità» subito accanto; il titolo della categoria è in maiuscolo come «NOVITA'» nell'app. */
+.o-carta .prezzo { margin-top: auto; padding-top: 8px; display: flex; align-items: center; justify-content: flex-start; gap: 8px; flex-wrap: wrap; font-size: 19px; font-weight: 800; color: var(--nero); font-variant-numeric: tabular-nums; }
+.o-etichetta { background: var(--vino); color: #fff; font-size: 13px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+.o-sez.o-sez-cat { text-transform: uppercase; letter-spacing: .02em; }
 .o-carta .fotobox { position: relative; width: 128px; height: 128px; border-radius: 8px; overflow: hidden; background: var(--sabbia-chiara); align-self: center; }
 .o-carta .foto { width: 100%; height: 100%; object-fit: cover; display: block; }
 .o-carta .nel { position: absolute; top: 6px; right: 6px; background: var(--vino); color: #fff; font-weight: 800; font-size: 14px; min-width: 26px; height: 26px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; padding: 0 6px; }
