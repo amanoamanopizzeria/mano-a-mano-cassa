@@ -836,3 +836,24 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 /* /cassa/rider */
 .borsello .b-testa h1 { margin: 0; }
 .borsello .b-tasti.sotto { margin-top: 10px; }
+/* /rider */
+.rider .r-errore { color: var(--accento); }
+.rider h2.r-sez { margin-top: 24px; }
+.rider .r-borsello b { color: var(--testo); }
+.rider .r-saldo { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rider .r-saldo .chi { font-size: 15px; }
+.rider .r-saldo .chi strong { font-size: 20px; font-family: "Oswald", sans-serif; font-weight: 600; }
+.rider .r-saldo .chi .muto { font-size: 15px; }
+.rider .r-saldo .cifra { font-weight: 600; font-size: 24px; font-family: "Oswald", sans-serif; font-variant-numeric: tabular-nums; color: var(--vino); white-space: nowrap; }
+.rider .r-intesta { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rider .r-intesta strong { font-size: 28px; font-family: "Oswald", sans-serif; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rider .r-quando { font-size: 15px; }
+.rider .r-via { margin-top: 6px; font-size: 22px; font-weight: 800; line-height: 1.2; }
+.rider .r-nome { font-size: 16px; margin-top: 2px; }
+.rider .r-avviso { margin-top: 4px; padding: 4px 8px; border-radius: 6px; background: var(--oro-velo); border-left: 4px solid var(--oro); font-size: 16px; font-weight: 600; }
+.rider .r-soldi { margin: 8px 0; font-size: 30px; font-weight: 600; font-family: "Oswald", sans-serif; font-variant-numeric: tabular-nums; color: var(--vino); line-height: 1.1; }
+.rider .r-soldi .come { font-size: 15px; font-family: "Figtree", sans-serif; font-weight: 600; }
+.rider .r-soldi .resto { font-size: 16px; font-weight: 700; font-family: "Figtree", sans-serif; color: var(--testo); margin-top: 4px; }
+.rider .r-righe { margin: 4px 0 8px; padding-left: 18px; font-size: 15px; }
+.rider .r-note { font-size: 15px; padding: 4px 8px; border-radius: 6px; background: var(--oro-velo); border-left: 4px solid var(--oro); }
+.rider .r-azioni { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
