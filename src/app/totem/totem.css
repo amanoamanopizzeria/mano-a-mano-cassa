@@ -450,3 +450,14 @@
 .t-fatto .numero b { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 80px; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .t-fatto .testo { font-size: 24px; max-width: 600px; color: var(--grigio); line-height: 1.35; margin: 18px 0 0; }
 .t-fatto .t-b-vino { min-height: 72px; min-width: 320px; }
+
+/* ===== grafico, giro 21 (24/10/2026): il totem sul modello dell'app, dopo il confronto a 390 del giro 20
+   (lettura/giro20-confronto-*.jpg). Tre cose: (1) il logo lineare grande al centro della fascia sabbia
+   come nell'app, col bollino a destra dove l'app ha la (i); (2) nel menù il prezzo in basso a SINISTRA
+   della colonna di testo con «! Novità» accanto; (3) la scheda come «Dettagli»: nome in cima, foto
+   quadrata al centro su sabbia (non più a tutta larghezza), descrizione, prezzo. Stessi tocchi. ===== */
+/* 1. testata */
+.totem .t-sabbia { justify-content: center; position: relative; padding: 0 110px; }
+.totem .t-sabbia img { height: 66px; max-width: 100%; object-fit: contain; }
+.totem .t-sabbia .bollino { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); height: 72px; width: 72px; }
+.t-avvio .t-sabbia-avvio img { height: 66px; }
