@@ -115,6 +115,7 @@ export function comandaEscPos(c: Comanda, o: OpzioniStampa): Uint8Array {
 
   // testata: il numero grande, poi se è una ristampa, poi tipo e quando
   p.centro(true).misura(2, 2).grassetto(true).testo(c.numero_visibile ?? `#${c.numero}`).grassetto(false).misura(1, 1);
+  if (c.stato === "annullato") p.misura(1, 2).fascia("ANNULLATO - NON FARE").misura(1, 1);
   if (c.modificato_il) p.fascia(`MODIFICATA - RISTAMPA ${oraRoma(c.modificato_il)}`);
   else if ((c.stampe ?? 0) > 0) p.fascia("RISTAMPA");
   p.misura(1, 2).grassetto(true).testo(`${TIPO_COMANDA[c.tipo] ?? c.tipo.toUpperCase()}${c.tavolo != null ? ` ${c.tavolo}` : ""}`).grassetto(false).misura(1, 1);

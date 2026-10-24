@@ -40,6 +40,14 @@ for (const [ruolo, colonne] of [["cucina", 48], ["cassa", 42]] as const) {
   ok(t.includes(`copia ${ruolo}`), `${ruolo}: la riga in fondo dice di chi è la copia`);
   ok(t.includes("TOTALE") && t.includes("31,30 €") && t.includes("RESTO 18,70 €") && t.includes("Via Novara 5") && t.includes("CONTANTI"), `${ruolo}: completa anche lei: totale, resto, via, pagamento`);
 }
+{
+  const { quandoComanda } = await import("../src/lib/comanda");
+  // 28/03/2027 23:30 di Roma (prima del cambio d'ora): domani 20:00 è il 29, e non è «adesso + 24 ore»
+  ok(quandoComanda("2027-03-29T18:00:00Z", new Date("2027-03-28T21:30:00Z")).testo === "DOMANI alle 20:00", "DOMANI giusto anche la notte del cambio d'ora");
+  ok(quandoComanda("2026-10-25T19:00:00Z", new Date("2026-10-24T20:30:00Z")).testo === "DOMANI alle 20:00", "DOMANI giusto la notte che torna l'ora solare");
+  const ann = anteprimaTesto(comandaEscPos({ ...c, stato: "annullato" }, { ruolo: "cucina" }));
+  ok(ann.includes("ANNULLATO - NON FARE"), "un ordine annullato lo dice sulla carta");
+}
 ok(codifica("€àèéìòù«»").join(",") === [0xd5, 0x85, 0x8a, 0x82, 0x8d, 0x95, 0x97, 0xae, 0xaf].join(","), "euro e accenti nella tabella PC858");
 ok(codifica("🍕x→").join(",") === [0x78, 0x2d, 0x3e].join(","), "emoji tolte, freccia in ->");
 ok(aCapo("una parola lunghissimaaaaaaaaaa qui", 10).every((r) => r.length <= 10), "a capo che spezza le parole troppo lunghe");

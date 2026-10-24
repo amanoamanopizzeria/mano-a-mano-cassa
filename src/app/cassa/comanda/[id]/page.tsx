@@ -60,6 +60,7 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
       <article className="comanda">
         <header>
           <div className="numero">{c.numero_visibile ?? `#${c.numero}`}</div>
+          {c.stato === "annullato" && <div className="modificata">ANNULLATO · NON FARE</div>}
           {c.modificato_il && <div className="modificata">MODIFICATA · RISTAMPA {ora(c.modificato_il)}</div>}
           <div className="tipo">{TIPO[c.tipo] ?? c.tipo}{c.tavolo != null && ` ${c.tavolo}`}</div>
           <div className="quando">

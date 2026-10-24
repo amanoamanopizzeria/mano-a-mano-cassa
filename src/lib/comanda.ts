@@ -82,9 +82,13 @@ export const euroComanda = (n: number) => Number(n).toFixed(2).replace(".", ",")
 export function quandoComanda(iso: string, adesso = new Date()): { testo: string; forte: boolean } {
   const ora = (d: Date) => d.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
   const giorno = (d: Date) => d.toLocaleDateString("it-IT", { timeZone: "Europe/Rome" });
-  const d = new Date(iso), domani = new Date(adesso.getTime() + 86_400_000);
+  // il giorno dopo sul calendario di Roma, non «adesso + 24 ore» (critico giro 20: la notte del cambio d'ora)
+  const ymd = (x: Date) => x.toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+  const [a, m, g] = ymd(adesso).split("-").map(Number);
+  const domaniYmd = new Date(Date.UTC(a, m - 1, g + 1)).toISOString().slice(0, 10);
+  const d = new Date(iso);
   if (giorno(d) === giorno(adesso)) return { testo: `per le ${ora(d)}`, forte: false };
-  if (giorno(d) === giorno(domani)) return { testo: `DOMANI alle ${ora(d)}`, forte: true };
+  if (ymd(d) === domaniYmd) return { testo: `DOMANI alle ${ora(d)}`, forte: true };
   return { testo: `${d.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Rome" })} alle ${ora(d)}`, forte: true };
 }
 export const oraRoma = (iso: string) => new Date(iso).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
