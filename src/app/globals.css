@@ -676,3 +676,6 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
    leggibile; − e + restano 44 e in riga sotto la pillola come nel giro 7. */
 .fasce-pagina .f-cella-in > button:nth-child(2) { min-height: 44px !important; font-size: 18px !important; font-family: "Oswald", sans-serif; font-weight: 600; letter-spacing: .02em; border-radius: 12px !important; }
 .fasce-pagina .f-tabella thead th { font-size: 14px !important; }
+/* /cassa/nuovo: la barra in cima (⌂, Dati cliente, Ordine, Sala) da 44 in Oswald come le tab di /ordina;
+   «Esci» della barra d'accesso da 44 su tutte le pagine (era 40 ovunque). */
+.cassa-nuovo .barra > a > button, .cassa-nuovo .barra > button { min-height: 44px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .05em; font-size: 15px; border-radius: 10px; }

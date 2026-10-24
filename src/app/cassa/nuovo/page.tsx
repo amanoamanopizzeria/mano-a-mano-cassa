@@ -421,7 +421,7 @@ function Cassa() {
   }
 
   const scheda = { display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "var(--vino)", color: "#fff", borderBottom: "3px solid var(--oro)" } as const;
-  const ghost = { background: "rgba(255,255,255,.14)", color: "#fff", borderColor: "transparent", padding: "0 14px", minHeight: 40, fontSize: 14 } as const;
+  const ghost = { background: "rgba(255,255,255,.14)", color: "#fff", borderColor: "transparent", padding: "0 14px", minHeight: 44, fontSize: 15 } as const;
 
   return (
     <div className="schermo cassa-nuovo" style={{ flexDirection: "row" }}>
