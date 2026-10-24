@@ -36,6 +36,7 @@ interface Orario { giorno: number; tipo: string; dalle: string; alle: string }
 interface Esito { ok: boolean; titolo: string; testo: string; numero?: string; segui?: string | null; righe?: RigaOrdine[]; totale?: number; consegna?: number }
 
 const giornoRoma = (d: Date) => d.toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }); // AAAA-MM-GG
+const nomeZona = (n: string) => n.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
 const NOMI_GIORNO = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"];
 
 export default function Ordina() {
@@ -62,7 +63,7 @@ export default function Ordina() {
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
-  const [pagamento, setPagamento] = useState<Pagamento | null>(null);
+  const [pagamento, setPagamento] = useState<Pagamento | null>("contanti");
   const [invio, setInvio] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
   const [esito, setEsito] = useState<Esito | null>(null);
@@ -109,7 +110,9 @@ export default function Ordina() {
       if (error || !data) { setFasciaEsito("errore"); setFasce([]); return; }
       const r = data as { esito: string; fasce?: Fascia[] };
       setFasciaEsito(r.esito); setFasce(r.fasce ?? []);
-      setFascia((f) => (f && (r.fasce ?? []).some((x) => x.inizio === f.inizio && !x.piena) ? f : null));
+      const libere = (r.fasce ?? []).filter((x) => !x.piena);
+      // «il prima possibile» è già scelto: chi vuole un'altra ora la tocca (critico giro 9: sedici quarti d'ora uguali e nessuno proposto)
+      setFascia((f) => (f && libere.some((x) => x.inizio === f.inizio) ? f : libere[0] ?? null));
     });
   }, [passo, tipo, giorno]);
 
@@ -139,7 +142,7 @@ export default function Ordina() {
   // Un tocco solo (Edoardo, 24/10/2026: «se clicco ordina a domicilio o ritira, già apre il menu»):
   // «Ritiro» va dritto al menù; «A casa» va al menù appena c'è un indirizzo in zona.
   function alMenu() {
-    setCategoria((c) => c ?? categorie[0]?.id ?? null);
+    setCategoria((c) => c ?? categorie.find((x) => /classic/i.test(x.nome))?.id ?? categorie[0]?.id ?? null);
     vai("menu");
   }
   function scegliTipo(t: Tipo) {
@@ -154,10 +157,24 @@ export default function Ordina() {
     if (i.zona && i.civico) alMenu();
   }
   const [civicoScritto, setCivicoScritto] = useState("");
-  function confermaCivico() {
+  const [cercoCivico, setCercoCivico] = useState(false);
+  async function confermaCivico() {
     const c = civicoScritto.trim();
-    if (!indirizzo || !c) return;
-    const i = { ...indirizzo, civico: c, testo: `${indirizzo.via ?? indirizzo.testo} ${c}${indirizzo.citta ? ", " + indirizzo.citta : ""}` };
+    if (!indirizzo || !c || cercoCivico) return;
+    let i: Indirizzo = { ...indirizzo, civico: c, testo: `${indirizzo.via ?? indirizzo.testo} ${c}${indirizzo.citta ? ", " + indirizzo.citta : ""}` };
+    // col numero si ricerca il punto vero: il centro del viale non è il portone (critico giro 9)
+    setCercoCivico(true);
+    try {
+      const r = await fetch("/api/ordina/indirizzi?q=" + encodeURIComponent(`${indirizzo.via ?? indirizzo.testo} ${c}, ${indirizzo.citta ?? "Roma"}`));
+      const j = (await r.json()) as { risultati?: Indirizzo[] };
+      let t = (j.risultati ?? []).find((x) => x.civico === c) ?? null;
+      if (t && t.lat == null && t.place_id) {
+        const d = await fetch("/api/ordina/indirizzi?id=" + encodeURIComponent(t.place_id));
+        if (d.ok) t = { ...(await d.json()) as Indirizzo, testo: t.testo };
+      }
+      if (t && t.lat != null && t.lng != null) i = { ...t, civico: t.civico ?? c, zona: t.zona ?? i.zona };
+    } catch {}
+    setCercoCivico(false);
     setIndirizzo(i); setCivicoScritto("");
     if (i.zona) alMenu();
   }
@@ -296,7 +313,7 @@ export default function Ordina() {
                   <div className="testo">
                     {indirizzo.testo}
                     {indirizzo.zona
-                      ? <small>Consegna {indirizzo.zona.costo_consegna > 0 ? euro(indirizzo.zona.costo_consegna) : "gratis"}{indirizzo.zona.minimo_ordine > 0 ? ` · ordine minimo ${euro(indirizzo.zona.minimo_ordine)}` : ""}</small>
+                      ? <small>Zona {nomeZona(indirizzo.zona.nome)} · consegna {indirizzo.zona.costo_consegna > 0 ? euro(indirizzo.zona.costo_consegna) : "gratis"}{indirizzo.zona.minimo_ordine > 0 ? ` · ordine minimo ${euro(indirizzo.zona.minimo_ordine)}` : ""}</small>
                       : <small style={{ color: "var(--vino)", fontWeight: 700 }}>Qui non consegniamo</small>}
                   </div>
                   <button className="cambia" onClick={() => setIndirizzo(null)}>Cambia</button>
@@ -310,7 +327,7 @@ export default function Ordina() {
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                     <input value={civicoScritto} onChange={(e) => setCivicoScritto(e.target.value)} placeholder="Civico" inputMode="text" autoFocus
                       onKeyDown={(e) => { if (e.key === "Enter") confermaCivico(); }} style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: "2px solid var(--linea)" }} />
-                    <button className="o-b-vino" onClick={confermaCivico} disabled={!civicoScritto.trim()}>Avanti</button>
+                    <button className="o-b-vino" onClick={confermaCivico} disabled={!civicoScritto.trim() || cercoCivico}>{cercoCivico ? "Cerco…" : "Avanti"}</button>
                   </div>
                 </div>
               )}
@@ -347,7 +364,7 @@ export default function Ordina() {
           ))}
           {carrello.length > 0 && (
             <div className="o-somme">
-              {tipo === "domicilio" && <div><span>Consegna{indirizzo?.zona ? ` · ${indirizzo.zona.nome.toLowerCase()}` : ""}</span><span>{costoConsegna > 0 ? euro(costoConsegna) : "gratis"}</span></div>}
+              {tipo === "domicilio" && <div><span>Consegna{indirizzo?.zona ? ` · zona ${nomeZona(indirizzo.zona.nome)}` : ""}</span><span>{costoConsegna > 0 ? euro(costoConsegna) : "gratis"}</span></div>}
               <div className="tot"><span>Totale</span><span>{euro(totale)}</span></div>
             </div>
           )}
@@ -373,7 +390,7 @@ export default function Ordina() {
             ))}
           </div>
           <div className="o-sez">{tipo === "domicilio" ? "Orario di consegna" : "Orario di ritiro"}</div>
-          <p className="o-sotto">Scegli il quarto d&apos;ora. Quelli barrati sono già pieni.</p>
+          <p className="o-sotto">Il primo orario libero è già scelto: tocca un altro quarto d&apos;ora se preferisci. Quelli barrati sono pieni.</p>
           {fasce === null && <div className="o-nota">Guardo i posti liberi…</div>}
           {fasce !== null && fasce.length === 0 && (
             <div className="o-avviso">{fasciaEsito === "chiuso" ? "Quel giorno siamo chiusi." : fasciaEsito === "errore" ? "Non riesco a leggere gli orari: riprova." : "Per oggi non ci sono più orari: prova domani."}</div>
@@ -387,7 +404,7 @@ export default function Ordina() {
           )}
           {errore && <div className="o-avviso">{errore}</div>}
         </div>
-        {barra(fascia ? `Alle ${fascia.ora} · avanti` : "Scegli un quarto d'ora", () => vai("dati"), !fascia)}
+        {barra(fascia ? (fasce && fasce.find((x) => !x.piena)?.inizio === fascia.inizio ? `Il prima possibile · ${fascia.ora}` : `Alle ${fascia.ora}`) : "Scegli un quarto d'ora", () => vai("dati"), !fascia)}
       </div>
     );
   }
@@ -447,7 +464,7 @@ export default function Ordina() {
               <button key={p.id} onClick={() => setAperto(p)} className="o-carta">
                 <div className="testo">
                   <div className="nome">{p.nome}</div>
-                  <div className="descr">{p.descrizione ?? ""}</div>
+                  <div className="descr">{p.descrizione ?? (p.incluso ? `Con ${p.incluso}` : "")}</div>
                   <div className="prezzo"><span>{euro(p.prezzo)}</span>{catCorrente && /novit/i.test(catCorrente.nome) && <span className="o-etichetta">! Novità</span>}</div>
                 </div>
                 <div className="fotobox">
@@ -459,7 +476,7 @@ export default function Ordina() {
           })}
         </div>
       </div>
-      {barra(sottoMinimo ? `Minimo ${euro(minimo)}` : "Vedi ordine", () => vai("carrello"), carrello.length === 0)}
+      {barra(sottoMinimo ? `Minimo ${euro(minimo)}` : "Avanti", () => vai("quando"), carrello.length === 0 || sottoMinimo)}
       {aperto && (
         <SchedaProdotto
           p={aperto}
