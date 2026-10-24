@@ -147,6 +147,36 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .borsello .b-chiudi { background: var(--sfondo); color: var(--muto); }
 .borsello .b-salda { grid-column: 1 / -1; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .06em; font-size: 19px; }
 .borsello .b-apri { grid-column: 1 / -1; }
+/* Giro 11 del grafico (24/10/2026): si usa di corsa in cassa. Nome grande, stato a colpo d'occhio
+   (vino = in giro, oro = da saldare, grigio = libero), rimandi da 44 px, movimenti a righe leggibili. */
+.borsello .b-testa { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.borsello .b-nav { display: flex; gap: 8px; }
+.borsello .b-nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--bordo); background: #fff; color: var(--vino); font-weight: 700; text-decoration: none; font-size: 15px; white-space: nowrap; }
+.borsello .b-spiega { font-size: 14px; margin: 6px 0 10px; }
+.borsello .b-msg { font-weight: 700; font-size: 16px; padding: 10px 14px; border-radius: 12px; margin: 0 0 10px; }
+.borsello .b-msg.errore { background: var(--errore-chiaro); color: var(--errore); }
+.borsello .b-msg.ok { background: #e8f3ea; color: var(--ok); }
+.borsello .b-rider { border-left: 6px solid var(--bordo); }
+.borsello .b-rider.in-giro { border-left-color: var(--vino); }
+.borsello .b-rider.spento { opacity: .6; }
+.borsello .b-intesta { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.borsello .b-nome { display: block; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .03em; font-weight: 600; font-size: 26px; line-height: 1.05; }
+.borsello .b-stato { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 999px; background: var(--sfondo); color: var(--muto); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.borsello .b-stato.giro { background: var(--vino); color: #fff; }
+.borsello .b-stato.saldare { background: var(--oro-velo); color: #7a5410; border: 1px solid var(--oro); }
+.borsello .b-mano { text-align: right; flex: none; }
+.borsello .b-mano .cifra { display: block; font-size: 38px; line-height: 1; font-weight: 600; font-family: "Oswald", sans-serif; color: var(--vino); font-variant-numeric: tabular-nums; }
+.borsello .b-mano .muto { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+.borsello .b-voci { font-size: 15px; margin-top: 10px; }
+.borsello .b-modulo { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.borsello .b-importo { width: 100%; min-width: 0; box-sizing: border-box; padding: 12px; font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; min-height: 56px; }
+.borsello .b-note { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 12px; font-size: 15px; min-height: 44px; }
+.borsello .b-h2 { margin-top: 24px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 20px; }
+.borsello .b-mov { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--bordo); font-size: 16px; align-items: baseline; }
+.borsello .b-mov .ora { color: var(--muto); font-variant-numeric: tabular-nums; flex: none; }
+.borsello .b-mov .chi { flex: 1; min-width: 0; line-height: 1.3; }
+.borsello .b-mov .cifra { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 18px; }
+.borsello .b-mov .cifra.dep { color: var(--ok); } .borsello .b-mov .cifra.prel { color: var(--vino); }
 
 /* Il riepilogo: numeri grandi in Oswald. */
 .riepilogo .carta.numero { padding: 12px 16px; }

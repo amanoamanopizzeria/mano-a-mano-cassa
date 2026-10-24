@@ -70,21 +70,28 @@ function RiderCassa() {
 
   return (
     <main className="borsello">
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <div className="b-testa">
         <h1 style={{ margin: 0 }}>Rider e borsello</h1>
-        <Link href="/cassa/mappa" className="muto">Mappa →</Link>
-        <Link href="/cassa" className="muto">Cassa →</Link>
+        <nav className="b-nav">
+          <Link href="/cassa/mappa">Mappa →</Link>
+          <Link href="/cassa">Cassa →</Link>
+        </nav>
       </div>
-      <p className="muto">In mano = prelievi − depositi + contanti delle consegne fatte e non ancora saldate. A fine serata: «Salda».</p>
-      {errore && <p style={{ color: "var(--accento)", fontWeight: 700 }}>{errore}</p>}
-      {esito && <p style={{ color: "var(--ok)", fontWeight: 600 }}>{esito}</p>}
+      <p className="muto b-spiega">In mano = prelievi − depositi + contanti delle consegne fatte e non ancora saldate. A fine serata: «Salda».</p>
+      {errore && <p className="b-msg errore">{errore}</p>}
+      {esito && <p className="b-msg ok">{esito}</p>}
 
       <div className="griglia">
         {rider.map((r) => (
-          <article key={r.id} className="carta" style={{ opacity: r.attivo ? 1 : 0.6 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <strong style={{ fontSize: 18, fontFamily: "Oswald, sans-serif", textTransform: "uppercase", letterSpacing: ".03em", fontWeight: 600 }}>{r.nome}</strong>
-              <span style={{ textAlign: "right" }}><span style={{ fontSize: 34, lineHeight: 1, fontWeight: 600, fontFamily: "Oswald, sans-serif", color: "var(--vino)", fontVariantNumeric: "tabular-nums" }}>{euro(r.in_mano)}</span><span className="muto" style={{ display: "block" }}>in mano</span></span>
+          <article key={r.id} className={"carta b-rider" + (r.attivo ? "" : " spento") + (r.in_corso > 0 ? " in-giro" : "")}>
+            <div className="b-intesta">
+              <div>
+                <strong className="b-nome">{r.nome}</strong>
+                <span className={"b-stato" + (r.in_corso > 0 ? " giro" : r.n_da_saldare > 0 ? " saldare" : "")}>
+                  {r.in_corso > 0 ? `${r.in_corso} in corso` : r.n_da_saldare > 0 ? "da saldare" : r.attivo ? "libero" : "non attivo"}
+                </span>
+              </div>
+              <span className="b-mano"><span className="cifra">{euro(r.in_mano)}</span><span className="muto">in mano</span></span>
             </div>
             <div className="b-voci">
               {r.in_corso > 0 && <span><b>{r.in_corso}</b> in corso</span>}
@@ -93,9 +100,9 @@ function RiderCassa() {
               <span>depositi <b>{euro(r.depositi)}</b></span>
             </div>
             {aperto === r.id ? (
-              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
-                <input inputMode="decimal" placeholder="Importo €" value={importo} onChange={(e) => setImporto(e.target.value)} style={{ padding: 10, fontSize: 22, fontWeight: 700, fontVariantNumeric: "tabular-nums" }} />
-                <input placeholder="Note (es. fondo serata)" value={note} onChange={(e) => setNote(e.target.value)} style={{ padding: 8, fontSize: 14 }} />
+              <div className="b-modulo">
+                <input inputMode="decimal" placeholder="Importo €" value={importo} onChange={(e) => setImporto(e.target.value)} className="b-importo" />
+                <input placeholder="Note (es. fondo serata)" value={note} onChange={(e) => setNote(e.target.value)} className="b-note" />
                 <div className="b-tasti">
                   <button className="b-fondo" onClick={() => movimento(r.id, "prelievo", true)}>Fondo<small>dalla cassa al rider, a inizio serata</small></button>
                   <button className="b-prelievo" onClick={() => movimento(r.id, "prelievo")}>Prelievo<small>dalla cassa al rider</small></button>
@@ -114,13 +121,13 @@ function RiderCassa() {
         {rider.length === 0 && <p className="muto">Nessun rider in anagrafica.</p>}
       </div>
 
-      <h2 style={{ marginTop: 24 }}>Movimenti di oggi</h2>
+      <h2 className="b-h2">Movimenti di oggi</h2>
       {movimenti.length === 0 && <p className="muto">Nessun movimento oggi.</p>}
       {movimenti.map((m) => (
-        <div key={m.id} style={{ display: "flex", gap: 10, padding: "6px 0", borderBottom: "1px solid var(--bordo)", fontSize: 15, alignItems: "baseline" }}>
-          <span className="muto">{new Date(m.creato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</span>
-          <span style={{ flex: 1 }}><b>{rider.find((r) => r.id === m.id_rider)?.nome ?? "?"}</b> · {m.fondo_cassa ? "fondo" : m.tipo} <span className="muto">({m.tipo === "deposito" ? "dal rider alla cassa" : "dalla cassa al rider"})</span>{m.note ? ` · ${m.note}` : ""}</span>
-          <span style={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", color: m.tipo === "deposito" ? "var(--ok)" : "var(--vino)" }}>{m.tipo === "deposito" ? "+" : "−"} {euro(m.importo)}</span>
+        <div key={m.id} className="b-mov">
+          <span className="ora">{new Date(m.creato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</span>
+          <span className="chi"><b>{rider.find((r) => r.id === m.id_rider)?.nome ?? "?"}</b> · {m.fondo_cassa ? "fondo" : m.tipo} <span className="muto">({m.tipo === "deposito" ? "dal rider alla cassa" : "dalla cassa al rider"})</span>{m.note ? ` · ${m.note}` : ""}</span>
+          <span className={"cifra " + (m.tipo === "deposito" ? "dep" : "prel")}>{m.tipo === "deposito" ? "+" : "−"} {euro(m.importo)}</span>
         </div>
       ))}
     </main>
