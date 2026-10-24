@@ -157,3 +157,20 @@ nuova non deve imitare niente qui; deve dare all'OS, per la giornata lavorativa:
 
 Quando l'OS vorrà smettere di leggere il canale dalla nota, il cambio è suo (Chiusura congelata):
 l'export nostro avrà già `Origine` e `canale` giusti.
+
+## 15.7 Fatto il 24/10/2026: `ordini_giornata` e `/api/ordini/csv`
+
+La mig. 0040 dà una riga per ordine con le 40 chiavi nell'ordine del CSV vero; la route
+`GET /api/ordini/csv?giornata=AAAA-MM-GG` (stessa chiave `x-api-key` di `/api/vendite`) la scrive in
+CSV: virgola, tutti i campi fra virgolette, BOM UTF-8, nome `export_gg-mm-aaaa.csv`. Traduzioni:
+Tipo (Tavolo/Banco/Ritiro/Domicilio), Stato (Consegnato / Ritirato dal cliente / Annullato / …),
+Origine (Da app / Da sito web / da totem / Da PC / Da Deliverect), Pagamento (Pagamento online /
+Contanti o Bancomat alla cassa o alla consegna; un ordine senza pagamento segnato esce «Contanti»,
+che è il caso normale in pizzeria), la piattaforma in testa alla nota (`GLOVO <id>`), `# Comanda`
+progressivo del giorno (0 per i tavoli), ritardo in secondi, `LIMITAZIONE` per i domicili.
+
+**Prova col parser vero dell'OS** (`scripts/prova-csv-os.mts`, senza toccare l'OS): 40 colonne
+riconosciute, l'annullato escluso, sala / interno / asporto giusti, Glovo preso dalla nota, il rider
+con contanti e pagate separati, la nota su due righe con le virgolette letta intera. Restano per
+dopo: i coperti sugli asporti, il nome del rider (oggi il nostro vero, non «Rider N»), e nell'OS la
+lettura di `Costo Consegna`.
