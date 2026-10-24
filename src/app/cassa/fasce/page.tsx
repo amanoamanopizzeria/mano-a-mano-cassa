@@ -138,9 +138,9 @@ function Fasce() {
   return (
     <main style={{ maxWidth: 980 }} className="fasce-pagina">
       {ultimo && (
-        <div role="status" style={{ position: "fixed", left: "50%", bottom: 18, transform: "translateX(-50%)", zIndex: 40, display: "flex", gap: 10, alignItems: "center", padding: "10px 14px", borderRadius: 999, background: "var(--testo)", color: "#fff", fontSize: 15, boxShadow: "0 8px 22px rgba(26,23,21,.3)" }}>
-          <span>{ultimo.ora.slice(0, 5)} · {ultimo.tipo === "produzione" ? "pizze" : "consegne"} {ultimo.prima} → <b>{ultimo.dopo}</b> · salvato</span>
-          <button onClick={annullaUltimo} style={{ minHeight: 36, padding: "0 12px", background: "var(--oro)", color: "var(--testo)", borderColor: "transparent" }}>Annulla</button>
+        <div role="status" className="f-salvato">
+          <span className="testo"><b className="ora">{ultimo.ora.slice(0, 5)}</b> {ultimo.tipo === "produzione" ? "pizze" : "consegne"} {ultimo.prima} → <b>{ultimo.dopo}</b> <span className="ok">✓ salvato</span></span>
+          <button onClick={annullaUltimo}>Annulla</button>
         </div>
       )}
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
