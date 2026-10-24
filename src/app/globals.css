@@ -225,3 +225,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .f-cons .f-chi { padding: 2px 10px; border-radius: 999px; font-size: 14px; background: var(--bordo); }
 .f-cons.da_assegnare .f-chi { background: var(--oro); color: var(--testo); }
 .f-cons.ritirata .f-chi { background: var(--vino); color: #fff; }
+
+/* Area preordini (24/10/2026) */
+.preordini { margin-bottom: 14px; }
+.preordini summary { cursor: pointer; font-family: "Oswald", sans-serif; font-size: 20px; text-transform: uppercase; color: var(--vino); margin-bottom: 8px; }
+.preordini summary small { font-family: "Figtree", sans-serif; text-transform: none; font-size: 14px; color: var(--muto); margin-left: 8px; }
+.carta.preordine { border-left: 5px solid var(--oro); }

@@ -58,6 +58,24 @@ function Mappa() {
   const consegneRef = useRef<Map<string, any>>(new Map());
   const lineeRef = useRef<any[]>([]);
   const [riders, setRiders] = useState<RiderInMappa[]>([]);
+  const [erroreAssegna, setErroreAssegna] = useState<string | null>(null);
+  // Assegna dalla cassa (mig. 0034): il rider la vede subito nella sua lista (realtime su consegna).
+  async function assegna(idConsegna: string, idRider: string | null) {
+    const { error } = await supabaseBrowser().rpc("assegna_consegna", { p_id: idConsegna, p_rider: idRider });
+    setErroreAssegna(error ? error.message : null);
+  }
+  // Il rider più vicino alla consegna, fra quelli con una posizione fresca (10 minuti).
+  function suggerito(k: ConsegnaInMappa): string | null {
+    const i = k.ordine?.indirizzo;
+    if (!i || i.lat == null || i.lng == null) return null;
+    let best: { id: string; d: number } | null = null;
+    for (const r of riders) {
+      if (r.lat == null || r.lng == null || !r.aggiornata_il || Date.now() - new Date(r.aggiornata_il).getTime() > 10 * 60_000) continue;
+      const d = Math.hypot((r.lat - i.lat) * 111, (r.lng - i.lng) * 83);
+      if (!best || d < best.d) best = { id: r.id, d };
+    }
+    return best?.id ?? null;
+  }
   const [consegne, setConsegne] = useState<ConsegnaInMappa[]>([]);
   const [errore, setErrore] = useState<string | null>(null);
 
@@ -189,6 +207,7 @@ function Mappa() {
       </div>
 
       <h2>Consegne in corso</h2>
+      {erroreAssegna && <p style={{ color: "var(--errore)", fontWeight: 700 }}>{erroreAssegna}</p>}
       <div className="griglia">
         {consegne.map((k) => (
           <div className="carta" key={k.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -198,6 +217,21 @@ function Mappa() {
               {k.ordine?.ora_consegna && <span className="muto"> · per le {oraDi(k.ordine.ora_consegna)}</span>}
               <div className="muto">{k.ordine?.indirizzo ? `${k.ordine.indirizzo.via} ${k.ordine.indirizzo.civico ?? ""}` : <b style={{ color: "var(--vino)" }}>senza indirizzo: da sistemare</b>}{nomeRider(k.id_rider) ? ` · ${nomeRider(k.id_rider)}` : ""}{k.ordine?.indirizzo && k.ordine.indirizzo.lat == null ? " · non sulla mappa" : ""}</div>
             </div>
+            {k.stato !== "ritirata" && riders.length > 0 && (
+              <select
+                className="m-assegna"
+                value={k.id_rider ?? ""}
+                onChange={(e) => assegna(k.id, e.target.value || null)}
+                aria-label={`Assegna ${nomeOrdine(k.ordine)} a un rider`}
+              >
+                <option value="">{k.id_rider ? "Togli il rider" : "Assegna a…"}</option>
+                {riders.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.nome}{suggerito(k) === r.id ? " · il più vicino" : ""}{r.consegne_in_corso ? ` (${r.consegne_in_corso} in corso)` : ""}
+                  </option>
+                ))}
+              </select>
+            )}
             <span className={"m-stato " + k.stato}>{STATO_CONSEGNA[k.stato]}</span>
           </div>
         ))}

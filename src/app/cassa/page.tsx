@@ -2,7 +2,7 @@
 
 // Cassa: gli ordini compaiono e cambiano da soli (Supabase Realtime), senza
 // ricaricare la pagina. Primo mattone della PWA cassa.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine } from "@/lib/types";
@@ -11,6 +11,22 @@ import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine } from "@/lib/types";
 // cassa): si apre la pagina /cassa/comanda/<id>?stampa=1 in un riquadro nascosto e quella chiama
 // window.print(). Col Chrome della cassa avviato con --kiosk-printing esce senza chiedere.
 const STAMPA_LS = "cassa:stampa-automatica";
+// Area preordini (REA cap. 10, lavoro 3; Velocissimo: flag «preordine» sullo stato, video 8:48):
+// un ordine per fra più di un'ora è un preordine: sta nella sua area e NON si stampa da solo
+// finché non manca mezz'ora (ATTESA) all'ora di consegna; poi passa fra quelli in corso e si stampa.
+const PREORDINE_MIN = 60;
+const ATTESA_MIN = 30;
+const ePreordine = (o: { ora_consegna?: string | null }, adesso: number) =>
+  !!o.ora_consegna && new Date(o.ora_consegna).getTime() - adesso > PREORDINE_MIN * 60_000;
+/** Quando va stampato un preordine: all'ora di consegna meno l'attesa. */
+const stampaAlle = (o: { ora_consegna?: string | null }) => (o.ora_consegna ? new Date(new Date(o.ora_consegna).getTime() - ATTESA_MIN * 60_000) : null);
+/** «fra 12 min» / «in ritardo di 5 min» sugli ordini in corso (Velocissimo: minuti mancanti e colore del ritardo). */
+function contoAllaRovescia(o: { ora_consegna?: string | null; creato_il: string }, adesso: number): { testo: string; ritardo: boolean } | null {
+  const scadenza = o.ora_consegna ? new Date(o.ora_consegna).getTime() : new Date(o.creato_il).getTime() + ATTESA_MIN * 60_000;
+  const min = Math.round((scadenza - adesso) / 60_000);
+  if (min > 180) return null;
+  return min >= 0 ? { testo: `fra ${min} min`, ritardo: false } : { testo: `in ritardo di ${-min} min`, ritardo: true };
+}
 type OrdineCassa = Ordine & {
   nome_cliente?: string | null; pagamento?: "contanti" | "pos" | null; paga_con?: number | null;
   cliente?: { nome: string | null; telefono: string | null; note: string | null } | null;
@@ -59,6 +75,20 @@ function Cassa() {
       .then(({ data }) => { if (data) setOrdini((prev) => prev.map((o) => (o.id === id ? (data as OrdineCassa) : o))); });
   }
   function stampa(id: string) { setInStampa((p) => (p.includes(id) ? p : [...p, id])); setTimeout(() => setInStampa((p) => p.filter((x) => x !== id)), 15_000); }
+  const [adesso, setAdesso] = useState(() => Date.now());
+  useEffect(() => { const t = setInterval(() => setAdesso(Date.now()), 30_000); return () => clearInterval(t); }, []);
+  // i preordini si stampano da soli quando è ora (una volta: stampato_il lo segna ordine_stampato)
+  const stampatiDaMe = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    let auto = false; try { auto = localStorage.getItem(STAMPA_LS) === "1"; } catch {}
+    if (!auto) return;
+    for (const o of ordini) {
+      const quando = stampaAlle(o);
+      if (!quando || o.stampato_il || stampatiDaMe.current.has(o.id)) continue;
+      if (o.stato === "annullato" || o.stato === "consegnato" || o.stato === "ritirato") continue;
+      if (quando.getTime() <= adesso && new Date(o.ora_consegna!).getTime() > adesso - 60 * 60_000) { stampatiDaMe.current.add(o.id); stampa(o.id); }
+    }
+  }, [adesso, ordini]);
 
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -87,7 +117,8 @@ function Cassa() {
           setOrdini((prev) => {
             if (payload.eventType === "INSERT") {
               const n = payload.new as OrdineCassa;
-              try { if (localStorage.getItem(STAMPA_LS) === "1") stampa(n.id); } catch {}
+              // un preordine non si stampa all'arrivo: lo fa l'orologio quando manca l'attesa
+              try { if (localStorage.getItem(STAMPA_LS) === "1" && !ePreordine(n, Date.now())) stampa(n.id); } catch {}
               completa(n.id);   // il realtime non porta cliente e indirizzo: si rileggono
               return [n, ...prev];
             }
@@ -137,8 +168,29 @@ function Cassa() {
       {ordini.length === 0 && !errore && (
         <p className="muto">Nessun ordine. Quando arriva, compare qui da solo.</p>
       )}
+      {ordini.some((o) => ePreordine(o, adesso) && o.stato !== "annullato") && (
+        <details className="preordini" open>
+          <summary>Preordini <small>{ordini.filter((o) => ePreordine(o, adesso) && o.stato !== "annullato").length} · si stampano da soli {ATTESA_MIN} minuti prima</small></summary>
+          <div className="griglia">
+            {ordini.filter((o) => ePreordine(o, adesso) && o.stato !== "annullato").sort((a, b) => (a.ora_consegna ?? "").localeCompare(b.ora_consegna ?? "")).map((o) => (
+              <article className="carta preordine" key={o.id}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <strong style={{ fontSize: 20, fontFamily: "Oswald, sans-serif", fontWeight: 600 }}>{o.numero_visibile ?? `#${o.numero}`}</strong>
+                  <b style={{ color: "var(--vino)" }}>{quando(o.ora_consegna!)}</b>
+                </div>
+                <div className="muto">{o.tipo} · {o.cliente?.nome ?? o.nome_cliente ?? ""}{o.indirizzo ? ` · ${o.indirizzo.via} ${o.indirizzo.civico ?? ""}` : ""} · {euro(o.totale)}</div>
+                <div className="muto" style={{ fontSize: 13 }}>stampa alle {oraDi(stampaAlle(o)!.toISOString())}{o.stampato_il ? " · già stampata" : ""}</div>
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
+                  <button onClick={() => stampa(o.id)}>Stampa ora</button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </details>
+      )}
       <div className="griglia">
-        {ordini.map((o) => (
+        {ordini.filter((o) => !ePreordine(o, adesso) || o.stato === "annullato").map((o) => (
           <article className="carta" key={o.id}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <strong style={{ fontSize: 20, fontFamily: "Oswald, sans-serif", fontWeight: 600 }}>{o.numero_visibile ?? `#${o.numero}`}</strong>
@@ -151,6 +203,7 @@ function Cassa() {
                 minute: "2-digit",
               })}
               {o.ora_consegna && <> · <b style={quando(o.ora_consegna).startsWith("per") ? undefined : { color: "var(--vino)" }}>{quando(o.ora_consegna)}</b></>}
+              {(o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") && (() => { const c = contoAllaRovescia(o, adesso); return c ? <> · <b style={{ color: c.ritardo ? "var(--errore)" : "var(--ok)" }}>{c.testo}</b></> : null; })()}
             </div>
             {(o.cliente?.nome || o.nome_cliente || o.cliente?.telefono || o.pagamento) && (
               <div style={{ marginTop: 6, fontWeight: 600 }}>

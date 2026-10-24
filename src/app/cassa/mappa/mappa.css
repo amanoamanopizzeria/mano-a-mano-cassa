@@ -48,3 +48,6 @@
 .leaflet-popup-content .p-riga b { color: var(--testo); }
 .leaflet-popup-tip { border-top: 2px solid var(--oro); }
 .leaflet-container a.leaflet-popup-close-button { color: var(--vino); font-size: 20px; top: 6px; right: 6px; }
+
+/* Assegna dalla cassa (24/10/2026) */
+.m-assegna { font-size: 15px; padding: 8px 10px; border-radius: 10px; border: 2px solid var(--vino); color: var(--vino); background: #fff; font-weight: 700; max-width: 220px; }
