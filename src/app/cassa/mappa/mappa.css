@@ -51,3 +51,19 @@
 
 /* Assegna dalla cassa (24/10/2026) */
 .m-assegna { font-size: 15px; padding: 8px 10px; border-radius: 10px; border: 2px solid var(--vino); color: var(--vino); background: #fff; font-weight: 700; max-width: 220px; }
+
+/* giro 7 del grafico (24/10/2026): niente sotto i 13 px (l'attribuzione di Leaflet era a 12),
+   le schede di rider e consegne con il testo da 15, il menù «Assegna a…» da dito, lo stato a 14. */
+.mappa-pagina .leaflet-container .leaflet-control-attribution { font-size: 13px; padding: 2px 8px; }
+.mappa-pagina .leaflet-container .leaflet-control-zoom a { width: 40px; height: 40px; line-height: 40px; font-size: 20px; }
+.mappa-pagina .m-conta b { color: var(--testo); font-variant-numeric: tabular-nums; }
+.mappa-pagina .m-scheda .muto { font-size: 15px; }
+.mappa-pagina .m-scheda { min-width: 0; }
+.mappa-pagina .m-scheda > div { overflow-wrap: anywhere; }
+.mappa-pagina .m-assegna { min-height: 44px; font-size: 15px; padding: 6px 10px; max-width: 100%; }
+.mappa-pagina .m-stato { font-size: 14px; padding: 5px 12px; }
+.mappa-pagina h2 { margin: 18px 0 8px; }
+@media (max-width: 620px) {
+  .mappa-pagina .mappa-mappa { height: 48vh; min-height: 280px; }
+  .mappa-pagina .m-legenda { gap: 8px 14px; padding: 8px 12px; font-size: 13px; }
+}

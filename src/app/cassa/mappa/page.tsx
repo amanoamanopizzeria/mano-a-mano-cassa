@@ -175,7 +175,7 @@ function Mappa() {
     <main className="mappa-pagina">
       <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
         <h1 style={{ margin: 0 }}>Cassa — rider in mappa</h1>
-        <span className="muto" style={{ fontSize: 14 }}>{riders.length} rider · {consegne.length} consegne in corso</span>
+        <span className="muto m-conta" style={{ fontSize: 15 }}><b>{riders.length}</b> rider · <b>{consegne.length}</b> consegne in corso</span>
       </div>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
       <div ref={divRef} className="mappa-mappa" style={{ marginTop: 10 }} />
@@ -191,10 +191,10 @@ function Mappa() {
       <h2>Rider</h2>
       <div className="griglia">
         {riders.map((r) => (
-          <div className="carta" key={r.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="carta m-scheda" key={r.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span className={"m-rider" + (fermo(r) ? " fermo" : "")}>{iniziali(r.nome)}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <strong style={{ fontSize: 17 }}>{r.nome}</strong>
+              <strong style={{ fontSize: 19 }}>{r.nome}</strong>
               <div className="muto">
                 {r.consegne_in_corso} {r.consegne_in_corso === 1 ? "consegna" : "consegne"} in corso ·{" "}
                 {r.aggiornata_il ? "posizione delle " + oraDi(r.aggiornata_il) : "nessuna posizione"}
@@ -210,10 +210,10 @@ function Mappa() {
       {erroreAssegna && <p style={{ color: "var(--errore)", fontWeight: 700 }}>{erroreAssegna}</p>}
       <div className="griglia">
         {consegne.map((k) => (
-          <div className="carta" key={k.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="carta m-scheda" key={k.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <span className={"m-goccia " + k.stato}><span>{k.ordine?.numero ?? ""}</span></span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <strong style={{ fontSize: 17 }}>{nomeOrdine(k.ordine)}</strong>
+              <strong style={{ fontSize: 19 }}>{nomeOrdine(k.ordine)}</strong>
               {k.ordine?.ora_consegna && <span className="muto"> · per le {oraDi(k.ordine.ora_consegna)}</span>}
               <div className="muto">{k.ordine?.indirizzo ? `${k.ordine.indirizzo.via} ${k.ordine.indirizzo.civico ?? ""}` : <b style={{ color: "var(--vino)" }}>senza indirizzo: da sistemare</b>}{nomeRider(k.id_rider) ? ` · ${nomeRider(k.id_rider)}` : ""}{k.ordine?.indirizzo && k.ordine.indirizzo.lat == null ? " · non sulla mappa" : ""}</div>
             </div>
