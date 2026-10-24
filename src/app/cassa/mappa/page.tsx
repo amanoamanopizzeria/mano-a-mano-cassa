@@ -78,6 +78,8 @@ function Mappa() {
   }
   const [consegne, setConsegne] = useState<ConsegnaInMappa[]>([]);
   const [errore, setErrore] = useState<string | null>(null);
+  // Giro 12 del grafico: finché le tessere non arrivano (3–4 s al primo carico) si legge «Carico la mappa…».
+  const [mappaPronta, setMappaPronta] = useState(false);
 
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
@@ -143,9 +145,17 @@ function Mappa() {
       .then((L) => {
         if (!vivo || !divRef.current) return;
         mappaRef.current = L.map(divRef.current).setView(CENTRO, 13);
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        const tessere = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: "&copy; OpenStreetMap",
         }).addTo(mappaRef.current);
+        tessere.once("load", () => { if (vivo) setMappaPronta(true); });
+        // le scritte di Leaflet in italiano (erano «Zoom in», «Zoom out» e il rimando a Leaflet)
+        mappaRef.current.attributionControl?.setPrefix("");
+        const cont: HTMLElement = mappaRef.current.getContainer();
+        cont.querySelector(".leaflet-control-zoom-in")?.setAttribute("title", "Avvicina");
+        cont.querySelector(".leaflet-control-zoom-out")?.setAttribute("title", "Allontana");
+        cont.querySelector(".leaflet-control-zoom-in")?.setAttribute("aria-label", "Avvicina");
+        cont.querySelector(".leaflet-control-zoom-out")?.setAttribute("aria-label", "Allontana");
         // la pizzeria: il bollino in un disco bianco col bordo oro, sempre al centro della storia
         L.marker(CENTRO, { icon: L.divIcon({ className: "", html: `<div class="m-pizzeria" title="A Mano a Mano"><img src="/brand/bollino.png" alt=""/></div>`, iconSize: [46, 46], iconAnchor: [23, 23], popupAnchor: [0, -26] }), zIndexOffset: 1000 })
           .addTo(mappaRef.current).bindPopup(`<b>A Mano a Mano</b><div class="p-riga">Via Novara 5/7</div>`);
@@ -180,7 +190,10 @@ function Mappa() {
         <span className="muto m-conta" style={{ fontSize: 15 }}><b>{riders.length}</b> rider · <b>{consegne.length}</b> consegne in corso</span>
       </div>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
-      <div ref={divRef} className="mappa-mappa" style={{ marginTop: 10 }} />
+      <div className="m-cornice">
+        <div ref={divRef} className="mappa-mappa" />
+        {!mappaPronta && !errore && <div className="m-carico" aria-live="polite"><img src="/brand/bollino.png" alt="" /><span>Carico la mappa…</span></div>}
+      </div>
       <div className="carta m-legenda">
         <span className="voce"><span className="m-pizzeria"><img src="/brand/bollino.png" alt="" /></span>la pizzeria</span>
         <span className="voce"><span className="m-rider">R</span>rider</span>

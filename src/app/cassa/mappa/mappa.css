@@ -67,3 +67,9 @@
   .mappa-pagina .mappa-mappa { height: 48vh; min-height: 280px; }
   .mappa-pagina .m-legenda { gap: 8px 14px; padding: 8px 12px; font-size: 13px; }
 }
+
+/* giro 12 del grafico (24/10/2026): «Carico la mappa…» sopra le tessere grigie del primo carico. */
+.m-cornice { position: relative; margin-top: 10px; }
+.m-carico { position: absolute; inset: 0; border-radius: 18px; background: var(--sfondo); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; z-index: 500; font-size: 17px; font-weight: 600; color: var(--muto); pointer-events: none; }
+.m-carico img { width: 64px; height: 64px; animation: m-pulsa 1.2s ease-in-out infinite; }
+@keyframes m-pulsa { 0%, 100% { opacity: .55; transform: scale(.96); } 50% { opacity: 1; transform: scale(1); } }
