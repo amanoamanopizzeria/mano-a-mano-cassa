@@ -2,8 +2,8 @@
 // Epson, una comande forse Ditron, una fiscale Epson, tutte in LAN). L'agente di stampa sul PC di cassa
 // riceve questi byte già pronti dal server e li manda alla porta 9100 della stampante: il disegno
 // della carta si cambia qui e arriva con un deploy, senza reinstallare niente in negozio.
-// Due copie: «cucina» (le righe per reparto, niente soldi) e «cassa» (tutto, anche totale e resto,
-// per la busta del domicilio). Il modello è lo stesso della pagina: src/lib/comanda.ts.
+// Due copie complete e uguali (cucina e cassa: anche via, telefono e totale, così una comanda persa
+// si ritrova dall'altra), con «copia cucina» o «copia cassa» in fondo. Il modello è lo stesso della pagina: src/lib/comanda.ts.
 import { vistaComanda, quandoComanda, oraRoma, euroComanda, TIPO_COMANDA, CANALE_COMANDA, type Comanda } from "../comanda";
 
 export type RuoloStampante = "cucina" | "cassa";
@@ -109,7 +109,9 @@ export function comandaEscPos(c: Comanda, o: OpzioniStampa): Uint8Array {
   const colonne = o.colonne ?? 48;
   const p = new Carta(colonne, o.tabella ?? 19);
   const { reparti, tolte, pezzi } = vistaComanda(c);
-  const cassa = o.ruolo === "cassa";
+  // Edoardo, 25/10/2026: «in cucina manda comunque l'ordine completo, anche con la via ed il totale,
+  // casomai non ci ritroviamo le comande». Le due copie sono uguali; cambia solo la riga in fondo.
+  const cassa = true;
 
   // testata: il numero grande, poi se è una ristampa, poi tipo e quando
   p.centro(true).misura(2, 2).grassetto(true).testo(c.numero_visibile ?? `#${c.numero}`).grassetto(false).misura(1, 1);
@@ -122,7 +124,7 @@ export function comandaEscPos(c: Comanda, o: OpzioniStampa): Uint8Array {
   else p.testo(`${q ? q.testo : "subito"} · ${ricevuto}`);
   p.centro(false).linea("=");
 
-  // chi e dove: il nome sempre (la cucina chiama il ritiro per nome), telefono e via solo sulla copia della cassa
+  // chi e dove
   if (c.cliente) p.grassetto(true).misura(1, 2).testo(c.cliente).misura(1, 1).grassetto(false);
   if (cassa && c.telefono) p.testo(c.telefono);
   if (c.cliente_note) p.grassetto(true).testo(`!! ${c.cliente_note}`).grassetto(false);
@@ -168,6 +170,7 @@ export function comandaEscPos(c: Comanda, o: OpzioniStampa): Uint8Array {
     if (!c.pagato_online && c.paga_con != null && Number(c.paga_con) > c.totale)
       p.grassetto(true).testo(`PAGA CON ${euroComanda(Number(c.paga_con))} € -> RESTO ${euroComanda(Number(c.paga_con) - c.totale)} €`).grassetto(false);
   }
+  p.centro(true).testo(o.ruolo === "cucina" ? "- copia cucina -" : "- copia cassa -").centro(false);
   return p.avanti(1).taglia().byte();
 }
 

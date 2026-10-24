@@ -7,8 +7,9 @@ si accende solo il giorno della prova in parallelo, deciso da Edoardo.
 
 1. Ogni 3 secondi chiede al server della cassa (`/api/stampa/coda`) le comande da stampare, con la
    sua chiave (`STAMPA_KEY`). Non ha credenziali Supabase.
-2. Il server gliele manda già pronte in ESC/POS, una copia per stampante: la **cucina** (righe per
-   reparto, niente soldi) e la **cassa** (anche telefono, via, totale, pagamento e resto).
+2. Il server gliele manda già pronte in ESC/POS, una copia per stampante. Le copie sono **complete
+   e uguali** (righe per reparto, telefono, via, totale, pagamento e resto: Edoardo, 25/10/2026, così
+   una comanda persa si ritrova dall'altra); in fondo dicono «copia cucina» o «copia cassa».
 3. L'agente le manda alla porta 9100 di ogni stampante. Quando tutte le hanno prese, lo dice al server
    (`/api/stampa/fatta`) e l'ordine risulta stampato.
 4. Se una stampante è spenta, l'agente lo scrive una volta e riprova da solo; l'altra non ristampa.

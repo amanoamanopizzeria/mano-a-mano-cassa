@@ -64,7 +64,7 @@ const ID1 = "00000000-0000-0000-0000-000000000001", ID2 = "00000000-0000-0000-00
 coda = [base(ID1, 101)];
 ok(await finché(() => segnate.includes(ID1)), "1) la comanda va su tutte e due e si segna");
 ok(ricevute.cucina.length === 1 && ricevute.cassa.length === 1, "1) una copia per stampante");
-ok(anteprimaTesto(new Uint8Array(ricevute.cucina[0])).includes("C-101") && !anteprimaTesto(new Uint8Array(ricevute.cucina[0])).includes("TOTALE"), "1) la cucina senza i soldi");
+ok(anteprimaTesto(new Uint8Array(ricevute.cucina[0])).includes("C-101") && anteprimaTesto(new Uint8Array(ricevute.cucina[0])).includes("copia cucina"), "1) la cucina ha la sua copia");
 ok(anteprimaTesto(new Uint8Array(ricevute.cassa[0])).includes("TOTALE"), "1) la cassa col totale");
 
 accese.cassa = false;

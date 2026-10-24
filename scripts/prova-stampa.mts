@@ -37,8 +37,8 @@ for (const [ruolo, colonne] of [["cucina", 48], ["cassa", 42]] as const) {
   ok(t.includes("SENZA basilico") && t.includes("CON bufala") && t.includes("Würstel"), `${ruolo}: varianti e figlie con gli accenti`);
   ok(t.includes("Supplì") || t.includes("SUPPLÌ"), `${ruolo}: Supplì con l'accento`);
   ok(b[b.length - 4] === 0x1d && b[b.length - 3] === 0x56, `${ruolo}: finisce col taglio`);
-  if (ruolo === "cucina") ok(!t.includes("TOTALE") && !t.includes("Via Novara") && !t.includes("333"), "cucina: niente soldi, via e telefono");
-  else ok(t.includes("TOTALE") && t.includes("31,30 €") && t.includes("RESTO 18,70 €") && t.includes("Via Novara 5") && t.includes("CONTANTI"), "cassa: totale, resto, via, pagamento");
+  ok(t.includes(`copia ${ruolo}`), `${ruolo}: la riga in fondo dice di chi è la copia`);
+  ok(t.includes("TOTALE") && t.includes("31,30 €") && t.includes("RESTO 18,70 €") && t.includes("Via Novara 5") && t.includes("CONTANTI"), `${ruolo}: completa anche lei: totale, resto, via, pagamento`);
 }
 ok(codifica("€àèéìòù«»").join(",") === [0xd5, 0x85, 0x8a, 0x82, 0x8d, 0x95, 0x97, 0xae, 0xaf].join(","), "euro e accenti nella tabella PC858");
 ok(codifica("🍕x→").join(",") === [0x78, 0x2d, 0x3e].join(","), "emoji tolte, freccia in ->");
