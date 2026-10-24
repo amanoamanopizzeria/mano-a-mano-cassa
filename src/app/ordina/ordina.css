@@ -63,24 +63,26 @@
 .o-indirizzo .testo small { display: block; color: var(--testo2); font-size: 13.5px; margin-top: 2px; }
 .o-indirizzo .cambia { color: var(--sabbia-scura); font-weight: 600; font-size: 15px; }
 
-/* le categorie: una seconda fila nella barra vino, scorrevole */
-.o-cat-striscia { display: flex; gap: 0; padding: 0 4px; background: var(--vino); overflow-x: auto; scrollbar-width: none; border-top: 1px solid rgba(255,255,255,.18); }
+/* le categorie: una seconda fila nella barra vino, scorrevole, che resta fissa sotto la testata (giro 8) */
+.o-cat-striscia { display: flex; gap: 0; padding: 0 4px; background: var(--vino); overflow-x: auto; scrollbar-width: none; border-top: 1px solid rgba(255,255,255,.18); position: sticky; top: 88px; z-index: 4; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
 .o-cat-striscia::-webkit-scrollbar { display: none; }
-.o-cat { flex-shrink: 0; padding: 0 12px; height: 42px; color: rgba(255,255,255,.62); font-weight: 700; font-size: 14.5px; text-transform: uppercase; white-space: nowrap; letter-spacing: .01em; border-bottom: 3px solid transparent; border-radius: 0; }
+.o-cat { flex-shrink: 0; padding: 0 12px; height: 44px; color: rgba(255,255,255,.7); font-family: "Oswald", sans-serif; font-weight: 500; font-size: 15px; text-transform: uppercase; white-space: nowrap; letter-spacing: .06em; border-bottom: 3px solid transparent; border-radius: 0; }
 .o-cat.attiva { color: #fff; border-bottom-color: #fff; }
 
-/* i prodotti: una colonna di righe, la foto grande a destra su sabbia */
+/* i prodotti (giro 8): righe col nome in Oswald, la descrizione corta, il prezzo in fondo a destra
+   della colonna di testo, la foto grande a destra su sabbia */
 .o-lista { display: flex; flex-direction: column; }
-.o-carta { display: grid; grid-template-columns: minmax(0, 1fr) 136px; gap: 14px; align-items: stretch; padding: 14px 0; border-bottom: 1px solid var(--linea); text-align: left; min-height: 136px; }
+.o-carta { display: grid; grid-template-columns: minmax(0, 1fr) 128px; gap: 14px; align-items: stretch; padding: 12px 0; border-bottom: 1px solid var(--linea); text-align: left; min-height: 128px; }
 .o-carta:active { background: var(--sabbia-chiara); transform: none; }
 .o-carta .testo { display: flex; flex-direction: column; min-width: 0; }
-.o-carta .nome { font-weight: 700; font-size: 16.5px; line-height: 1.2; text-transform: uppercase; }
-.o-carta .descr { font-size: 14px; line-height: 1.35; color: var(--testo2); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.o-carta .prezzo { margin-top: auto; padding-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 17px; font-weight: 700; color: var(--nero); font-variant-numeric: tabular-nums; }
-.o-etichetta { background: var(--vino); color: #fff; font-size: 13px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
-.o-carta .fotobox { position: relative; width: 136px; height: 136px; border-radius: 6px; overflow: hidden; background: var(--sabbia-chiara); align-self: center; }
+.o-carta .nome { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 20px; line-height: 1.1; text-transform: uppercase; letter-spacing: .01em; }
+.o-carta .descr { font-size: 14px; line-height: 1.35; color: var(--testo2); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.o-carta .prezzo { margin-top: auto; padding-top: 8px; display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; font-size: 19px; font-weight: 800; color: var(--nero); font-variant-numeric: tabular-nums; }
+.o-carta .prezzo > span:first-child { order: 2; }
+.o-etichetta { background: var(--vino); color: #fff; font-size: 13px; font-weight: 700; padding: 2px 9px; border-radius: 999px; order: 1; margin-right: auto; }
+.o-carta .fotobox { position: relative; width: 128px; height: 128px; border-radius: 8px; overflow: hidden; background: var(--sabbia-chiara); align-self: center; }
 .o-carta .foto { width: 100%; height: 100%; object-fit: cover; display: block; }
-.o-carta .nel { position: absolute; top: 6px; right: 6px; background: var(--sabbia-scura); color: #fff; font-weight: 800; font-size: 14px; min-width: 26px; height: 26px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; padding: 0 6px; }
+.o-carta .nel { position: absolute; top: 6px; right: 6px; background: var(--vino); color: #fff; font-weight: 800; font-size: 14px; min-width: 26px; height: 26px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; padding: 0 6px; }
 .o-manca { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--sabbia-chiara); }
 
 /* la barra in fondo: fascia grigia, un solo pulsante sabbia con articoli · azione · totale */
@@ -98,21 +100,35 @@
 .o-b-linea { background: #fff; color: var(--vino); border: 2px solid var(--vino); font-size: 15px; min-height: 48px; padding: 0 16px; border-radius: 4px; font-weight: 700; }
 .o-b-largo { width: 100%; box-sizing: border-box; display: block; text-align: center; margin-top: 16px; }
 
-/* la scheda del prodotto: una pagina intera, «Dettagli» nella barra vino */
+/* la scheda del prodotto (giro 8): una pagina intera che sta in una schermata a 390. In testa la foto
+   a sinistra e nome, descrizione e prezzo a destra; la quantità in una riga; i gruppi di ingredienti
+   sono righe chiuse che si aprono una alla volta, con le scelte fatte scritte sulla riga. */
 .o-velo { position: fixed; inset: 0; background: #fff; display: flex; flex-direction: column; z-index: 10; }
 .o-scheda { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .o-scheda .corpo { flex: 1; overflow-y: auto; padding: 12px 16px 24px; }
 .o-scheda .dentro { max-width: 760px; margin: 0 auto; }
-.o-scheda h2 { font-size: 20px; text-align: center; text-transform: uppercase; margin: 2px 0 10px; }
-.o-scheda .fotobox-grande { width: min(100%, 300px); aspect-ratio: 1; margin: 0 auto; border-radius: 8px; overflow: hidden; background: var(--sabbia-chiara); }
+.o-intesta { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 14px; align-items: start; }
+.o-intesta .testo { display: flex; flex-direction: column; min-width: 0; min-height: 124px; }
+.o-scheda h2 { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 22px; line-height: 1.1; text-transform: uppercase; letter-spacing: .01em; margin: 0; }
+.o-scheda .fotobox-grande { width: 124px; height: 124px; border-radius: 8px; overflow: hidden; background: var(--sabbia-chiara); }
 .o-scheda .foto-grande { width: 100%; height: 100%; object-fit: cover; display: block; }
-.o-scheda .descr { font-size: 15.5px; color: var(--testo2); margin: 12px 0 6px; line-height: 1.4; }
-.o-scheda .prezzo { font-size: 18px; font-weight: 700; }
-.o-scheda h3 { font-weight: 700; font-size: 16px; text-transform: uppercase; margin: 16px 0 2px; display: flex; align-items: center; gap: 8px; }
+.o-scheda .descr { font-size: 14px; color: var(--testo2); margin: 6px 0 0; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.o-scheda .prezzo { font-size: 20px; font-weight: 800; margin-top: auto; padding-top: 6px; font-variant-numeric: tabular-nums; }
+.o-quanti { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; margin-top: 10px; border-top: 1.5px solid var(--nero); border-bottom: 1px solid var(--linea); font-weight: 700; font-size: 16px; }
+.o-scheda .o-quanti .o-cont { margin: 0; }
 .o-scheda .piede { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: var(--fascia); display: flex; gap: 10px; }
 .o-scheda .piede .dentro { display: flex; gap: 10px; width: 100%; }
 .o-gruppo { font-weight: 700; font-size: 15.5px; text-transform: uppercase; margin: 14px 0 0; }
-.o-opz { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 6px 2px; border-bottom: 1px solid var(--linea); text-align: left; font-size: 16px; border-radius: 0; }
+.o-acc { border-bottom: 1px solid var(--linea); }
+.o-acc-testa { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 2px; text-align: left; border-radius: 0; }
+.o-acc-testa .nome { font-family: "Oswald", sans-serif; font-weight: 500; font-size: 16px; text-transform: uppercase; letter-spacing: .04em; flex: none; }
+.o-acc-testa .scelte { flex: 1; min-width: 0; color: var(--testo2); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+.o-acc-testa .scelte.fatte { color: var(--vino); font-weight: 600; }
+.o-acc-testa .freccia { color: var(--sabbia-scura); font-size: 18px; flex: none; width: 24px; text-align: center; }
+.o-acc.aperto .o-acc-testa { background: var(--sabbia-chiara); }
+.o-acc .o-opz { padding-left: 10px; }
+.o-acc .o-opz:last-child { border-bottom: none; }
+.o-opz { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 4px 2px; border-bottom: 1px solid var(--linea); text-align: left; font-size: 16px; border-radius: 0; }
 .o-opz.on { background: var(--sabbia-chiara); }
 .o-opz .extra { color: var(--testo2); font-size: 14.5px; margin-left: auto; font-variant-numeric: tabular-nums; }
 .o-opz .spunta { order: 3; width: 38px; height: 38px; border-radius: 999px; background: var(--tassello); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; flex-shrink: 0; margin-left: 4px; }

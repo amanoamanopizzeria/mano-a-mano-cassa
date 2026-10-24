@@ -558,6 +558,8 @@ function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, massimi,
   const [q, setQ] = useState(1);
   const [scelte, setScelte] = useState<VarianteMenu[]>([]);
   const [scelteMenu, setScelteMenu] = useState<ProdottoMenu[][]>(() => gruppiMenu.map(() => []));
+  // giro 8: i gruppi di ingredienti sono righe chiuse (63 voci in una pizza non stanno in una schermata); si apre uno alla volta
+  const [gruppoAperto, setGruppoAperto] = useState<string | null>(null);
   const gruppi = gruppiDi(varianti);
   const extra = scelte.reduce((s, v) => s + v.prezzo, 0);
   const completo = menuCompleto(gruppiMenu, scelteMenu);
@@ -595,11 +597,15 @@ function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, massimi,
       </div>
       <div className="o-scheda">
         <div className="corpo"><div className="dentro">
-          <h2>{p.nome}</h2>
-          <div className="fotobox-grande"><Foto p={p} classe="foto-grande" /></div>
-          {p.descrizione && <p className="descr">{p.descrizione}</p>}
-          <div className="prezzo">{euro(p.prezzo)}</div>
-          {p.incluso && <p className="descr" style={{ fontWeight: 700, marginTop: 6 }}>Inclusi nel menu: {p.incluso}</p>}
+          <div className="o-intesta">
+            <div className="fotobox-grande"><Foto p={p} classe="foto-grande" /></div>
+            <div className="testo">
+              <h2>{p.nome}</h2>
+              {p.descrizione && <p className="descr">{p.descrizione}</p>}
+              {p.incluso && <p className="descr" style={{ fontWeight: 700 }}>Inclusi nel menu: {p.incluso}</p>}
+              <div className="prezzo">{euro(p.prezzo)}</div>
+            </div>
+          </div>
 
           {gruppiMenu.map((g, i) => {
             const fatto = scelteMenu[i].length >= g.quantita;
@@ -625,23 +631,30 @@ function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, massimi,
             );
           })}
 
-          <div className="o-sez">Quantità</div>
-          <Contatore n={q} meno={() => setQ(Math.max(1, q - 1))} piu={() => setQ(Math.min(20, q + 1))} />
+          <div className="o-quanti"><span>Quantità</span><Contatore n={q} meno={() => setQ(Math.max(1, q - 1))} piu={() => setQ(Math.min(20, q + 1))} /></div>
 
           {gruppi.length > 0 && <div className="o-sez">Aggiungi ingredienti</div>}
-          {gruppi.map((g) => (
-            <div key={g}>
-              <div className="o-gruppo">{g}</div>
-              {varianti.filter((v) => v.gruppo === g).map((v) => {
-                const on = scelte.some((x) => x.id === v.id);
-                return (
-                  <button key={v.id} onClick={() => alterna(v)} className={"o-opz" + (on ? " on" : "")}>
-                    <span className="spunta">{on ? "✓" : ""}</span><span>{v.nome}</span><span className="extra">{v.prezzo > 0 ? "+ " + euro(v.prezzo) : ""}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+          {gruppi.map((g) => {
+            const scelteQui = scelte.filter((x) => x.gruppo === g);
+            const aperto = gruppoAperto === g;
+            return (
+              <div key={g} className={"o-acc" + (aperto ? " aperto" : "")}>
+                <button className="o-acc-testa" onClick={() => setGruppoAperto(aperto ? null : g)} aria-expanded={aperto}>
+                  <span className="nome">{g}</span>
+                  <span className={"scelte" + (scelteQui.length > 0 ? " fatte" : "")}>{scelteQui.length > 0 ? scelteQui.map((x) => x.nome).join(", ") : `${varianti.filter((v) => v.gruppo === g).length} scelte`}</span>
+                  <span className="freccia" aria-hidden>{aperto ? "▴" : "▾"}</span>
+                </button>
+                {aperto && varianti.filter((v) => v.gruppo === g).map((v) => {
+                  const on = scelte.some((x) => x.id === v.id);
+                  return (
+                    <button key={v.id} onClick={() => alterna(v)} className={"o-opz" + (on ? " on" : "")}>
+                      <span className="spunta">{on ? "✓" : ""}</span><span>{v.nome}</span><span className="extra">{v.prezzo > 0 ? "+ " + euro(v.prezzo) : ""}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div></div>
         <div className="piede"><div className="dentro">
           <button
