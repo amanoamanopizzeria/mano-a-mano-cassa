@@ -65,7 +65,8 @@ function Rider() {
           setGps(`GPS attivo · ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
           await supabaseRef.current!.rpc("segnala_posizione", { p_lat: lat, p_lng: lng });
         },
-        (e) => setGps(`GPS non disponibile: ${e.message}`),
+        // critico giro 15: il telefono parlava inglese («User denied Geolocation»)
+        (e) => setGps(e.code === 1 ? "GPS negato: consenti la posizione a questo sito nelle impostazioni del telefono" : e.code === 2 ? "GPS: posizione non trovata, riprovo" : "GPS lento: riprovo"),
         { enableHighAccuracy: true, maximumAge: 5000 }
       );
     }
@@ -93,6 +94,10 @@ function Rider() {
 
   const libere = consegne.filter((c) => c.stato === "da_assegnare");
   const mie = consegne.filter((c) => c.stato === "assegnata" || c.stato === "ritirata");
+  // critico giro 15: due consegne allo stesso indirizzo erano due schede uguali e nessuno diceva il contante totale
+  const chiave = (c: ConsegnaRider) => [c.via, c.civico].filter(Boolean).join(" ").toLowerCase().trim();
+  const insieme = (c: ConsegnaRider) => mie.filter((x) => x.id !== c.id && chiave(x) && chiave(x) === chiave(c)).map((x) => `#${x.numero}`);
+  const contantiMie = mie.reduce((t, c) => t + (c.pagato_online ? 0 : Number(c.contanti_da_incassare)), 0);
   const daSaldare = consegne.filter((c) => c.stato === "consegnata");
 
   return (
@@ -103,9 +108,10 @@ function Rider() {
 
       <h2>Le mie ({mie.length})</h2>
       {mie.length === 0 && <p className="muto">Nessuna consegna in corso.</p>}
+      {mie.length > 1 && <p className="muto" style={{ fontSize: 15 }}>In tutto da incassare in contanti: <b style={{ color: "var(--vino)", fontSize: 18 }}>{euro(contantiMie)}</b></p>}
       <div className="griglia">
         {mie.map((c) => (
-          <SchedaConsegna key={c.id} c={c}>
+          <SchedaConsegna key={c.id} c={c} insieme={insieme(c)}>
             {c.stato === "assegnata" && (
               <button className="primario r-azione" onClick={() => aggiorna(c.id, "ritirata")}>Ritirata</button>
             )}
@@ -130,7 +136,7 @@ function Rider() {
       {borsello && (
         <p className="muto">
           Hai in mano <b style={{ color: "var(--testo)" }}>{euro(borsello.in_mano)}</b>
-          {borsello.da_saldare > 0 && <> · di cui {euro(borsello.da_saldare)} delle consegne fatte</>}
+          {borsello.da_saldare > 0 && <> · da versare in cassa {euro(borsello.da_saldare)}</>}
           . A fine serata si fa il dare-avere in cassa e queste spariscono.
         </p>
       )}
@@ -147,7 +153,7 @@ function Rider() {
   );
 }
 
-function SchedaConsegna({ c, children }: { c: ConsegnaRider; children: React.ReactNode }) {
+function SchedaConsegna({ c, children, insieme = [] }: { c: ConsegnaRider; children: React.ReactNode; insieme?: string[] }) {
   const indirizzo = [c.via, c.civico, c.cap, c.citta].filter(Boolean).join(" ");
   const naviga = c.lat && c.lng
     ? `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`
@@ -167,6 +173,7 @@ function SchedaConsegna({ c, children }: { c: ConsegnaRider; children: React.Rea
           : "appena pronto"}
       </div>
       {indirizzo && <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800, lineHeight: 1.2 }}>{indirizzo}</div>}
+      {insieme.length > 0 && <div style={{ fontSize: 15, fontWeight: 700, color: "var(--vino)" }}>Stesso indirizzo di {insieme.join(", ")}: portale insieme</div>}
       {c.cliente_nome && <div style={{ fontSize: 16, marginTop: 2 }}>{c.cliente_nome}</div>}
       {c.cliente_note && <div style={{ marginTop: 4, padding: "4px 8px", borderRadius: 6, background: "var(--oro-velo)", borderLeft: "4px solid var(--oro)", fontSize: 16, fontWeight: 600 }}>⚠ {c.cliente_note}</div>}
       <div style={{ margin: "8px 0", fontSize: 30, fontWeight: 600, fontFamily: "Oswald, sans-serif", fontVariantNumeric: "tabular-nums", color: "var(--vino)", lineHeight: 1.1 }}>

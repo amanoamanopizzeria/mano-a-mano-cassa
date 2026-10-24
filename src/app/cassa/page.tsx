@@ -190,7 +190,7 @@ function Cassa() {
                   <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
                   <b className="tempo attesa">{quando(o.ora_consegna!)}</b>
                 </header>
-                <div className="riga">{o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>}{o.modificato_il && <b className="vino"> · modificata</b>} · {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"}{o.zona?.nome && <> · {o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""}</>}</div>
+                <div className="riga">{o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>}{o.modificato_il && <b className="vino"> · modificata {oraDi(o.modificato_il)}</b>} · {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"}{o.zona?.nome && <> · {o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""}</>}</div>
                 <div className="chi">{o.cliente?.nome ?? o.nome_cliente ?? ""}</div>
                 {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
                 {o.note && <div className="nota">Note: {o.note}</div>}
@@ -200,7 +200,12 @@ function Cassa() {
                   <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
                   <button onClick={() => stampa(o.id)}>Stampa ora</button>
                   <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>
-                  <button onClick={() => cambiaStato(o.id, "annullato")} className={daConfermare === o.id ? "primario" : ""} style={{ marginLeft: "auto" }}>{daConfermare === o.id ? "Sicuro? Tocca ancora" : "Annullato"}</button>
+                  {/* critico giro 15: un preordine ritirato in anticipo non si poteva chiudere: gli stessi passi delle carte sotto */}
+                  {TRANSIZIONI_ORDINE[o.stato].map((s) => (
+                    <button key={s} className={s === "annullato" ? (daConfermare === o.id ? "primario" : "") : "azione"} style={s === "annullato" ? { marginLeft: "auto" } : undefined} onClick={() => cambiaStato(o.id, s)}>
+                      {s === "annullato" && daConfermare === o.id ? "Sicuro? Tocca ancora" : ETICHETTE[s]}
+                    </button>
+                  ))}
                 </div>
               </article>
             ))}
@@ -208,7 +213,8 @@ function Cassa() {
         </details>
       )}
       <div className="griglia">
-        {ordini.filter((o) => !ePreordine(o, adesso) || o.stato === "annullato").map((o) => (
+        {/* un preordine già consegnato, ritirato o annullato esce dall'area Preordini e sta qui (critico giro 15: C-50 e C-51 consegnate in anticipo non si vedevano fino alle 20:30) */}
+        {ordini.filter((o) => !ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)).map((o) => (
           <article className={"carta ordine-c " + o.stato + ((() => { const c = (o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") ? contoAllaRovescia(o, adesso) : null; return c?.ritardo ? " ritardo" : ""; })())} key={o.id}>
             <header>
               <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
@@ -221,7 +227,7 @@ function Cassa() {
             </div>
             {(o.cliente?.nome || o.nome_cliente || o.cliente?.telefono || o.pagamento) && (
               <div className="chi">
-                {o.cliente?.nome ?? o.nome_cliente}{o.cliente?.telefono && <span className="tel"> · {o.cliente.telefono}</span>}{o.pagamento && <span className="paga"> · {o.pagamento === "pos" ? "POS" : "contanti"}</span>}{o.pagamento === "contanti" && o.paga_con && Number(o.paga_con) > Number(o.totale) && <span className="resto"> · paga con {euro(Number(o.paga_con))}, resto {euro(Number(o.paga_con) - Number(o.totale))}</span>}
+                {o.cliente?.nome ?? o.nome_cliente}{o.cliente?.telefono && <span className="tel"> · {o.cliente.telefono}</span>}{o.pagamento && <span className="paga">{(o.cliente?.nome || o.nome_cliente || o.cliente?.telefono) ? " · " : ""}{o.pagamento === "pos" ? "POS" : "contanti"}</span>}{o.pagamento === "contanti" && o.paga_con && Number(o.paga_con) > Number(o.totale) && <span className="resto"> · paga con {euro(Number(o.paga_con))}, resto {euro(Number(o.paga_con) - Number(o.totale))}</span>}
               </div>
             )}
             {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}

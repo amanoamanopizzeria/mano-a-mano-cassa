@@ -29,7 +29,8 @@ function RiderCassa() {
 
   const carica = useCallback(async () => {
     const s = supabaseBrowser();
-    const da = new Date(); da.setHours(0, 0, 0, 0);
+    // la serata parte alle 6 di mattina, come il riepilogo e rider_borsello (mig. 0046)
+    const da = new Date(); if (da.getHours() < 6) da.setDate(da.getDate() - 1); da.setHours(6, 0, 0, 0);
     const [r, m] = await Promise.all([
       s.rpc("rider_borsello"),
       s.from("rider_movimento").select("*").gte("creato_il", da.toISOString()).order("creato_il", { ascending: false }),
@@ -77,7 +78,7 @@ function RiderCassa() {
           <Link href="/cassa">Cassa →</Link>
         </nav>
       </div>
-      <p className="muto b-spiega">In mano = prelievi − depositi + contanti delle consegne fatte e non ancora saldate. A fine serata: «Salda».</p>
+      <p className="muto b-spiega">In mano = fondo e prelievi di stasera − depositi + contanti di tutte le consegne fatte stasera. «Salda» registra un deposito con le consegne non ancora versate.</p>
       {errore && <p className="b-msg errore">{errore}</p>}
       {esito && <p className="b-msg ok">{esito}</p>}
 
@@ -96,7 +97,7 @@ function RiderCassa() {
             <div className="b-voci">
               {r.in_corso > 0 && <span><b>{r.in_corso}</b> in corso</span>}
               <span><b>{r.n_da_saldare}</b> da saldare <b>{euro(r.da_saldare)}</b></span>
-              <span>prelievi <b>{euro(r.prelievi)}</b></span>
+              <span>fondo e prelievi <b>{euro(r.prelievi)}</b></span>
               <span>depositi <b>{euro(r.depositi)}</b></span>
             </div>
             {aperto === r.id ? (
@@ -121,8 +122,8 @@ function RiderCassa() {
         {rider.length === 0 && <p className="muto">Nessun rider in anagrafica.</p>}
       </div>
 
-      <h2 className="b-h2">Movimenti di oggi</h2>
-      {movimenti.length === 0 && <p className="muto">Nessun movimento oggi.</p>}
+      <h2 className="b-h2">Movimenti di stasera</h2>
+      {movimenti.length === 0 && <p className="muto">Nessun movimento stasera.</p>}
       {movimenti.map((m) => (
         <div key={m.id} className="b-mov">
           <span className="ora">{new Date(m.creato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</span>
