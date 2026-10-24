@@ -218,6 +218,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .menu-lettura .prodotti li .prezzo { font-size: 17px; }
 .menu-lettura .prodotti li .muto { font-size: 14px; }
 .menu-lettura .m-varianti { margin-top: 8px; font-size: 14px; }
+@media (max-width: 600px) { .menu-lettura .prodotti li { padding: 6px 0; } }
 .menu-lettura .prodotti li .nome { flex: 1; min-width: 160px; }
 .menu-lettura .prodotti li .prezzo { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .menu-lettura .prodotti li .muto { flex-basis: 100%; }
