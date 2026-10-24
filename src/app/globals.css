@@ -294,3 +294,20 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
   .fasce-pagina .f-cella > .f-passo { display: inline-block; width: 44px; margin: 0 2px; }
   .fasce-pagina .f-legenda { font-size: 13px; }
 }
+
+/* /cassa/riepilogo (giro 7): i quattro numeri in una riga sola sul PC e due a due sul telefono,
+   più grandi; la lista degli ordini a schede strette con numero e totale in Oswald. */
+.riepilogo .r-cima { grid-template-columns: repeat(4, 1fr); }
+.riepilogo .r-cima .carta.numero strong { font-size: 44px; }
+.riepilogo .r-cima .carta.numero .eti { font-size: 14px; }
+.riepilogo h2 { margin: 20px 0 8px; }
+.riepilogo .r-ordini { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.riepilogo .r-ordine.annullato { opacity: .55; }
+.riepilogo .r-ordine .badge { font-size: 13px; }
+@media (max-width: 620px) {
+  .riepilogo .r-cima { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .riepilogo .r-cima .carta.numero { padding: 10px 12px; }
+  .riepilogo .r-cima .carta.numero strong { font-size: 36px; }
+  .riepilogo .r-ordini { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .riepilogo .r-ordine { padding: 10px 12px; }
+}

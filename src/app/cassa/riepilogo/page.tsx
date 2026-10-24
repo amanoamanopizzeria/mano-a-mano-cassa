@@ -65,7 +65,7 @@ function Riepilogo() {
       <h1>Riepilogo di oggi</h1>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
-      <div className="griglia">
+      <div className="griglia r-cima">
         <div className="carta numero"><div className="eti">Ordini</div><strong>{validi.length}</strong></div>
         <div className="carta numero"><div className="eti">Pizze</div><strong>{pizze}</strong></div>
         <div className="carta numero"><div className="eti">Consegne</div><strong>{consegne}</strong></div>
@@ -81,18 +81,18 @@ function Riepilogo() {
       </div>
 
       <h2>Ordini</h2>
-      <div className="griglia">
+      <div className="griglia r-ordini">
         {ordini.map((o) => (
-          <article key={o.id} className="carta">
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <strong style={{ fontSize: 20, fontFamily: "Oswald, sans-serif", fontWeight: 600 }}>{o.numero_visibile ?? `#${o.numero}`}</strong>
+          <article key={o.id} className={"carta r-ordine " + o.stato}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <strong style={{ fontSize: 26, fontFamily: "Oswald, sans-serif", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{o.numero_visibile ?? `#${o.numero}`}</strong>
               <span className={`badge ${o.stato}`}>{o.stato.replace("_", " ")}</span>
             </div>
-            <div className="muto">
+            <div className="muto" style={{ fontSize: 15 }}>
               {o.canale} · {o.tipo}
               {o.ora_consegna && " · per le " + new Date(o.ora_consegna).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" })}
             </div>
-            <div style={{ marginTop: 4, fontWeight: 800, fontSize: 18, color: "var(--vino)" }}>{Number(o.totale).toFixed(2).replace(".", ",")} €</div>
+            <div style={{ marginTop: 4, fontWeight: 600, fontSize: 24, fontFamily: "Oswald, sans-serif", fontVariantNumeric: "tabular-nums", color: "var(--vino)" }}>{Number(o.totale).toFixed(2).replace(".", ",")} €</div>
           </article>
         ))}
       </div>
