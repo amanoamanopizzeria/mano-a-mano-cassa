@@ -15,3 +15,11 @@
   .cassa-comanda .c-invia { position: static; }
   .cassa-comanda button { min-height: 44px !important; }
 }
+
+/* grafico giro 22 (critico giro 19): a 390 col pannello aperto Adesso, Applica, € e % restavano a 40
+   (lo stile in riga vinceva; la regola dei 44 c'era solo sopra i 600 px). Ora 44 anche sul telefono,
+   e i campi della stessa fila (Giorno, Ora, Coupon, Sconto, Nome, Note) con loro, così la fila resta pari.
+   Sopra i 600 px, cioè la comanda sul PC, non cambia niente. */
+@media (max-width: 600px) {
+  .cassa-comanda button, .cassa-comanda select, .cassa-comanda input { min-height: 44px !important; }
+}
