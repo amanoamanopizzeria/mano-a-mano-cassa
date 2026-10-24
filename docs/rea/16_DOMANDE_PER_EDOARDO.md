@@ -99,3 +99,8 @@ WhatsApp agli avvisi) non sono ripetute.*
     (lun–mer, 10 pizze a quarto d'ora)? → Decide il piano di collaudo.
 
 21. **Il minimo d'ordine a domicilio vale anche quando l'ordine lo prendete voi al telefono?** In Velocissimo il minimo (10 € nelle zone vicine) ferma l'app; la cassa nuova oggi lo applica anche dalla cassa («Minimo d'ordine 10,00 €: mancano 2,80 €», critico giro 12). *Cosa cambia:* se al telefono si vuole poter dire di sì lo stesso, il blocco resta solo sull'app e sul sito e in cassa diventa un avviso.
+
+22. **«Modifica ingredienti» e la ricerca nel menù** (grafico, giro 20, confronto con l'app
+    vecchia): nell'app il cliente può togliere un ingrediente da una pizza e cercare un prodotto
+    per nome; su /ordina nostra oggi non c'è né l'una né l'altra. Le vuoi tutte e due, solo il
+    «senza», o nessuna? → Decide se /ordina le aggiunge prima della prova in parallelo.
