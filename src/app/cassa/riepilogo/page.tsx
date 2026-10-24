@@ -56,14 +56,22 @@ function Riepilogo() {
   );
   const consegne = validi.filter((o) => o.tipo === "domicilio").length;
   const incasso = validi.reduce((s, o) => s + Number(o.totale), 0);
-  // La chiusura di cassa (critico giro 10): quanto è davvero entrato (ordini chiusi), diviso per come è stato pagato,
-  // e quanto è ancora in giro (ordini aperti, contanti in mano ai rider).
-  const chiusi = validi.filter((o) => o.stato === "consegnato" || o.stato === "ritirato");
-  const aperti = validi.filter((o) => o.stato !== "consegnato" && o.stato !== "ritirato");
-  const somma = (xs: OrdineConRighe[]) => xs.reduce((s, o) => s + Number(o.totale), 0);
-  const perPagamento = (xs: OrdineConRighe[], p: "contanti" | "pos" | "online" | "ignoto") => somma(xs.filter((o) => (o.pagato_online ? "online" : o.pagamento ?? "ignoto") === p));
+  // La chiusura di cassa: gli stessi numeri che diamo all'OS (vendite_giornata_totali, mig. 0044),
+  // così il riepilogo e l'export non dicono due cifre per la stessa cosa. «Incassato» = dove stanno i
+  // soldi: in cassa (contanti, POS), ai rider (contanti, POS), online nostro, piattaforme; e quanto
+  // è ancora aperto. In più i contanti ancora in mano a ogni rider (rider_borsello).
+  type Incassato = { contantiInCassa: number; posInCassa: number; contantiAiRider: number; posAiRider: number; onlineNostro: number; piattaforme: number; ancoraAperti: number };
+  const [incassato, setIncassato] = useState<Incassato | null>(null);
   const [riderDaSaldare, setRiderDaSaldare] = useState<{ nome: string; da_saldare: number }[]>([]);
   useEffect(() => {
+    // la giornata lavorativa: dopo mezzanotte è ancora la sera prima (taglio alle 06:00 di Roma)
+    const roma = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Rome" }));
+    roma.setHours(roma.getHours() - 6);
+    const giornata = `${roma.getFullYear()}-${String(roma.getMonth() + 1).padStart(2, "0")}-${String(roma.getDate()).padStart(2, "0")}`;
+    supabaseBrowser().rpc("vendite_giornata_totali", { p_giornata: giornata }).then(({ data }) => {
+      const d = data as { incassato?: Incassato } | null;
+      setIncassato(d?.incassato ?? null);
+    });
     supabaseBrowser().rpc("rider_borsello").then(({ data }) => {
       setRiderDaSaldare(((data ?? []) as { nome: string; da_saldare: number }[]).filter((r) => Number(r.da_saldare) > 0).map((r) => ({ nome: r.nome, da_saldare: Number(r.da_saldare) })));
     });
@@ -86,15 +94,18 @@ function Riepilogo() {
       </div>
 
       <h2>Cassa</h2>
-      <div className="griglia r-cima">
-        <div className="carta numero vino"><div className="eti">Incassato · {chiusi.length} chiusi</div><strong>{eur(somma(chiusi))}</strong></div>
-        <div className="carta numero"><div className="eti">Contanti</div><strong>{eur(perPagamento(chiusi, "contanti"))}</strong></div>
-        <div className="carta numero"><div className="eti">POS</div><strong>{eur(perPagamento(chiusi, "pos"))}</strong></div>
-        <div className="carta numero"><div className="eti">Online</div><strong>{eur(perPagamento(chiusi, "online"))}</strong></div>
-        {perPagamento(chiusi, "ignoto") > 0 && <div className="carta numero"><div className="eti">Senza pagamento segnato</div><strong>{eur(perPagamento(chiusi, "ignoto"))}</strong></div>}
-        <div className="carta numero"><div className="eti">Ancora aperti · {aperti.length}</div><strong>{eur(somma(aperti))}</strong></div>
-        {riderDaSaldare.map((r) => <div key={r.nome} className="carta numero"><div className="eti">In mano a {r.nome}</div><strong>{eur(r.da_saldare)}</strong></div>)}
-      </div>
+      {incassato ? (
+        <div className="griglia r-cima">
+          <div className="carta numero vino"><div className="eti">In cassa · contanti</div><strong>{eur(Number(incassato.contantiInCassa))}</strong></div>
+          <div className="carta numero"><div className="eti">In cassa · POS</div><strong>{eur(Number(incassato.posInCassa))}</strong></div>
+          <div className="carta numero"><div className="eti">Ai rider · contanti</div><strong>{eur(Number(incassato.contantiAiRider))}</strong></div>
+          <div className="carta numero"><div className="eti">Ai rider · POS</div><strong>{eur(Number(incassato.posAiRider))}</strong></div>
+          <div className="carta numero"><div className="eti">Online nostro</div><strong>{eur(Number(incassato.onlineNostro))}</strong></div>
+          {Number(incassato.piattaforme) > 0 && <div className="carta numero"><div className="eti">Piattaforme</div><strong>{eur(Number(incassato.piattaforme))}</strong></div>}
+          <div className="carta numero"><div className="eti">Ancora aperti</div><strong>{eur(Number(incassato.ancoraAperti))}</strong></div>
+          {riderDaSaldare.map((r) => <div key={r.nome} className="carta numero"><div className="eti">In mano a {r.nome}</div><strong>{eur(r.da_saldare)}</strong></div>)}
+        </div>
+      ) : <p className="muto">Leggo la cassa…</p>}
 
       <h2>Per canale</h2>
       <div className="griglia">
