@@ -396,7 +396,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
   .cassa-comanda { position: fixed; left: 0; right: 0; bottom: 0; width: 100% !important; max-height: 88dvh; border-left: none !important; border-top: 2px solid var(--oro); border-radius: 18px 18px 0 0; box-shadow: 0 -8px 24px rgba(26,23,21,.18) !important; z-index: 20; overflow-y: auto; }
   .cassa-comanda .c-maniglia { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; margin: 6px 6px 0; padding: 0 14px; border-radius: 999px; background: var(--vino-chiaro); border: 1px solid var(--oro-chiaro); font-size: 15px; color: var(--vino); }
   .cassa-comanda .c-maniglia b { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 17px; text-transform: uppercase; letter-spacing: .04em; color: var(--testo); }
-  .cassa-comanda:not(.aperta) > *:not(.c-maniglia):not(.c-mod):not(.c-totale):not(.c-invia):not(.c-paga):not(.esito-invio) { display: none !important; }
+  .cassa-comanda:not(.aperta) > *:not(.c-maniglia):not(.c-mod):not(.c-totale):not(.c-invia):not(.c-paga):not(.c-paga-manca):not(.esito-invio) { display: none !important; }
   .cassa-comanda .c-mod { font-size: 14px; }
   .cassa-comanda .c-mod button { min-height: 40px !important; }
   .cassa-comanda .c-invia { position: sticky; bottom: 6px; }
@@ -679,3 +679,12 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 /* /cassa/nuovo: la barra in cima (⌂, Dati cliente, Ordine, Sala) da 44 in Oswald come le tab di /ordina;
    «Esci» della barra d'accesso da 44 su tutte le pagine (era 40 ovunque). */
 .cassa-nuovo .barra > a > button, .cassa-nuovo .barra > button { min-height: 44px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .05em; font-size: 15px; border-radius: 10px; }
+
+/* /cassa/nuovo sul PC (critico giro 17): a 1024×768 la comanda era alta 941 px dentro uno schermo da 768
+   senza scorrere, e INVIA IN CUCINA stava sotto il bordo. La colonna scorre, totale e INVIA restano in fondo. */
+@media (min-width: 601px) {
+  .cassa-comanda { overflow-y: auto; min-height: 0; }
+  .cassa-comanda .scorri { min-height: 90px !important; }
+  .cassa-comanda .c-totale { position: sticky; bottom: 74px; background: #fff; z-index: 2; padding-top: 4px !important; }
+  .cassa-comanda .c-invia { position: sticky; bottom: 0; z-index: 2; margin-bottom: 0 !important; }
+}

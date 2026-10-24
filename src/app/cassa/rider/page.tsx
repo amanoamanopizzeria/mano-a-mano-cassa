@@ -127,7 +127,7 @@ function RiderCassa() {
       {movimenti.map((m) => (
         <div key={m.id} className="b-mov">
           <span className="ora">{new Date(m.creato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</span>
-          <span className="chi"><b>{rider.find((r) => r.id === m.id_rider)?.nome ?? "?"}</b> · {m.fondo_cassa ? "fondo" : m.tipo}<span className="muto">{m.tipo === "deposito" ? "dal rider alla cassa" : "dalla cassa al rider"}{m.note ? ` · ${m.note}` : ""}</span></span>
+          <span className="chi"><b>{rider.find((r) => r.id === m.id_rider)?.nome ?? "?"}</b> · {m.fondo_cassa ? "fondo" : m.tipo}<span className="muto"> {m.tipo === "deposito" ? "dal rider alla cassa" : "dalla cassa al rider"}{m.note ? ` · ${m.note}` : ""}</span></span>
           <span className={"cifra " + (m.tipo === "deposito" ? "dep" : "prel")}>{m.tipo === "deposito" ? "+" : "−"} {euro(m.importo)}</span>
         </div>
       ))}

@@ -691,6 +691,10 @@ function Cassa() {
           </div>
         )}
         {/* n. 10 del giro 3: gli errori stanno in UN posto, vicino al bottone */}
+        {/* critico giro 17: il banco partiva senza contanti/POS, e in chiusura non si sa come ha pagato */}
+        {!errore && !esito && tipo === "banco" && !pagamento && righe.length > 0 && !modifica && (
+          <div className="c-paga-manca" style={{ margin: "0 6px 6px", padding: "8px 12px", borderRadius: 12, background: "var(--oro-velo)", borderLeft: "4px solid var(--oro)", fontSize: 14, fontWeight: 600 }}>Al banco si paga subito: scegli Contanti o POS.</div>
+        )}
         {!errore && tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo) && righe.length > 0 && (
           <div style={{ margin: "0 6px 6px", padding: "8px 12px", borderRadius: 12, background: "var(--errore-chiaro)", border: "2px solid var(--errore)", color: "var(--errore)", fontWeight: 700, fontSize: 14 }}>
             {!idIndirizzo ? "Serve l'indirizzo di consegna: aprilo da Dati cliente." : fuoriZona ? "Fuori dalle zone di consegna: non consegniamo lì." : `Minimo d'ordine ${euro(zonaSel!.minimo_ordine)}: mancano ${euro(zonaSel!.minimo_ordine - totale)}.`}
@@ -707,7 +711,7 @@ function Cassa() {
             <span style={{ fontSize: 30, fontWeight: 800, color: "var(--vino)", fontFamily: "Oswald, sans-serif", lineHeight: 1.1 }}>{euro(righe.length === 0 ? 0 : modifica ? Math.max(0, totale + (modifica.costo_consegna ?? 0) - (modifica.sconto ?? 0)) : Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - scontoManuale))}</span>
           </span>
         </div>
-        <button onClick={invia} className="primario c-invia" disabled={invio || righe.length === 0 || !!modifica?.bloccata || (!modifica && ((tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)))} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
+        <button onClick={invia} className="primario c-invia" disabled={invio || righe.length === 0 || !!modifica?.bloccata || (!modifica && ((tipo === "tavolo" && !idTavolo) || (tipo === "banco" && !pagamento) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)))} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
           {invio ? (modifica ? "Salvo…" : "Invio…") : modifica ? "Salva e ristampa" : "Invia in cucina"}
         </button>
       </aside>
