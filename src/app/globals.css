@@ -810,3 +810,26 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .sala .tavolo .riga-min b.da-troppo { color: var(--vino); }
 .sala .tavolo .azioni { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
 .sala .conto .sconti { text-align: right; }
+/* /cassa/cliente */
+.cliente-pagina .cl-errore { color: var(--accento); }
+.cliente-pagina .cl-cerca { display: flex; gap: 8px; flex-wrap: wrap; }
+.cliente-pagina .cl-cerca input[type="tel"] { flex: 1; min-width: 180px; min-height: 48px; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cliente-pagina .cl-cerca .cerca { min-height: 48px; font-size: 16px; padding: 0 20px; }
+.cliente-pagina .cl-cerca .prova { min-height: 48px; font-size: 15px; }
+.cliente-pagina .cl-tags { display: block; }
+.cliente-pagina .cl-modulo { margin-top: 12px; display: grid; gap: 8px; }
+.cliente-pagina .cl-modulo .titolo { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; font-size: 16px; }
+.cliente-pagina .cl-modulo input { min-height: 44px; font-size: 16px; }
+.cliente-pagina .cl-via-box { position: relative; }
+.cliente-pagina .cl-via-fila { display: flex; gap: 8px; }
+.cliente-pagina .cl-via-fila .via { flex: 3; }
+.cliente-pagina .cl-via-fila .civico { flex: 1; }
+.cliente-pagina .cl-sugg { position: absolute; left: 0; right: 0; top: 100%; z-index: 5; padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+.cliente-pagina .cl-sugg button { display: flex; width: 100%; text-align: left; border: none; border-radius: 10px; padding: 10px 12px; gap: 8px; font-weight: 400; min-height: 44px; font-size: 15px; }
+.cliente-pagina .cl-sugg button .testo { flex: 1; }
+.cliente-pagina .cl-sugg .fonte { padding: 4px 10px; font-size: 14px; }
+.cliente-pagina .cl-zona { font-weight: 600; }
+.cliente-pagina .cl-zona.ok { color: var(--ok); }
+.cliente-pagina .cl-zona.civico { color: var(--muto); }
+.cliente-pagina .cl-zona.fuori { color: var(--accento); font-weight: 700; }
+.cliente-pagina .cl-modulo .salva { min-height: 48px; font-size: 17px; }

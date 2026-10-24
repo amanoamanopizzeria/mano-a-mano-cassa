@@ -156,7 +156,7 @@ function Cliente() {
   return (
     <main className="cliente-pagina">
       <h1>Cassa — cliente</h1>
-      {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
+      {errore && <p className="cl-errore">{errore}</p>}
 
       {chiamata && (
         <div className="carta cl-chiamata">
@@ -170,17 +170,16 @@ function Cliente() {
         </div>
       )}
 
-      <form onSubmit={(e) => { e.preventDefault(); cerca(telefono); }} className="carta" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <form onSubmit={(e) => { e.preventDefault(); cerca(telefono); }} className="carta cl-cerca">
         <input
           type="tel"
           inputMode="tel"
           placeholder="Numero di telefono"
           value={telefono}
           onChange={(e) => setTelefono(e.target.value)}
-          style={{ flex: 1, minWidth: 180, minHeight: 48, fontSize: 22, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}
         />
-        <button className="primario" type="submit" style={{ minHeight: 48, fontSize: 16, padding: "0 20px" }}>Cerca</button>
-        <button type="button" onClick={provaChiamata} title="Simula una telefonata in arrivo con questo numero" style={{ minHeight: 48, fontSize: 15 }}>Prova chiamata</button>
+        <button className="primario cerca" type="submit">Cerca</button>
+        <button type="button" onClick={provaChiamata} title="Simula una telefonata in arrivo con questo numero" className="prova">Prova chiamata</button>
       </form>
 
       {scheda?.esito === "numero_corto" && <p className="muto">Numero troppo corto.</p>}
@@ -207,7 +206,7 @@ function Cliente() {
           )}
           <p className="muto cl-punti">
             <span className="stella">★ {scheda.cliente.punti ?? 0}</span> punti{Number(scheda.cliente.credito ?? 0) > 0 && <> · credito {Number(scheda.cliente.credito).toFixed(2).replace(".", ",")} €</>}{scheda.cliente.card && <> · card {scheda.cliente.card}</>}
-            {(scheda.cliente.tag ?? []).length > 0 && <span style={{ display: "block" }}>{(scheda.cliente.tag ?? []).map((t) => <span key={t} className="cl-tag">{t}</span>)}</span>}
+            {(scheda.cliente.tag ?? []).length > 0 && <span className="cl-tags">{(scheda.cliente.tag ?? []).map((t) => <span key={t} className="cl-tag">{t}</span>)}</span>}
           </p>
           <h3>Indirizzi</h3>
           <ul className="c-lista">
@@ -232,30 +231,30 @@ function Cliente() {
       )}
 
       {scheda && scheda.esito !== "numero_corto" && (
-        <div className="carta" style={{ marginTop: 12, display: "grid", gap: 8 }}>
-          <strong style={{ fontFamily: "Oswald, sans-serif", textTransform: "uppercase", letterSpacing: ".04em", fontWeight: 600, fontSize: 16 }}>{scheda.esito === "nuovo" ? "Cliente nuovo: crea la scheda" : "Modifica la scheda"}</strong>
-          <input placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} style={{ minHeight: 44, fontSize: 16 }} />
+        <div className="carta cl-modulo">
+          <strong className="titolo">{scheda.esito === "nuovo" ? "Cliente nuovo: crea la scheda" : "Modifica la scheda"}</strong>
+          <input placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
           <textarea placeholder="Note fisse (es. citofono rotto, non suonare)" value={note} onChange={(e) => setNote(e.target.value)} />
-          <div style={{ position: "relative" }}>
-            <div style={{ display: "flex", gap: 8 }}>
+          <div className="cl-via-box">
+            <div className="cl-via-fila">
               <input
                 placeholder="Via (scrivi e scegli dalla lista)"
                 value={cercaVia}
                 onChange={(e) => { setCercaVia(e.target.value); setScelto(null); }}
                 autoComplete="off"
-                style={{ flex: 3, minHeight: 44, fontSize: 16 }}
+                className="via"
               />
-              <input placeholder="Civico" value={civico} onChange={(e) => setCivico(e.target.value)} style={{ flex: 1, minHeight: 44, fontSize: 16 }} />
+              <input placeholder="Civico" value={civico} onChange={(e) => setCivico(e.target.value)} className="civico" />
             </div>
             {suggerimenti.length > 0 && (
-              <div className="carta" style={{ position: "absolute", left: 0, right: 0, top: "100%", zIndex: 5, padding: 4, boxShadow: "0 8px 24px rgba(0,0,0,.12)" }}>
+              <div className="carta cl-sugg">
                 {suggerimenti.map((s, i) => (
-                  <button key={i} type="button" onClick={() => scegli(s)} style={{ display: "flex", width: "100%", textAlign: "left", border: "none", borderRadius: 10, padding: "10px 12px", gap: 8, fontWeight: 400, minHeight: 44, fontSize: 15 }}>
-                    <span style={{ flex: 1 }}>{s.testo}</span>
+                  <button key={i} type="button" onClick={() => scegli(s)}>
+                    <span className="testo">{s.testo}</span>
                     {s.km != null && <span className="muto">{s.km.toFixed(1).replace(".", ",")} km</span>}
                   </button>
                 ))}
-                <div className="muto" style={{ padding: "4px 10px", fontSize: 14 }}>{fonte === "google" ? "Google Maps" : "OpenStreetMap (senza chiave Google)"}</div>
+                <div className="muto fonte">{fonte === "google" ? "Google Maps" : "OpenStreetMap (senza chiave Google)"}</div>
               </div>
             )}
           </div>
@@ -264,14 +263,14 @@ function Cliente() {
               {scelto.via ?? scelto.testo}{scelto.cap ? ", " + scelto.cap : ""}{scelto.citta ? " " + scelto.citta : ""} · {scelto.km != null ? `${scelto.km.toFixed(1).replace(".", ",")} km dalla pizzeria` : ""}
               {scelto.zona !== undefined && (
                 scelto.zona
-                  ? <div style={{ color: "var(--ok)", fontWeight: 600 }}>Zona {scelto.zona.nome} · consegna {scelto.zona.costo_consegna.toFixed(2).replace(".", ",")} € · minimo {scelto.zona.minimo_ordine.toFixed(0)} €</div>
+                  ? <div className="cl-zona ok">Zona {scelto.zona.nome} · consegna {scelto.zona.costo_consegna.toFixed(2).replace(".", ",")} € · minimo {scelto.zona.minimo_ordine.toFixed(0)} €</div>
                   : civico.trim() === "" && !scelto.civico
-                    ? <div style={{ color: "var(--muto)", fontWeight: 600 }}>Scrivi il civico: la zona si decide sul portone, non sulla via.</div>
-                    : <div style={{ color: "var(--accento)", fontWeight: 700 }}>Fuori dalle zone di consegna: non consegniamo qui.</div>
+                    ? <div className="cl-zona civico">Scrivi il civico: la zona si decide sul portone, non sulla via.</div>
+                    : <div className="cl-zona fuori">Fuori dalle zone di consegna: non consegniamo qui.</div>
               )}
             </div>
           )}
-          <button className="primario" onClick={salva} style={{ minHeight: 48, fontSize: 17 }}>{salvato ? "Salvato" : "Salva scheda"}</button>
+          <button className="primario salva" onClick={salva}>{salvato ? "Salvato" : "Salva scheda"}</button>
         </div>
       )}
     </main>
