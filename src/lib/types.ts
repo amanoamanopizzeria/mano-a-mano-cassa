@@ -152,8 +152,10 @@ export function calcolaTotale(righe: OrdineRiga[]): number {
 
 /** Transizioni di stato ammesse per un ordine. */
 export const TRANSIZIONI_ORDINE: Record<StatoOrdine, StatoOrdine[]> = {
-  ricevuto: ["in_preparazione", "annullato"],
-  in_preparazione: ["pronto", "annullato"],
+  // «ritirato» anche da ricevuto e in_preparazione: il cliente che passa prima non deve
+  // costare tre tocchi (critico giro 16). La cassa non lo offre ai domicili (passiOrdine).
+  ricevuto: ["in_preparazione", "ritirato", "annullato"],
+  in_preparazione: ["pronto", "ritirato", "annullato"],
   pronto: ["in_consegna", "ritirato", "annullato"],
   in_consegna: ["consegnato", "annullato"],
   consegnato: [],

@@ -40,6 +40,12 @@ type OrdineCassa = Ordine & {
   zona?: { nome: string } | null; costo_consegna?: number | null;
   tavolo?: { numero: string } | null; sconto?: number | null; modificato_il?: string | null;
 };
+/** I passi di stato offerti sulla carta: un domicilio non si «ritira», banco/tavolo/asporto non vanno «in consegna». */
+const passiOrdine = (o: OrdineCassa): StatoOrdine[] =>
+  TRANSIZIONI_ORDINE[o.stato].filter((s) => (o.tipo === "domicilio" ? s !== "ritirato" : s !== "in_consegna"));
+/** La serata parte alle 6 di mattina: quello che c'è prima va sotto «Ieri e prima». */
+const inizioSerata = (adesso: number) => { const d = new Date(adesso); if (d.getHours() < 6) d.setDate(d.getDate() - 1); d.setHours(6, 0, 0, 0); return d.getTime(); };
+const diStasera = (o: OrdineCassa, adesso: number) => new Date(o.creato_il).getTime() >= inizioSerata(adesso) || (!!o.ora_consegna && new Date(o.ora_consegna).getTime() >= inizioSerata(adesso));
 const PREORDINE_ATTIVO = (o: OrdineCassa) => !["annullato", "consegnato", "ritirato"].includes(o.stato);
 const euro = (n: number) => Number(n).toFixed(2).replace(".", ",") + " €";
 const oraDi = (s: string) => new Date(s).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
@@ -76,6 +82,7 @@ function Cassa() {
   const [errore, setErrore] = useState<string | null>(null);
   const [stampaAuto, setStampaAuto] = useState(false);
   const [inStampa, setInStampa] = useState<string[]>([]);
+  const [vecchiAperti, setVecchiAperti] = useState(false);
 
   useEffect(() => { try { setStampaAuto(localStorage.getItem(STAMPA_LS) === "1"); } catch {} }, []);
   function cambiaStampaAuto(v: boolean) { setStampaAuto(v); try { localStorage.setItem(STAMPA_LS, v ? "1" : "0"); } catch {} }
@@ -201,7 +208,7 @@ function Cassa() {
                   <button onClick={() => stampa(o.id)}>Stampa ora</button>
                   <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>
                   {/* critico giro 15: un preordine ritirato in anticipo non si poteva chiudere: gli stessi passi delle carte sotto */}
-                  {TRANSIZIONI_ORDINE[o.stato].map((s) => (
+                  {passiOrdine(o).map((s) => (
                     <button key={s} className={s === "annullato" ? (daConfermare === o.id ? "primario" : "") : "azione"} style={s === "annullato" ? { marginLeft: "auto" } : undefined} onClick={() => cambiaStato(o.id, s)}>
                       {s === "annullato" && daConfermare === o.id ? "Sicuro? Tocca ancora" : ETICHETTE[s]}
                     </button>
@@ -212,9 +219,13 @@ function Cassa() {
           </div>
         </details>
       )}
+      {/* un preordine già consegnato, ritirato o annullato esce dall'area Preordini e sta qui (critico giro 15).
+          Critico giro 16: a 390 la pagina era 19,6 schermate con gli ordini di ieri «in ritardo di 930 min»: in griglia solo stasera. */}
+      {ordini.some((o) => !diStasera(o, adesso) && !ePreordine(o, adesso)) && (
+        <button className="vecchi" onClick={() => setVecchiAperti((v) => !v)}>{vecchiAperti ? "Nascondi ieri e prima" : `Ieri e prima (${ordini.filter((o) => !diStasera(o, adesso) && !ePreordine(o, adesso)).length})`}</button>
+      )}
       <div className="griglia">
-        {/* un preordine già consegnato, ritirato o annullato esce dall'area Preordini e sta qui (critico giro 15: C-50 e C-51 consegnate in anticipo non si vedevano fino alle 20:30) */}
-        {ordini.filter((o) => !ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)).map((o) => (
+        {ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && (diStasera(o, adesso) || vecchiAperti)).map((o) => (
           <article className={"carta ordine-c " + o.stato + ((() => { const c = (o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") ? contoAllaRovescia(o, adesso) : null; return c?.ritardo ? " ritardo" : ""; })())} key={o.id}>
             <header>
               <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
@@ -245,7 +256,7 @@ function Cassa() {
               <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
               <button onClick={() => stampa(o.id)} disabled={inStampa.includes(o.id)}>{inStampa.includes(o.id) ? "Stampo…" : "Stampa"}</button>
               {(o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto") && <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>}
-              {TRANSIZIONI_ORDINE[o.stato].map((s) => (
+              {passiOrdine(o).map((s) => (
                 <button
                   key={s}
                   className={s === "annullato" ? (daConfermare === o.id ? "primario" : "") : "azione"}

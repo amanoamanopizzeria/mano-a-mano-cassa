@@ -648,8 +648,9 @@ function Cassa() {
             </select>
           </div>
         )}
-        {(tipo === "domicilio" || tipo === "ritiro") && (
-          <div style={{ display: "flex", gap: 4, margin: "0 6px 6px", alignItems: "center" }}>
+        {/* critico giro 16: dal telefono il banco partiva senza contanti/POS. Il tavolo paga col conto. */}
+        {(tipo === "domicilio" || tipo === "ritiro" || tipo === "banco") && (
+          <div className="c-paga" style={{ display: "flex", gap: 4, margin: "0 6px 6px", alignItems: "center" }}>
             {([["contanti", "Contanti"], ["pos", "POS"], ["online", "Già pagato"]] as const).map(([v, t]) => (
               <button key={v} onClick={() => setPagamento(pagamento === v ? null : v)} className={pagamento === v ? "primario" : ""} style={{ padding: "8px 10px", fontSize: 14, minHeight: 40 }}>{t}</button>
             ))}
