@@ -103,12 +103,12 @@ function Rider() {
   return (
     <main className="rider">
       <h1>Rider — consegne</h1>
-      <p className="muto" style={{ fontSize: 14 }}>{gps}</p>
+      <p className={"muto r-gps" + (gps.startsWith("GPS attivo") ? " on" : "")}>{gps}</p>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
       <h2>Le mie ({mie.length})</h2>
       {mie.length === 0 && <p className="muto">Nessuna consegna in corso.</p>}
-      {mie.length > 1 && <p className="muto" style={{ fontSize: 15 }}>In tutto da incassare in contanti: <b style={{ color: "var(--vino)", fontSize: 18 }}>{euro(contantiMie)}</b></p>}
+      {mie.length > 1 && <p className="r-tutto"><span>In tutto da incassare in contanti</span><b>{euro(contantiMie)}</b></p>}
       <div className="griglia">
         {mie.map((c) => (
           <SchedaConsegna key={c.id} c={c} insieme={insieme(c)}>
@@ -173,7 +173,7 @@ function SchedaConsegna({ c, children, insieme = [] }: { c: ConsegnaRider; child
           : "appena pronto"}
       </div>
       {indirizzo && <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800, lineHeight: 1.2 }}>{indirizzo}</div>}
-      {insieme.length > 0 && <div style={{ fontSize: 15, fontWeight: 700, color: "var(--vino)" }}>Stesso indirizzo di {insieme.join(", ")}: portale insieme</div>}
+      {insieme.length > 0 && <div className="r-insieme">Stesso indirizzo di <b>{insieme.join(", ")}</b>: portale insieme</div>}
       {c.cliente_nome && <div style={{ fontSize: 16, marginTop: 2 }}>{c.cliente_nome}</div>}
       {c.cliente_note && <div style={{ marginTop: 4, padding: "4px 8px", borderRadius: 6, background: "var(--oro-velo)", borderLeft: "4px solid var(--oro)", fontSize: 16, fontWeight: 600 }}>⚠ {c.cliente_note}</div>}
       <div style={{ margin: "8px 0", fontSize: 30, fontWeight: 600, fontFamily: "Oswald, sans-serif", fontVariantNumeric: "tabular-nums", color: "var(--vino)", lineHeight: 1.1 }}>

@@ -598,3 +598,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .capacita .c-fascia.piena .ora { color: var(--vino); }
 @media (min-width: 900px) { .capacita .c-griglia { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; } }
 @media (max-width: 480px) { .capacita .c-griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); } .capacita .c-azioni button { font-size: 13px; padding: 0 6px; } }
+
+/* ===== giro 14 del grafico (24/10/2026) ===== */
+/* /rider: il GPS è una riga discreta, «In tutto da incassare» è un tassello oro con la cifra in Oswald,
+   «Stesso indirizzo di #N» è un tassello vino che salta all'occhio. Ritirata/Consegnata restano 64 px. */
+.rider .r-gps { font-size: 13px; margin: -6px 0 10px; display: flex; align-items: center; gap: 6px; }
+.rider .r-gps::before { content: ""; width: 9px; height: 9px; border-radius: 999px; background: var(--muto); flex: none; }
+.rider .r-gps.on::before { background: var(--ok); }
+.rider .r-tutto { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 0 0 10px; padding: 10px 14px; border-radius: 12px; background: var(--oro-velo); border: 1.5px solid var(--oro); font-size: 15px; font-weight: 600; }
+.rider .r-tutto b { font-family: "Oswald", sans-serif; font-size: 26px; font-weight: 600; color: var(--vino); font-variant-numeric: tabular-nums; line-height: 1; white-space: nowrap; }
+.rider .r-insieme { margin-top: 6px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--vino); color: #fff; font-size: 15px; font-weight: 600; line-height: 1.2; }
+.rider .r-insieme::before { content: "⇄"; font-size: 17px; }
+.rider .r-insieme b { font-family: "Oswald", sans-serif; font-size: 17px; font-weight: 600; letter-spacing: .02em; }
