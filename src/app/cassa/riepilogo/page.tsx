@@ -84,7 +84,7 @@ function Riepilogo() {
   return (
     <main className="riepilogo">
       <h1>Riepilogo di oggi</h1>
-      {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
+      {errore && <p className="r-errore">{errore}</p>}
 
       <div className="griglia r-cima">
         <div className="carta numero"><div className="eti">Ordini</div><strong>{validi.length}</strong></div>
@@ -115,29 +115,33 @@ function Riepilogo() {
       ) : <p className="muto">Leggo la cassa…</p>}
 
       <h2>Per canale</h2>
-      <div className="griglia">
+      <div className="griglia r-canali">
         {[...perCanale.entries()].map(([canale, n]) => (
           <div key={canale} className="carta numero"><div className="eti">{canale}</div><strong>{n}<small> {n === 1 ? "ordine" : "ordini"}</small></strong></div>
         ))}
         {perCanale.size === 0 && <p className="muto">Nessun ordine oggi.</p>}
       </div>
 
-      <h2>Ordini</h2>
-      <div className="griglia r-ordini">
-        {ordini.map((o) => (
-          <article key={o.id} className={"carta r-ordine " + o.stato}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-              <strong style={{ fontSize: 26, fontFamily: "Oswald, sans-serif", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{o.numero_visibile ?? `#${o.numero}`}</strong>
-              <span className={`badge ${o.stato}`}>{o.stato.replace("_", " ")}</span>
-            </div>
-            <div className="muto" style={{ fontSize: 15 }}>
-              {o.canale} · {o.tipo}
-              {o.ora_consegna && " · per le " + new Date(o.ora_consegna).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" })}
-            </div>
-            <div style={{ marginTop: 4, fontWeight: 600, fontSize: 24, fontFamily: "Oswald, sans-serif", fontVariantNumeric: "tabular-nums", color: "var(--vino)" }}>{Number(o.totale).toFixed(2).replace(".", ",")} €</div>
-          </article>
-        ))}
-      </div>
+      {/* Giro 17 del grafico: gli ordini uno per uno stanno in un ramo chiuso (sono la parte lunga: 47 carte
+          la sera del critico). Nessun numero tolto: si apre e c'è tutto. */}
+      <details className="r-ramo">
+        <summary><h2>Ordini <small>{ordini.length} · {validi.length} validi</small></h2></summary>
+        <div className="griglia r-ordini">
+          {ordini.map((o) => (
+            <article key={o.id} className={"carta r-ordine " + o.stato}>
+              <div className="r-testa">
+                <strong className="r-num">{o.numero_visibile ?? `#${o.numero}`}</strong>
+                <span className={`badge ${o.stato}`}>{o.stato.replace("_", " ")}</span>
+              </div>
+              <div className="muto r-dove">
+                {o.canale} · {o.tipo}
+                {o.ora_consegna && " · per le " + new Date(o.ora_consegna).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" })}
+              </div>
+              <div className="r-tot">{Number(o.totale).toFixed(2).replace(".", ",")} €</div>
+            </article>
+          ))}
+        </div>
+      </details>
     </main>
   );
 }

@@ -690,3 +690,20 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 }
 /* e i tasti dentro la comanda (Adesso, Contanti/POS/Già pagato, Applica, €, %, Svuota) da 44 anche sul PC e sul tablet */
 .cassa-comanda button { min-height: 44px; }
+
+/* ===== giro 17 del grafico (24/10/2026): via gli stili in riga da riepilogo, planner e capacità ===== */
+/* /cassa/riepilogo: le carte degli ordini alle classi; gli ordini in un ramo chiuso (5,5 schermate → meno di 4). */
+.riepilogo .r-errore { color: var(--errore); font-weight: 700; }
+.riepilogo .r-canali .carta.numero strong { font-size: 30px; }
+.riepilogo .r-ramo { margin-top: 20px; }
+.riepilogo .r-ramo summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--oro); background: #fff; }
+.riepilogo .r-ramo summary::-webkit-details-marker { display: none; }
+.riepilogo .r-ramo summary::before { content: "▸"; color: var(--vino); font-size: 18px; width: 16px; }
+.riepilogo .r-ramo[open] summary::before { content: "▾"; }
+.riepilogo .r-ramo summary h2 { margin: 0; font-size: 18px; }
+.riepilogo .r-ramo summary h2 small { font-family: "Figtree", sans-serif; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 14px; color: var(--muto); margin-left: 8px; }
+.riepilogo .r-ramo .r-ordini { margin-top: 10px; }
+.riepilogo .r-ordine .r-testa { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.riepilogo .r-ordine .r-num { font-size: 26px; font-family: "Oswald", sans-serif; font-weight: 600; font-variant-numeric: tabular-nums; }
+.riepilogo .r-ordine .r-dove { font-size: 15px; }
+.riepilogo .r-ordine .r-tot { margin-top: 4px; font-weight: 600; font-size: 24px; font-family: "Oswald", sans-serif; font-variant-numeric: tabular-nums; color: var(--vino); }
