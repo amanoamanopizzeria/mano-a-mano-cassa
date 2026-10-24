@@ -64,6 +64,10 @@ function Cassa() {
   const [codiceCoupon, setCodiceCoupon] = useState("");
   const [coupon, setCoupon] = useState<{ codice: string; nome: string; sconto: number } | null>(null);
   const [erroreCoupon, setErroreCoupon] = useState<string | null>(null);
+  // Lo sconto manuale (mig. 0039, REA 13 A.3: in Velocissimo ~190 volte al mese): in euro o in
+  // percentuale, si vede nel totale e si applica all'ordine accettato con ordine_sconto_manuale.
+  const [scontoTesto, setScontoTesto] = useState("");
+  const [scontoPct, setScontoPct] = useState(false);
   const [esito, setEsito] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [invio, setInvio] = useState(false);
@@ -211,6 +215,8 @@ function Cassa() {
   const gruppi = gruppiDi(variantiSel);
   const gruppoAttivo = gruppo && gruppi.includes(gruppo) ? gruppo : gruppi[0] ?? null;
   const totale = totaleRighe(righe);
+  const scontoNum = Number(scontoTesto.replace(",", ".")) || 0;
+  const scontoManuale = scontoNum <= 0 ? 0 : Math.round((scontoPct ? totale * Math.min(scontoNum, 100) / 100 : Math.min(scontoNum, totale)) * 100) / 100;
   const indirizzoSel = indirizzi.find((i) => i.id === idIndirizzo) ?? null;
   const zonaSel = indirizzoSel ? zone.find((z) => z.id === indirizzoSel.id_zona) ?? null : null;
   const costoConsegna = tipo === "domicilio" && zonaSel ? zonaSel.costo_consegna : 0;
@@ -349,7 +355,7 @@ function Cassa() {
     else setErroreCoupon(msg[r.esito] ?? `Coupon non applicabile (${r.esito}).`);
   }
 
-  function svuota() { setRighe([]); setSelezionata(null); setModoVarianti(false); setDigitato(""); setNote(""); setNomeCliente(""); setEsito(null); setErrore(null); setMenuAperto(null); setFigliaSel(null); setCoupon(null); setCodiceCoupon(""); setErroreCoupon(null); }
+  function svuota() { setRighe([]); setSelezionata(null); setModoVarianti(false); setDigitato(""); setNote(""); setNomeCliente(""); setEsito(null); setErrore(null); setMenuAperto(null); setFigliaSel(null); setCoupon(null); setCodiceCoupon(""); setErroreCoupon(null); setScontoTesto(""); setScontoPct(false); }
 
   async function salvaModifica() {
     if (!modifica) return;
@@ -383,6 +389,11 @@ function Cassa() {
       const { data: ca } = await supabaseBrowser().rpc("coupon_applica", { p_id_ordine: r.id, p_codice: coupon.codice });
       const x = ca as { esito: string } | null;
       if (x?.esito !== "applicato") setErroreCoupon(`Ordine inviato ma coupon NON applicato (${x?.esito ?? "errore"}).`);
+    }
+    if (r.esito === "accettato" && r.id && scontoManuale > 0) {
+      const { data: sc } = await supabaseBrowser().rpc("ordine_sconto_manuale", { p_id: r.id, p_sconto: scontoManuale, p_motivo: scontoPct ? `${scontoNum}%` : null });
+      const x = sc as { esito: string } | null;
+      if (x?.esito !== "applicato") setErroreCoupon(`Ordine inviato ma sconto NON applicato (${x?.esito ?? "errore"}).`);
     }
     if (r.esito === "accettato" && r.id && (pagamento || pagaCon)) {
       const pc = Number(pagaCon.replace(",", "."));
@@ -644,6 +655,14 @@ function Cassa() {
           <button onClick={verificaCoupon} disabled={!codiceCoupon.trim() || righe.length === 0} style={{ padding: "8px 12px", fontSize: 14, minHeight: 40 }}>Applica</button>
           {coupon && <span style={{ fontSize: 14, color: "var(--ok)", fontWeight: 700, whiteSpace: "nowrap" }}>−{euro(coupon.sconto)}</span>}
         </div>
+        {!modifica && (
+          <div style={{ display: "flex", gap: 4, margin: "0 6px 6px", alignItems: "center" }}>
+            <input placeholder="Sconto" inputMode="decimal" value={scontoTesto} onChange={(e) => setScontoTesto(e.target.value.replace(/[^\d.,]/g, ""))} style={{ flex: 1, minWidth: 0, padding: "6px 8px", fontSize: 15, minHeight: 40 }} />
+            <button onClick={() => setScontoPct(false)} className={!scontoPct ? "primario" : ""} style={{ padding: "8px 12px", fontSize: 14, minHeight: 40 }}>€</button>
+            <button onClick={() => setScontoPct(true)} className={scontoPct ? "primario" : ""} style={{ padding: "8px 12px", fontSize: 14, minHeight: 40 }}>%</button>
+            {scontoManuale > 0 && <span style={{ fontSize: 14, color: "var(--ok)", fontWeight: 700, whiteSpace: "nowrap" }}>−{euro(scontoManuale)}</span>}
+          </div>
+        )}
         {erroreCoupon && <div style={{ margin: "-2px 6px 6px", fontSize: 13, color: "var(--accento)", fontWeight: 700 }}>{erroreCoupon}</div>}
         {!cliente && tipo !== "tavolo" && <input placeholder={tipo === "ritiro" ? "Nome di chi ritira" : "Nome (se serve)"} value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} style={{ margin: "0 6px 6px", padding: "8px 10px", fontSize: 15, minHeight: 40 }} />}
         <input placeholder="Note (es. ben cotta)" value={note} onChange={(e) => setNote(e.target.value)} style={{ margin: "0 6px 6px", padding: "8px 10px", fontSize: 15, minHeight: 40 }} />
@@ -668,7 +687,8 @@ function Cassa() {
           <span style={{ flex: 1, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
             {costoConsegna > 0 && <span className="muto" style={{ display: "block" }}>+ consegna {euro(costoConsegna)}</span>}
             {coupon && <span className="muto" style={{ display: "block" }}>− {coupon.nome} {euro(coupon.sconto)}</span>}
-            <span style={{ fontSize: 30, fontWeight: 800, color: "var(--vino)", fontFamily: "Oswald, sans-serif", lineHeight: 1.1 }}>{euro(righe.length === 0 ? 0 : Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0)))}</span>
+            {scontoManuale > 0 && !modifica && <span className="muto" style={{ display: "block" }}>− sconto {euro(scontoManuale)}</span>}
+            <span style={{ fontSize: 30, fontWeight: 800, color: "var(--vino)", fontFamily: "Oswald, sans-serif", lineHeight: 1.1 }}>{euro(righe.length === 0 ? 0 : Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - (modifica ? 0 : scontoManuale)))}</span>
           </span>
         </div>
         <button onClick={invia} className="primario" disabled={invio || righe.length === 0 || (!modifica && ((tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)))} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
