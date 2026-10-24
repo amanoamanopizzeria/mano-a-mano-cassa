@@ -82,7 +82,7 @@ function Cassa() {
   const [orari, setOrari] = useState<Orario[]>([]);
   // Modifica con ristampa (mig. 0038, come in Velocissimo): con ?modifica=<id> si riapre un ordine già
   // battuto, si cambiano le righe e la comanda si ristampa con la scritta MODIFICATA. Il tipo non cambia.
-  const [modifica, setModifica] = useState<{ id: string; numero: string } | null>(null);
+  const [modifica, setModifica] = useState<{ id: string; numero: string; bloccata?: boolean } | null>(null);
   // giro 8 del grafico: sul telefono (≤ 600 px) la comanda è un pannello in fondo che si apre dalla maniglia;
   // sul PC e sul tablet non cambia niente (la classe non ha effetto).
   const [comandaAperta, setComandaAperta] = useState(false);
@@ -115,7 +115,12 @@ function Cassa() {
       .then(({ data, error }) => {
         if (error || !data) { setErrore("Non trovo l'ordine da modificare."); return; }
         const o = data as unknown as { id: string; numero: number; numero_visibile: string | null; tipo: Tipo; note: string | null; stato: string; id_tavolo: string | null; id_indirizzo: string | null; cliente: { id: string; nome: string | null; telefono: string } | null; ordine_riga: RigaDb[] };
-        if (!["ricevuto", "in_preparazione", "pronto"].includes(o.stato)) { setErrore(`L'ordine ${o.numero_visibile ?? "#" + o.numero} è ${o.stato}: non si modifica più, si annulla e si rifà.`); return; }
+        if (!["ricevuto", "in_preparazione", "pronto"].includes(o.stato)) {
+          // la pagina resta «in modifica» ma bloccata: un tocco su Invia non deve fare un ordine nuovo (critico giro 12)
+          setModifica({ id: o.id, numero: o.numero_visibile ?? `#${o.numero}`, bloccata: true });
+          setErrore(`L'ordine ${o.numero_visibile ?? "#" + o.numero} è ${o.stato}: non si modifica più, si annulla e si rifà.`);
+          return;
+        }
         const padri = o.ordine_riga.filter((r) => !r.id_riga_padre);
         const nuove: RigaOrdine[] = padri.map((r) => {
           const q = Number(r.quantita) || 1;
@@ -402,7 +407,7 @@ function Cassa() {
       const pc = Number(pagaCon.replace(",", "."));
       await supabaseBrowser().rpc("ordine_pagamento", { p_id: r.id, p_pagamento: pagamento === "online" ? null : pagamento, p_paga_con: pc > 0 ? pc : null, p_pagato_online: pagamento === "online" });
     }
-    if (r.esito === "accettato") { svuota(); setGiorno(""); setOra(""); setPagamento(null); setPagaCon(""); setEsito(`Ordine n. ${r.numero} inviato in cucina${quando}${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
+    if (r.esito === "accettato") { svuota(); setGiorno(""); setOra(""); setPagamento(null); setPagaCon(""); setEsito(`Ordine n. ${r.numero} inviato in cucina${quando} · ${euro(Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - scontoManuale))}${pagamento ? (pagamento === "pos" ? " POS" : pagamento === "online" ? " già pagato" : " contanti") : ""}${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
     else if (r.esito === "pieno" && r.motivo === "consegne") setErrore(`Quarto d'ora pieno per le consegne${pOra ? ` alle ${ora}` : ""}: scegli un altro orario o un rider in più.`);
     else if (r.esito === "pieno" && r.massimo === 0) setErrore(`Per ${pOra ? (giorniScelta.find((g) => g.v === giorno)?.t.toLowerCase() ?? giorno) : "oggi"} non sono impostati i pizzaioli (0 posti): aprì Capacità e metti quanti sono.`);
     else if (r.esito === "pieno") setErrore(`Quarto d'ora pieno in cucina${pOra ? ` alle ${ora}` : ""}${r.libere ? `: ci stanno ancora ${r.libere} pizze` : ""}. Scegli un altro orario.`);
@@ -533,7 +538,7 @@ function Cassa() {
         {modifica && (
           <div className="c-mod" style={{ margin: "6px 6px 0", padding: "8px 12px", borderRadius: 12, background: "var(--oro)", color: "var(--testo)", fontSize: 14, display: "flex", gap: 8, alignItems: "center" }}>
             <b style={{ fontFamily: "Oswald, sans-serif", textTransform: "uppercase", letterSpacing: ".04em" }}>Modifica {modifica.numero}</b>
-            <span style={{ flex: 1 }}>le righe qui sotto sostituiscono la comanda, che si ristampa</span>
+            <span style={{ flex: 1 }}>{modifica.bloccata ? "non si modifica più: torna alla cassa, annulla e rifai" : "le righe qui sotto sostituiscono la comanda, che si ristampa"}</span>
             <Link href="/cassa" style={{ textDecoration: "none" }}><button style={{ padding: "2px 10px", minHeight: 32 }}>Lascia stare</button></Link>
           </div>
         )}
@@ -698,7 +703,7 @@ function Cassa() {
             <span style={{ fontSize: 30, fontWeight: 800, color: "var(--vino)", fontFamily: "Oswald, sans-serif", lineHeight: 1.1 }}>{euro(righe.length === 0 ? 0 : Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - (modifica ? 0 : scontoManuale)))}</span>
           </span>
         </div>
-        <button onClick={invia} className="primario c-invia" disabled={invio || righe.length === 0 || (!modifica && ((tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)))} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
+        <button onClick={invia} className="primario c-invia" disabled={invio || righe.length === 0 || !!modifica?.bloccata || (!modifica && ((tipo === "tavolo" && !idTavolo) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)))} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
           {invio ? (modifica ? "Salvo…" : "Invio…") : modifica ? "Salva e ristampa" : "Invia in cucina"}
         </button>
       </aside>

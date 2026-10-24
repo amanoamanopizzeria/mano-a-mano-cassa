@@ -21,10 +21,16 @@ const ePreordine = (o: { ora_consegna?: string | null }, adesso: number) =>
 /** Quando va stampato un preordine: all'ora di consegna meno l'attesa. */
 const stampaAlle = (o: { ora_consegna?: string | null }) => (o.ora_consegna ? new Date(new Date(o.ora_consegna).getTime() - ATTESA_MIN * 60_000) : null);
 /** «fra 12 min» / «in ritardo di 5 min» sugli ordini in corso (Velocissimo: minuti mancanti e colore del ritardo). */
-function contoAllaRovescia(o: { ora_consegna?: string | null; creato_il: string }, adesso: number): { testo: string; ritardo: boolean } | null {
+function contoAllaRovescia(o: { ora_consegna?: string | null; creato_il: string; tipo?: string }, adesso: number): { testo: string; ritardo: boolean } | null {
   const scadenza = o.ora_consegna ? new Date(o.ora_consegna).getTime() : new Date(o.creato_il).getTime() + ATTESA_MIN * 60_000;
   const min = Math.round((scadenza - adesso) / 60_000);
   if (min > 180) return null;
+  // Banco e tavolo «subito» non hanno un'ora promessa: si dice da quanto aspettano, senza il rosso
+  // del ritardo (critico giro 12: «in ritardo di 227 min» su un banco battuto a cucina chiusa).
+  if (!o.ora_consegna && (o.tipo === "banco" || o.tipo === "tavolo")) {
+    const da = Math.round((adesso - new Date(o.creato_il).getTime()) / 60_000);
+    return { testo: da < 1 ? "appena battuto" : `da ${da} min`, ritardo: false };
+  }
   return min >= 0 ? { testo: `fra ${min} min`, ritardo: false } : { testo: `in ritardo di ${-min} min`, ritardo: true };
 }
 type OrdineCassa = Ordine & {

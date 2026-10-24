@@ -97,3 +97,5 @@ WhatsApp agli avvisi) non sono ripetute.*
 20. **Il giorno del cambio**: una sera di prova in parallelo (2Bit che lavora, cassa nuova che
     riceve gli stessi ordini battuti due volte da una seconda persona) ti va bene, e in quale sera
     (lun–mer, 10 pizze a quarto d'ora)? → Decide il piano di collaudo.
+
+21. **Il minimo d'ordine a domicilio vale anche quando l'ordine lo prendete voi al telefono?** In Velocissimo il minimo (10 € nelle zone vicine) ferma l'app; la cassa nuova oggi lo applica anche dalla cassa («Minimo d'ordine 10,00 €: mancano 2,80 €», critico giro 12). *Cosa cambia:* se al telefono si vuole poter dire di sì lo stesso, il blocco resta solo sull'app e sul sito e in cassa diventa un avviso.
