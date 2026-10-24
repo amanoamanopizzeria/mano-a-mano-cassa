@@ -73,6 +73,7 @@ function Cassa() {
   const [idNegozio, setIdNegozio] = useState<string | null>(null);
   const [preordiniGiorni, setPreordiniGiorni] = useState(7);
   const [giorno, setGiorno] = useState<string>("");          // "" = adesso
+  const [nomeCliente, setNomeCliente] = useState("");         // chi ritira, quando non c'è una scheda cliente (critico giro 10: C-24 senza nome)
   const [ora, setOra] = useState<string>("");                // "HH:MM"
   const [orari, setOrari] = useState<Orario[]>([]);
 
@@ -326,6 +327,9 @@ function Cassa() {
     if (error) { setErrore("Non sono riuscito a inviare l'ordine: " + error.message); return; }
     const r = data as { esito: string; id?: string; numero?: number; libere?: number; motivo?: string; minimo?: number; zona?: string; costo_consegna?: number; dalle?: string; alle?: string; slot?: string; massimo?: number };
     const quando = pOra ? ` per ${giorniScelta.find((g) => g.v === giorno)?.t.toLowerCase() ?? giorno} alle ${ora}` : "";
+    if (r.esito === "accettato" && r.id && !cliente && nomeCliente.trim()) {
+      await supabaseBrowser().rpc("ordine_nome", { p_id: r.id, p_nome: nomeCliente.trim() });
+    }
     if (r.esito === "accettato" && r.id && coupon) {
       const { data: ca } = await supabaseBrowser().rpc("coupon_applica", { p_id_ordine: r.id, p_codice: coupon.codice });
       const x = ca as { esito: string } | null;
@@ -585,6 +589,7 @@ function Cassa() {
           {coupon && <span style={{ fontSize: 14, color: "var(--ok)", fontWeight: 700, whiteSpace: "nowrap" }}>−{euro(coupon.sconto)}</span>}
         </div>
         {erroreCoupon && <div style={{ margin: "-2px 6px 6px", fontSize: 13, color: "var(--accento)", fontWeight: 700 }}>{erroreCoupon}</div>}
+        {!cliente && tipo !== "tavolo" && <input placeholder={tipo === "ritiro" ? "Nome di chi ritira" : "Nome (se serve)"} value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} style={{ margin: "0 6px 6px", padding: "8px 10px", fontSize: 15, minHeight: 40 }} />}
         <input placeholder="Note (es. ben cotta)" value={note} onChange={(e) => setNote(e.target.value)} style={{ margin: "0 6px 6px", padding: "8px 10px", fontSize: 15, minHeight: 40 }} />
         {errore && (
           <div role="alert" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 12, background: "var(--errore-chiaro)", border: "2px solid var(--errore)", color: "var(--errore)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
@@ -603,7 +608,7 @@ function Cassa() {
           </div>
         )}
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 6px 6px" }}>
-          <button onClick={svuota} disabled={righe.length === 0}>Svuota</button>
+          <button onClick={svuota} disabled={righe.length === 0} style={{ minHeight: 40, fontSize: 14 }}>Svuota</button>
           <span style={{ flex: 1, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
             {costoConsegna > 0 && <span className="muto" style={{ display: "block" }}>+ consegna {euro(costoConsegna)}</span>}
             {coupon && <span className="muto" style={{ display: "block" }}>− {coupon.nome} {euro(coupon.sconto)}</span>}

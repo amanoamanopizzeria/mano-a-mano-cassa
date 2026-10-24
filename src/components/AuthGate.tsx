@@ -40,7 +40,7 @@ export default function AuthGate({ children, barra = true }: { children: React.R
         style={{ display: "flex", justifyContent: "flex-end", gap: 10, padding: "8px 16px" }}
       >
         <span>{email}</span>
-        <button onClick={esci}>Esci</button>
+        <button onClick={esci} style={{ minHeight: 40 }}>Esci</button>
       </div>}
       {children}
     </>
