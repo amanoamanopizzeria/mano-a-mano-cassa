@@ -464,3 +464,13 @@
 /* 2. il menù: prezzo a sinistra, pillola accanto */
 .totem .t-carta .prezzo { justify-content: flex-start; gap: 16px; }
 .totem .t-carta .prezzo b { order: 0; }
+/* 3. la scheda: nome in cima, foto quadrata centrata su sabbia, poi descrizione e prezzo */
+.totem .t-scheda .corpo { display: flex; flex-direction: column; align-items: stretch; }
+.totem .t-scheda::before { background: #cfc7b8; }
+.totem .t-scheda h2 { order: -1; margin: 30px 0 16px; }
+.totem .t-scheda .fotobox-grande { width: 400px; height: 400px; margin: 0 auto; border-radius: 12px; overflow: hidden; background: var(--sabbia-chiara); flex: none; }
+.totem .t-scheda .fotobox-grande::after { display: none; }
+.totem .t-scheda .foto-grande { width: 100%; height: 100%; object-fit: cover; }
+.totem .t-scheda .fotobox-grande .t-manca { height: 100%; }
+.totem .t-scheda .descr { margin-top: 18px; }
+.totem .t-scheda .prezzo { align-self: center; margin-top: 10px; }
