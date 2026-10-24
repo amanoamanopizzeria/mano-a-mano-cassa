@@ -657,3 +657,16 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
   .lista-ordini .ordine-c .azioni button.primario, .lista-ordini .ordine-c .azioni button.azione:only-of-type { grid-column: 1 / -1; }
   .lista-ordini .vecchi { width: 100%; }
 }
+/* /cassa/capacita a 390: pizzaioli e rider affiancati, Salva a tutta larghezza, carte strette. */
+@media (max-width: 600px) {
+  .capacita .c-fila { gap: 8px; }
+  .capacita .c-fila .c-campo { flex: 1 1 0; }
+  .capacita .c-campo input[type="number"] { width: 100%; box-sizing: border-box; }
+  .capacita .c-salva { flex: 1 1 100%; width: 100%; }
+  .capacita .c-frase { font-size: 15px; padding: 8px 12px; }
+  .capacita .c-frase b { font-size: 22px; }
+  .capacita .c-fascia { padding: 8px 10px; }
+  .capacita .c-fascia .ora { font-size: 24px; }
+  .capacita .c-conta { font-size: 15px; margin-top: 2px; }
+  .capacita .c-conta b { font-size: 19px; }
+}
