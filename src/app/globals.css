@@ -315,3 +315,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 /* /rider (giro 7): numero, indirizzo e soldi da incassare in grande (i tasti da 56/64 px sono del giro 2 e restano). */
 .rider .r-scheda .badge { font-size: 13px; }
 .rider h2 { margin: 18px 0 8px; }
+/* /cassa/cliente, visto a 390: i campi della scheda uscivano dalla carta a destra (larghezza propria
+   dell'input, 20 caratteri). Ora riempiono la riga e non di più. */
+.cliente-pagina input, .cliente-pagina textarea { width: 100%; min-width: 0; box-sizing: border-box; }
+.cliente-pagina form input[type="tel"] { width: auto; flex: 1 1 180px; }
