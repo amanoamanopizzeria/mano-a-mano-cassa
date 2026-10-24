@@ -72,7 +72,7 @@ function RiderCassa() {
   return (
     <main className="borsello">
       <div className="b-testa">
-        <h1 style={{ margin: 0 }}>Rider e borsello</h1>
+        <h1>Rider e borsello</h1>
         <nav className="b-nav">
           <Link href="/cassa/mappa">Mappa →</Link>
           <Link href="/cassa">Cassa →</Link>
@@ -112,7 +112,7 @@ function RiderCassa() {
                 </div>
               </div>
             ) : (
-              <div className="b-tasti" style={{ marginTop: 10 }}>
+              <div className="b-tasti sotto">
                 <button className="primario b-salda" onClick={() => salda(r)} disabled={r.n_da_saldare === 0}>Salda {r.n_da_saldare > 0 ? euro(r.da_saldare) : ""}<small>le consegne fatte tornano in cassa</small></button>
                 <button className="b-apri" onClick={() => { setAperto(r.id); setImporto(""); setNote(""); }}>Fondo / prelievo / deposito</button>
               </div>

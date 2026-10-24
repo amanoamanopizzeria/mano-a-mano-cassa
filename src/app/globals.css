@@ -833,3 +833,6 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .cliente-pagina .cl-zona.civico { color: var(--muto); }
 .cliente-pagina .cl-zona.fuori { color: var(--accento); font-weight: 700; }
 .cliente-pagina .cl-modulo .salva { min-height: 48px; font-size: 17px; }
+/* /cassa/rider */
+.borsello .b-testa h1 { margin: 0; }
+.borsello .b-tasti.sotto { margin-top: 10px; }
