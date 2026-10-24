@@ -311,3 +311,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
   .riepilogo .r-ordini { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .riepilogo .r-ordine { padding: 10px 12px; }
 }
+
+/* /rider (giro 7): numero, indirizzo e soldi da incassare in grande (i tasti da 56/64 px sono del giro 2 e restano). */
+.rider .r-scheda .badge { font-size: 13px; }
+.rider h2 { margin: 18px 0 8px; }

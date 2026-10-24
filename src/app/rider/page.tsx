@@ -98,7 +98,7 @@ function Rider() {
   return (
     <main className="rider">
       <h1>Rider — consegne</h1>
-      <p className="muto">{gps}</p>
+      <p className="muto" style={{ fontSize: 14 }}>{gps}</p>
       {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
 
       <h2>Le mie ({mie.length})</h2>
@@ -107,10 +107,10 @@ function Rider() {
         {mie.map((c) => (
           <SchedaConsegna key={c.id} c={c}>
             {c.stato === "assegnata" && (
-              <button className="primario" onClick={() => aggiorna(c.id, "ritirata")}>Ritirata</button>
+              <button className="primario r-azione" onClick={() => aggiorna(c.id, "ritirata")}>Ritirata</button>
             )}
             {c.stato === "ritirata" && (
-              <button className="primario" onClick={() => aggiorna(c.id, "consegnata")}>Consegnata</button>
+              <button className="primario r-azione" onClick={() => aggiorna(c.id, "consegnata")}>Consegnata</button>
             )}
           </SchedaConsegna>
         ))}
@@ -121,7 +121,7 @@ function Rider() {
       <div className="griglia">
         {libere.map((c, i) => (
           <SchedaConsegna key={c.id} c={c}>
-            <button className="primario" onClick={() => prendi(c.id)}>{i === 0 ? "La prendo io" : "Prendi"}</button>
+            <button className="primario r-azione" onClick={() => prendi(c.id)}>{i === 0 ? "La prendo io" : "Prendi"}</button>
           </SchedaConsegna>
         ))}
       </div>
@@ -137,9 +137,9 @@ function Rider() {
       {daSaldare.length === 0 && <p className="muto">Niente da saldare.</p>}
       <div className="griglia">
         {daSaldare.map((c) => (
-          <article key={c.id} className="carta" style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-            <span><strong>#{c.numero}</strong> <span className="muto">{c.consegnata_il ? new Date(c.consegnata_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : ""} · {[c.via, c.civico].filter(Boolean).join(" ")}</span></span>
-            <span style={{ fontWeight: 800, fontSize: 20, color: "var(--vino)", whiteSpace: "nowrap" }}>{euro(Number(c.contanti_da_incassare))}</span>
+          <article key={c.id} className="carta" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 15 }}><strong style={{ fontSize: 20, fontFamily: "Oswald, sans-serif", fontWeight: 600 }}>#{c.numero}</strong> <span className="muto" style={{ fontSize: 15 }}>{c.consegnata_il ? new Date(c.consegnata_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : ""} · {[c.via, c.civico].filter(Boolean).join(" ")}</span></span>
+            <span style={{ fontWeight: 600, fontSize: 24, fontFamily: "Oswald, sans-serif", fontVariantNumeric: "tabular-nums", color: "var(--vino)", whiteSpace: "nowrap" }}>{euro(Number(c.contanti_da_incassare))}</span>
           </article>
         ))}
       </div>
@@ -155,42 +155,42 @@ function SchedaConsegna({ c, children }: { c: ConsegnaRider; children: React.Rea
       ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(indirizzo)}`
       : null;
   return (
-    <article className="carta">
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <strong style={{ fontSize: 22, fontFamily: "Oswald, sans-serif", fontWeight: 600 }}>#{c.numero}</strong>
+    <article className="carta r-scheda">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <strong style={{ fontSize: 28, fontFamily: "Oswald, sans-serif", fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>#{c.numero}</strong>
         <span className={`badge ${c.stato === "da_assegnare" ? "ricevuto" : "in_consegna"}`}>{c.stato.replace("_", " ")}</span>
       </div>
-      <div className="muto">
+      <div className="muto" style={{ fontSize: 15 }}>
         {c.zona ?? "—"} ·{" "}
         {c.ora_consegna
           ? "per le " + new Date(c.ora_consegna).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
           : "appena pronto"}
       </div>
-      {indirizzo && <div style={{ marginTop: 6, fontSize: 20, fontWeight: 700, lineHeight: 1.25 }}>{indirizzo}</div>}
-      {c.cliente_nome && <div className="muto">{c.cliente_nome}</div>}
+      {indirizzo && <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800, lineHeight: 1.2 }}>{indirizzo}</div>}
+      {c.cliente_nome && <div style={{ fontSize: 16, marginTop: 2 }}>{c.cliente_nome}</div>}
       {c.cliente_note && <div style={{ marginTop: 4, padding: "4px 8px", borderRadius: 6, background: "var(--oro-velo)", borderLeft: "4px solid var(--oro)", fontSize: 16, fontWeight: 600 }}>⚠ {c.cliente_note}</div>}
-      <div style={{ margin: "8px 0", fontSize: 24, fontWeight: 800, color: "var(--vino)" }}>
+      <div style={{ margin: "8px 0", fontSize: 30, fontWeight: 600, fontFamily: "Oswald, sans-serif", fontVariantNumeric: "tabular-nums", color: "var(--vino)", lineHeight: 1.1 }}>
         {c.pagato_online
-          ? <>Già pagato <span className="muto" style={{ fontSize: 13 }}>niente da incassare</span></>
+          ? <>Già pagato <span className="muto" style={{ fontSize: 15, fontFamily: "Figtree, sans-serif", fontWeight: 600 }}>niente da incassare</span></>
           : c.pagamento === "pos"
-            ? <>{euro(Number(c.totale))} <span className="muto" style={{ fontSize: 13 }}>col POS · niente contanti</span></>
+            ? <>{euro(Number(c.totale))} <span className="muto" style={{ fontSize: 15, fontFamily: "Figtree, sans-serif", fontWeight: 600 }}>col POS · niente contanti</span></>
             : Number(c.contanti_da_incassare) === 0
-            ? <>Già pagato <span className="muto" style={{ fontSize: 13 }}>niente da incassare</span></>
-            : <>{euro(Number(c.contanti_da_incassare))} <span className="muto" style={{ fontSize: 13 }}>in contanti</span>
+            ? <>Già pagato <span className="muto" style={{ fontSize: 15, fontFamily: "Figtree, sans-serif", fontWeight: 600 }}>niente da incassare</span></>
+            : <>{euro(Number(c.contanti_da_incassare))} <span className="muto" style={{ fontSize: 15, fontFamily: "Figtree, sans-serif", fontWeight: 600 }}>in contanti</span>
                 {c.paga_con != null && Number(c.paga_con) > Number(c.contanti_da_incassare) && (
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>paga con {euro(Number(c.paga_con))} → resto {euro(Number(c.paga_con) - Number(c.contanti_da_incassare))}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "Figtree, sans-serif", color: "var(--testo)", marginTop: 4 }}>paga con {euro(Number(c.paga_con))} → resto {euro(Number(c.paga_con) - Number(c.contanti_da_incassare))}</div>
                 )}</>}
       </div>
-      <ul className="muto" style={{ margin: "4px 0 8px", paddingLeft: 18 }}>
+      <ul className="muto" style={{ margin: "4px 0 8px", paddingLeft: 18, fontSize: 15 }}>
         {c.righe.map((r, i) => (
           <li key={i}>{Number(r.quantita)}× {r.descrizione}</li>
         ))}
       </ul>
-      {c.note && <div className="muto">Note: {c.note}</div>}
-      <div className="azioni" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+      {c.note && <div style={{ fontSize: 15, padding: "4px 8px", borderRadius: 6, background: "var(--oro-velo)", borderLeft: "4px solid var(--oro)" }}>Note: {c.note}</div>}
+      <div className="azioni r-azioni" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
         {children}
-        {naviga && <a href={naviga} target="_blank" rel="noreferrer"><button>Naviga</button></a>}
-        {c.cliente_telefono && <a href={`tel:${c.cliente_telefono}`}><button>Chiama</button></a>}
+        {naviga && <a href={naviga} target="_blank" rel="noreferrer"><button className="r-azione">Naviga</button></a>}
+        {c.cliente_telefono && <a href={`tel:${c.cliente_telefono}`}><button className="r-azione">Chiama</button></a>}
       </div>
     </article>
   );
