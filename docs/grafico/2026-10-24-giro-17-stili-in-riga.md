@@ -36,10 +36,12 @@ schermate e 190 in riga: la sera del critico ha aggiunto ordini, oggi erano 56.)
    la pillola `.f-pillola .piena/.quasi/.vuota` (ora da 44 senza `!important`),
    la riga degli ordini della fascia, il velo e il modulo del massimo
    (`.f-modifica`: tasti −/+ 52, cifra Oswald 44, «Torna alla regola / Annulla /
-   OK» da 52). L'errore prende `--errore`: `--accento` non esisteva nei token e
-   il messaggio restava nero.
+   OK» da 52). **Correzione del giro 18:** avevo scritto che `--accento` non esisteva e
+   messo `--errore`; esiste (è il vino, riga 13 di globals.css), e il colore è
+   tornato `--accento` come prima.
 3. **Capacità.** I 4 siti a classi: `.c-errore`, il margine del turno in CSS,
-   `.c-fascia.spenta` (opacità .5 quando pizze e consegne sono a zero), `.c-testa`.
+   `.c-fascia.spenta` (opacità .5 quando pizze e consegne sono a zero), `.c-testa`
+   (l'errore: stessa correzione del planner, torna `--accento`).
 
 ## Cosa resta
 

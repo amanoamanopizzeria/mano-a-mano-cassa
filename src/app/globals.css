@@ -714,7 +714,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .fasce-pagina .f-testa h1 { margin: 0; }
 .fasce-pagina .f-giorno { min-height: 44px; font-size: 16px; }
 .fasce-pagina .f-totale { margin-left: auto; }
-.fasce-pagina .f-errore { color: var(--errore); font-weight: 700; }
+.fasce-pagina .f-errore { color: var(--accento); }
 .fasce-pagina .f-carta { margin-top: 12px; padding: 0; overflow: hidden; }
 .fasce-pagina .f-tabella { width: 100%; border-collapse: collapse; font-size: 15px; }
 .fasce-pagina .f-tabella thead tr { background: var(--sfondo); color: var(--muto); font-size: 14px; font-family: "Oswald", sans-serif; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; }
@@ -757,7 +757,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .fasce-pagina .f-modifica .annulla { min-height: 44px; font-size: 15px; }
 .fasce-pagina .f-modifica .ok { min-height: 44px; font-size: 16px; padding: 0 22px; }
 /* /cassa/capacita: i 39 stili in riga alle classi, stessa resa. */
-.capacita .c-errore { color: var(--errore); font-weight: 700; }
+.capacita .c-errore { color: var(--accento); }
 .capacita .c-turno { margin-bottom: 12px; }
 .capacita .c-fascia.spenta { opacity: .5; }
 .capacita .c-fascia .c-testa { display: flex; justify-content: space-between; }
