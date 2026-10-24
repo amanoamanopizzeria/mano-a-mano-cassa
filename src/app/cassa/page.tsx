@@ -182,8 +182,8 @@ function Cassa() {
           Stampa da sola ogni comanda nuova
         </label>
       </div>
-      {inStampa.map((id) => <iframe key={id} src={`/cassa/comanda/${id}?stampa=1`} title="comanda" style={{ position: "absolute", width: 0, height: 0, border: 0 }} />)}
-      {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
+      {inStampa.map((id) => <iframe key={id} src={`/cassa/comanda/${id}?stampa=1`} title="comanda" className="lo-stampa" />)}
+      {errore && <p className="lo-errore">{errore}</p>}
       {ordini.length === 0 && !errore && (
         <p className="muto">Nessun ordine. Quando arriva, compare qui da solo.</p>
       )}
@@ -209,7 +209,7 @@ function Cassa() {
                   <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>
                   {/* critico giro 15: un preordine ritirato in anticipo non si poteva chiudere: gli stessi passi delle carte sotto */}
                   {passiOrdine(o).map((s) => (
-                    <button key={s} className={s === "annullato" ? (daConfermare === o.id ? "primario" : "") : "azione"} style={s === "annullato" ? { marginLeft: "auto" } : undefined} onClick={() => cambiaStato(o.id, s)}>
+                    <button key={s} className={s === "annullato" ? (daConfermare === o.id ? "primario annulla" : "annulla") : "azione"} onClick={() => cambiaStato(o.id, s)}>
                       {s === "annullato" && daConfermare === o.id ? "Sicuro? Tocca ancora" : ETICHETTE[s]}
                     </button>
                   ))}
