@@ -220,3 +220,10 @@
 .o-giorni button:disabled b { text-decoration: line-through; }
 .o-entra { animation: o-entra .22s ease-out; }
 @keyframes o-entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* grafico giro 22 (critico): il logo della testata era 87×32, perché il lockup ha sopra e sotto
+   «PIZZA ITALIANA», «FORNO A LEGNA», «2013» e la scritta era un terzo dell'immagine. Come nell'app,
+   nella fascia va la sola scritta (public/brand/logo-scritta.png, ritagliata dal lockup): alta 36,
+   larga circa 258 a 390, in una fascia da 56. */
+.o-sabbia { height: 56px; }
+.o-sabbia img { height: 36px; }

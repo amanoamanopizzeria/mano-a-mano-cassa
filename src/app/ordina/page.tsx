@@ -247,7 +247,7 @@ export default function Ordina() {
   const testata = (indietro?: () => void) => (
     <div className="o-testa">
       <div className="o-sabbia">
-        <img src="/brand/logo-amanoamano.png" alt="A Mano A Mano Pugliese" />
+        <img src="/brand/logo-scritta.png" alt="A Mano A Mano Pugliese" />
         <img src="/brand/bollino.png" alt="" className="bollino" />
       </div>
       <div className="o-vino">
@@ -588,7 +588,7 @@ function SchedaProdotto({ p, varianti, gruppiMenu, prodotti, categorie, massimi,
     <div className="o-velo">
       <div className="o-testa">
         <div className="o-sabbia">
-          <img src="/brand/logo-amanoamano.png" alt="A Mano A Mano Pugliese" />
+          <img src="/brand/logo-scritta.png" alt="A Mano A Mano Pugliese" />
           <img src="/brand/bollino.png" alt="" className="bollino" />
         </div>
         <div className="o-vino">
