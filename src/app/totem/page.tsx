@@ -216,7 +216,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
         </div>
         <h1>{esito?.ok ? (nome ? `Grazie ${nome}!` : "Grazie!") : "Ops"}</h1>
         {esito?.numero != null && <div className="numero"><small>Il tuo ordine</small><b>{esito.numero}</b></div>}
-        <p style={{ fontSize: 22, maxWidth: 560, color: "var(--grigio)" }}>{esito?.testo}</p>
+        <p className="testo">{esito?.testo}</p>
         <button onClick={ricomincia} className="t-b-vino" style={{ marginTop: 28 }}>Nuovo ordine</button>
         <div className="ritorno" />
       </div>
@@ -288,15 +288,16 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
             </button>
           </div>
           {/* Il riepilogo e la conferma: come «Ordina» online, niente parte al primo tocco (critico giro 1, lavoro 6). */}
-          <div style={{ margin: "26px auto 0", maxWidth: 560, textAlign: "left" }}>
+          <div className="t-riep">
             <div className="t-gruppo">Il tuo ordine · {nome}</div>
             {carrello.map((r) => (
-              <div key={r.chiave} style={{ display: "flex", gap: 10, padding: "6px 0", borderBottom: "1px solid #eee", fontSize: 18 }}>
-                <b style={{ minWidth: 34 }}>{r.quantita}×</b>
-                <span style={{ flex: 1 }}>{r.descrizione}{r.variazioni.length > 0 && <small style={{ display: "block", color: "var(--grigio)" }}>{r.variazioni.map((v) => v.nome).join(" · ")}</small>}{r.figlie && <small style={{ display: "block", color: "var(--grigio)" }}>{r.figlie.map((f) => (f.quantita > 1 ? `${f.quantita}× ` : "") + f.descrizione).join(" · ")}</small>}</span>
-                <span>{euro(prezzoRiga(r))}</span>
+              <div key={r.chiave} className="t-riep-riga">
+                <b>{r.quantita}×</b>
+                <span>{r.descrizione}{r.variazioni.length > 0 && <small>{r.variazioni.map((v) => v.nome).join(" · ")}</small>}{r.figlie && <small>{r.figlie.map((f) => (f.quantita > 1 ? `${f.quantita}× ` : "") + f.descrizione).join(" · ")}</small>}</span>
+                <span className="p">{euro(prezzoRiga(r))}</span>
               </div>
             ))}
+            <div className="t-riep-riga t-riep-tot"><b /><span>Totale</span><span className="p">{euro(totale)}</span></div>
           </div>
           <button onClick={conferma} disabled={invio || !pagamento} className="t-b-vino" style={{ marginTop: 26, fontSize: 24, minWidth: 320 }}>
             {invio ? "Invio l'ordine…" : pagamento ? `Conferma · ${euro(totale)}` : "Scegli come paghi"}

@@ -431,3 +431,22 @@
   .t-carta .nome { font-size: 22px; } .t-carta .descr { font-size: 15px; } .t-carta .prezzo b { font-size: 22px; }
   .t-carta .fotobox { width: 116px; height: 116px; } .t-carta .piu { width: 44px; height: 44px; font-size: 28px; }
 }
+
+/* Giro 15 del grafico (24/10/2026): il riepilogo finale e la schermata «grazie» al marchio.
+   Righe del riepilogo da 22 col prezzo in Oswald, il totale col filo nero; nel «grazie» il numero
+   d'ordine in un tassello sabbia con la cifra Oswald 80 e il testo a 24. Niente sotto i 20 px. */
+.t-riep { margin: 26px auto 0; width: min(100%, 600px); text-align: left; }
+.t-riep .t-gruppo { text-align: left; font-size: 20px; letter-spacing: .12em; border-bottom: 2px solid var(--nero, #1a1715); padding-bottom: 6px; color: var(--vino); }
+.t-riep-riga { display: flex; gap: 14px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid #e6e6e6; font-size: 22px; }
+.t-riep-riga > b { min-width: 48px; font-family: "Oswald", sans-serif; font-weight: 600; font-size: 24px; }
+.t-riep-riga > span:not(.p) { flex: 1; min-width: 0; }
+.t-riep-riga small { display: block; color: var(--grigio); font-size: 20px; }
+.t-riep-riga .p { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 24px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.t-riep-tot { border-top: 2px solid #1a1715; border-bottom: none; margin-top: 2px; font-weight: 700; }
+.t-riep-tot .p { color: var(--vino); font-size: 30px; }
+.t-fatto h1 { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 52px; letter-spacing: .03em; text-transform: uppercase; }
+.t-fatto .numero { display: inline-flex; flex-direction: column; align-items: center; background: #f1e8da; border: 2px solid #c9a981; border-radius: 14px; padding: 14px 48px 10px; margin-top: 10px; color: var(--nero, #1a1715); }
+.t-fatto .numero small { font-family: "Oswald", sans-serif; font-weight: 500; font-size: 20px; letter-spacing: .16em; text-transform: uppercase; color: var(--grigio); }
+.t-fatto .numero b { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 80px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.t-fatto .testo { font-size: 24px; max-width: 600px; color: var(--grigio); line-height: 1.35; margin: 18px 0 0; }
+.t-fatto .t-b-vino { min-height: 72px; min-width: 320px; }
