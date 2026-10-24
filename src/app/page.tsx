@@ -33,7 +33,11 @@ export default function Home() {
         </Link>
         <Link href="/cassa/tavoli" className="carta">
           <strong>Sala</strong>
-          <p className="muto">20 tavoli dentro, 15 fuori: apri, conto, libera.</p>
+          <p className="muto">10 tavoli dentro, 5 fuori: apri, conto, libera.</p>
+        </Link>
+        <Link href="/ordina" className="carta">
+          <strong>Ordina online</strong>
+          <p className="muto">La pagina d&apos;ordine nostra per i clienti: a casa o da ritirare, con le fasce libere. È quella a cui punterà il sito.</p>
         </Link>
         <Link href="/totem" className="carta">
           <strong>Totem</strong>
