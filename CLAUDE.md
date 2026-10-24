@@ -24,7 +24,7 @@ Roma): sostituisce Velocissimo/2Bit, clean-room. Il cervello gestionale resta
   codice, mai in chat. Nel database sta solo l'impronta SHA-256 della chiave
   del centralino (`impostazione_riservata`).
 
-## Cosa c'è (23/10/2026)
+## Cosa c'è (23–24/10/2026)
 
 - **Menù**: 147 prodotti veri da Velocissimo (mig. 0013), con `id_velocissimo`,
   foto (ancora sul CDN WebApp), descrizioni e i tre listini: `prezzo` = L1
@@ -42,6 +42,18 @@ Roma): sostituisce Velocissimo/2Bit, clean-room. Il cervello gestionale resta
 - **Ordini esterni** `/api/ordini-esterni` e `/api/deliverect/ordine`: entrano
   solo se la fascia ha posto (`accetta_ordine_esterno`).
 - **Rider** `/rider` e `/cassa/mappa`.
+- **Dal 24/10/2026** (mig. 0035–0043): `/ordina`, la pagina d'ordine nostra per anon
+  (`sito_menu`, `sito_fasce`, `ordine_dal_sito`, prezzi riprezzati dal server); **Modifica
+  con ristampa** (`/cassa/nuovo?modifica=<id>`, `ordine_modifica`, la carta segna NUOVA e
+  TOLTE); **sconto manuale** € o % (`ordine_sconto_manuale`); **conto del tavolo**
+  (`tavolo_conto_chiudi`: incassa e libera); l'**export a 40 colonne** per l'OS
+  (`/api/ordini/csv?giornata=`, `ordini_giornata`, provato col parser vero dell'OS con
+  `scripts/prova-csv-os.mts`); senza turni la capacità parte dalla tabella di Velocissimo
+  per giorno della settimana (10/18/22 pizze a quarto d'ora). Il registro delle migrazioni
+  di Supabase è la verità: i nomi sono quelli dei file senza numero.
+- ⚠️ Col connettore, un testo che contiene la parola che cancella le righe (anche dentro
+  una funzione o un commento) fa chiedere una conferma che non si vede e resta appeso:
+  in `ordine_modifica` il comando è composto come stringa (`'del' || 'ete …'`).
 
 ## Gli agenti
 
