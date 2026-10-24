@@ -64,7 +64,7 @@ function Menu() {
     <main className="menu-lettura">
       <h1>Menù</h1>
       <p className="muto">Sola lettura: il menù si cambia dal back office e dal database.</p>
-      {errore && <p style={{ color: "var(--accento)" }}>{errore}</p>}
+      {errore && <p className="m-errore">{errore}</p>}
 
       {gruppi.map((g) => (
         <section key={g.id} className="m-gruppo">

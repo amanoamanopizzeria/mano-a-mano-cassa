@@ -857,3 +857,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .rider .r-righe { margin: 4px 0 8px; padding-left: 18px; font-size: 15px; }
 .rider .r-note { font-size: 15px; padding: 4px 8px; border-radius: 6px; background: var(--oro-velo); border-left: 4px solid var(--oro); }
 .rider .r-azioni { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+/* ===== grafico, giro 23 (24/10/2026): /cassa/menu, l'ultimo stile in riga a classe e
+   «Spenti (N)» da 44 come ogni altro tasto (era 40: il conto dei tasti guardava solo button e a). ===== */
+.menu-lettura .m-errore { color: var(--accento); }
+.menu-lettura details.spenti summary { min-height: 44px; }
