@@ -583,7 +583,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 @media (min-width: 900px) {
   .fasce-pagina .f-tabella td.f-col-ora { font-size: 22px !important; padding: 8px 14px !important; }
   .fasce-pagina .f-tabella th { font-size: 15px !important; padding: 10px 8px !important; }
-  .fasce-pagina .f-cella-in > button:nth-child(2) { min-width: 96px; min-height: 44px; font-size: 20px; font-family: "Oswald", sans-serif; font-weight: 600; letter-spacing: .02em; }
+  .fasce-pagina .f-cella-in > button:nth-child(2) { min-width: 96px !important; min-height: 44px !important; font-size: 20px !important; font-family: "Oswald", sans-serif; font-weight: 600; letter-spacing: .02em; }
   .fasce-pagina .f-passo { width: 48px; height: 48px; font-size: 24px; }
 }
 .fasce-pagina .f-turno { min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px; }
