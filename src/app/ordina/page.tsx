@@ -384,7 +384,7 @@ export default function Ordina() {
           <div className="o-sez">Giorno</div>
           <div className="o-giorni">
             {giorni.map((g) => (
-              <button key={g.chiave} onClick={() => { setGiorno(g.chiave); setFascia(null); }} className={g.chiave === giorno ? "on" : ""} disabled={g.chiuso} style={g.chiuso ? { opacity: .4 } : undefined}>
+              <button key={g.chiave} onClick={() => { setGiorno(g.chiave); setFascia(null); }} className={g.chiave === giorno ? "on" : ""} disabled={g.chiuso}>
                 <small>{g.nome}</small><b>{g.numero}</b>
               </button>
             ))}
@@ -393,7 +393,7 @@ export default function Ordina() {
           <p className="o-sotto">Il primo orario libero è già scelto: tocca un altro quarto d&apos;ora se preferisci. Quelli barrati sono pieni.</p>
           {fasce === null && <div className="o-nota">Guardo i posti liberi…</div>}
           {fasce !== null && fasce.length === 0 && (
-            <div className="o-avviso">{fasciaEsito === "chiuso" ? "Quel giorno siamo chiusi." : fasciaEsito === "errore" ? "Non riesco a leggere gli orari: riprova." : "Per oggi non ci sono più orari: prova domani."}</div>
+            <div className="o-avviso chiuso">{fasciaEsito === "chiuso" ? "Quel giorno siamo chiusi." : fasciaEsito === "errore" ? "Non riesco a leggere gli orari: riprova." : "Per oggi non ci sono più orari: prova domani."}</div>
           )}
           {fasce !== null && fasce.length > 0 && (
             <div className="o-fasce">

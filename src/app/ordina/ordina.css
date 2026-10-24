@@ -186,17 +186,28 @@
 .o-riepilogo .r small { display: block; color: var(--testo2); font-size: 13.5px; }
 .o-riepilogo .r .p { font-weight: 700; font-variant-numeric: tabular-nums; }
 
-/* fatto */
-.o-fatto { text-align: center; padding-top: 16px; }
-.o-fatto .bollino { width: 120px; }
-.o-fatto .cerchio { width: 72px; height: 72px; border-radius: 999px; background: var(--ok); color: #fff; display: inline-flex; align-items: center; justify-content: center; margin: 8px 0 10px; }
-.o-fatto .cerchio.no { background: var(--vino); font-size: 36px; font-weight: 800; }
+/* fatto — giro 11 del grafico (24/10/2026): la schermata «Grazie» col vocabolario dell'app:
+   titolo Oswald, numero d'ordine grande su sabbia chiara, riepilogo come una sezione col filo,
+   «Segui la consegna» sabbia da 52 px e «Nuovo ordine» a filo vino della stessa altezza. */
+.o-fatto { text-align: center; padding-top: 12px; padding-bottom: 32px; }
+.o-fatto .bollino { width: 96px; }
+.o-fatto .cerchio { width: 72px; height: 72px; border-radius: 999px; background: var(--ok); color: #fff; display: inline-flex; align-items: center; justify-content: center; margin: 4px 0 8px; box-shadow: 0 4px 14px rgba(46,125,79,.3); }
+.o-fatto .cerchio.no { background: var(--vino); font-size: 36px; font-weight: 800; box-shadow: 0 4px 14px rgba(141,5,54,.3); }
 .o-fatto .cerchio svg { width: 40px; height: 40px; stroke: #fff; stroke-width: 6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.o-fatto h1 { font-size: 24px; text-transform: uppercase; }
-.o-fatto .numero { display: inline-flex; flex-direction: column; background: var(--sabbia-chiara); border-radius: 6px; padding: 10px 28px; margin: 14px 0; }
-.o-fatto .numero small { color: var(--testo2); font-size: 13.5px; }
-.o-fatto .numero b { font-size: 34px; }
-.o-fatto p { color: var(--testo2); font-size: 16px; line-height: 1.4; margin: 6px 0; }
-.o-fatto .segui { display: block; margin: 16px auto 0; max-width: 360px; background: var(--sabbia); color: var(--nero); font-weight: 700; font-size: 17px; padding: 14px 20px; border-radius: 4px; text-decoration: none; }
+.o-fatto h1 { font-family: Oswald, sans-serif; font-weight: 600; font-size: 30px; line-height: 1.1; text-transform: uppercase; letter-spacing: .03em; margin: 6px 0 4px; }
+.o-fatto .numero { display: inline-flex; flex-direction: column; background: var(--sabbia-chiara); border: 1.5px solid var(--sabbia); border-radius: 6px; padding: 10px 32px 8px; margin: 12px 0 10px; }
+.o-fatto .numero small { color: var(--testo2); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.o-fatto .numero b { font-family: Oswald, sans-serif; font-weight: 600; font-size: 44px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.o-fatto p { color: var(--testo2); font-size: 16px; line-height: 1.4; margin: 6px auto; max-width: 420px; }
+.o-fatto .o-riepilogo { margin: 16px auto 4px; max-width: 480px; border-top: 1.5px solid var(--nero); padding-top: 4px; }
+.o-fatto .o-riepilogo .r { font-size: 16px; padding: 10px 2px; }
+.o-fatto .o-riepilogo .r:last-child { border-top: 1.5px solid var(--nero); margin-top: 2px; font-size: 18px; }
+.o-fatto .segui { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 12px auto 0; max-width: 420px; min-height: 52px; background: var(--sabbia); color: var(--nero); font-weight: 700; font-size: 17px; padding: 0 20px; border-radius: 4px; text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,.12); }
+.o-fatto .segui::before { content: "🛵"; font-size: 20px; }
+.o-fatto .o-b-largo { display: block; width: 100%; max-width: 420px; margin: 14px auto 0; min-height: 52px; font-size: 16px; }
+/* chiusi / fuori orario: l'avviso si legge da solo, il giorno chiuso è barrato */
+.o-avviso.chiuso { display: flex; align-items: center; gap: 12px; font-size: 16px; padding: 14px 16px; margin-top: 14px; }
+.o-avviso.chiuso::before { content: "✕"; flex: none; width: 36px; height: 36px; border-radius: 999px; background: var(--vino); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; }
+.o-giorni button:disabled b { text-decoration: line-through; }
 .o-entra { animation: o-entra .22s ease-out; }
 @keyframes o-entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
