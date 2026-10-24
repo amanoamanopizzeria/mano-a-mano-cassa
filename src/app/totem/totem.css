@@ -488,3 +488,16 @@
 .totem.t-avvio .t-sabbia-avvio { position: absolute; top: 0; left: 0; right: 0; padding: 0 24px; }
 /* e sugli schermi bassi (1024×768) il bollino si stringe con l'altezza, così non finisce sotto la fascia */
 .totem.t-avvio .bollino { width: min(44vw, 360px, 36vh); }
+
+/* ===== grafico, giro 23 (24/10/2026): nella fascia sabbia la sola scritta AMANOAMANO, come /ordina e
+   come l'app (public/brand/logo-scritta.png, ritagliata dal lockup). Col lockup intero alto 66 la
+   scritta era alta circa 25 px; ora 54 su una fascia da 96. Sul telefono e sul tablet coricato la
+   scritta scende con la fascia: prima le regole del giro 21 (logo 66, bollino 72) vincevano anche sulla
+   fascia da 60 e uscivano dal bordo. ===== */
+.totem .t-sabbia img.scritta { height: 54px; width: auto; max-width: 100%; }
+@media (orientation: landscape) and (max-height: 900px) { .totem .t-sabbia img.scritta { height: 36px; } .totem .t-sabbia .bollino { height: 52px; width: 52px; } }
+@media (max-width: 700px) {
+  .totem .t-sabbia { padding: 0 64px; }
+  .totem .t-sabbia img.scritta { height: 28px; }
+  .totem .t-sabbia .bollino { right: 10px; height: 46px; width: 46px; }
+}

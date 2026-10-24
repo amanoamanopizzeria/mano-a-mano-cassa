@@ -183,7 +183,7 @@ function Totem({ chiave, disattiva }: { chiave: string; disattiva: () => void })
         <img className="foto" src="/brand/mani-farina.jpg" alt="" />
         <div className="velo" />
         <div className="t-sabbia t-sabbia-avvio">
-          <img src="/brand/logo-amanoamano.png" alt="A Mano A Mano" />
+          <img src="/brand/logo-scritta.png" alt="A Mano A Mano" className="scritta" />
         </div>
         <div className="corpo t-entra">
           <img className="bollino" src="/brand/bollino.png" alt="A Mano A Mano Pugliese" />
@@ -497,7 +497,7 @@ function Testata({ indietro, annulla, titolo }: { indietro?: () => void; annulla
   return (
     <>
       <div className="t-sabbia">
-        <img src="/brand/logo-amanoamano.png" alt="A Mano A Mano" />
+        <img src="/brand/logo-scritta.png" alt="A Mano A Mano" className="scritta" />
         <img src="/brand/bollino.png" alt="" className="bollino" />
       </div>
       <div className="t-testata">
