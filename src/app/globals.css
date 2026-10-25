@@ -874,3 +874,17 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .ordine-c .origine.o-justeat { background: #ff8000; color: #fff; }
 .ordine-c .origine.o-app, .ordine-c .origine.o-web { background: #8a1538; color: #fff; }
 .ordine-c .origine.o-telefono { background: #f2c200; }
+
+/* ===== grafico, giro 24 (25/10/2026): /cassa, la pastiglia dell'origine senza arcobaleno.
+   Il colore pieno lo tiene la fascia a sinistra (giallo = consegna nostra, salmone = ritira la
+   piattaforma); la pastiglia dice da dove arriva con bordo e testo del suo colore su un velo chiaro.
+   Così il colore pieno resta uno per carta, e il testo si legge: bianco su arancio stava a 2,5:1,
+   ora ogni pastiglia è sopra 5:1. Oswald maiuscolo come gli stati, 13 px; la riga non si alza. ===== */
+.ordine-c .origine { display: inline-block; padding: 0 7px; border-radius: 999px; background: #fff; border: 1.5px solid var(--bordo); color: var(--muto); font-family: "Oswald", sans-serif; font-weight: 600; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; line-height: 14px; vertical-align: middle; }
+.ordine-c .origine.o-app, .ordine-c .origine.o-web { background: #f7e8ed; border-color: var(--vino); color: var(--vino); }
+.ordine-c .origine.o-telefono { background: #fff4c2; border-color: #f2c200; color: #6b5200; }
+.ordine-c .origine.o-justeat { background: #ffeedd; border-color: #ff8000; color: #a34f00; }
+.ordine-c .origine.o-glovo, .ordine-c .origine.o-deliveroo { background: #fde8de; border-color: #f08a5d; color: #9a3d16; }
+/* a 390 i tasti della carta stanno su due colonne: l'ultimo, se resta da solo, prende tutta la riga
+   (era «Link per il cliente» a metà con un buco accanto) */
+@media (max-width: 600px) { .lista-ordini .ordine-c .azioni > :last-child:nth-child(odd) { grid-column: 1 / -1; } }
