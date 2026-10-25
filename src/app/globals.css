@@ -862,3 +862,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
    «Spenti (N)» da 44 come ogni altro tasto (era 40: il conto dei tasti guardava solo button e a). ===== */
 .menu-lettura .m-errore { color: var(--accento); }
 .menu-lettura details.spenti summary { min-height: 44px; }
+
+/* /cassa: i colori di 2Bit sulle carte (Edoardo, 25/10/2026): consegne nostre gialle, ritiri delle
+   piattaforme rosa/arancio. Una fascia a sinistra, così lo stato (colore del bordo) resta leggibile. */
+.ordine-c.col-consegna { background-image: linear-gradient(to right, #f2c200 0 7px, transparent 7px); padding-left: 16px; }
+.ordine-c.col-piattaforma { background-image: linear-gradient(to right, #f08a5d 0 7px, transparent 7px); padding-left: 16px; }

@@ -44,6 +44,11 @@ type OrdineCassa = Ordine & {
   tavolo?: { numero: string } | null; sconto?: number | null; modificato_il?: string | null;
 };
 /** I passi di stato offerti sulla carta: un domicilio non si «ritira», banco/tavolo/asporto non vanno «in consegna». */
+// I colori di 2Bit (Edoardo, 25/10/2026): gialle le consegne dei nostri rider (anche Just Eat, che
+// portiamo noi), rosa/arancio i ritiri di Glovo e Deliveroo, che portano i loro rider.
+const coloreTipo = (o: OrdineCassa) =>
+  o.canale === "glovo" || o.canale === "deliveroo" ? " col-piattaforma" : o.tipo === "domicilio" ? " col-consegna" : "";
+
 const passiOrdine = (o: OrdineCassa): StatoOrdine[] =>
   TRANSIZIONI_ORDINE[o.stato].filter((s) => (o.tipo === "domicilio" ? s !== "ritirato" : s !== "in_consegna"));
 /** La serata parte alle 6 di mattina: quello che c'è prima va sotto «Ieri e prima». */
@@ -208,7 +213,7 @@ function Cassa() {
           <summary>Preordini <small>{ordini.filter((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o)).length} · si stampano da soli {ATTESA_MIN} minuti prima</small></summary>
           <div className="griglia">
             {ordini.filter((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o)).sort((a, b) => (a.ora_consegna ?? "").localeCompare(b.ora_consegna ?? "")).map((o) => (
-              <article className="carta ordine-c preordine" key={o.id}>
+              <article className={"carta ordine-c preordine" + coloreTipo(o)} key={o.id}>
                 <header>
                   <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
                   <b className="tempo attesa">{quando(o.ora_consegna!)}</b>
@@ -243,7 +248,7 @@ function Cassa() {
       )}
       <div className="griglia">
         {ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && (diStasera(o, adesso) || vecchiAperti)).map((o) => (
-          <article className={"carta ordine-c " + o.stato + ((() => { const c = (o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") ? contoAllaRovescia(o, adesso) : null; return c?.ritardo ? " ritardo" : ""; })())} key={o.id}>
+          <article className={"carta ordine-c " + o.stato + coloreTipo(o) + ((() => { const c = (o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") ? contoAllaRovescia(o, adesso) : null; return c?.ritardo ? " ritardo" : ""; })())} key={o.id}>
             <header>
               <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
               <span className={`badge ${o.stato}`}>{ETICHETTE[o.stato]}</span>
