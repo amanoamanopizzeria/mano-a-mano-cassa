@@ -31,6 +31,7 @@
 | `14_SERATA_MINUTO_PER_MINUTO.md` | La serata vera sul 2Bit dalle 18:00 alle 23:10, passo per passo, contro la cassa nuova dopo il giro 10 del critico; il modello del POS dalle viste SQL; il bancone (stampante fiscale **Ditron** nel pacchetto, modem per il numero che chiama, due stampanti comanda) |
 | `15_REPORT_E_EXPORT.md` | Le **due** letture dell'OS (API per articolo, CSV per ordine); le 40 colonne del CSV una per una con la traduzione nostra; `RigaVendita` contro `v_vendite_giornata` campo per campo; cosa aggiungere perché l'OS non si accorga del cambio |
 | `16_DOMANDE_PER_EDOARDO.md` | Le **20 domande** che non si deducono, ognuna con «cosa cambia a seconda della risposta» |
+| `17_REA_COMPLETO_25_10.md` · `18_DOMANDE_PER_EDOARDO.md` | Rapporto completo del 25/10/2026 (cassa 2Bit, back-office ordini e zone, menu e disponibilità, app, sito, rider, telefono, stampa) con lo stato di ogni voce e le domande per Edoardo |
 | `dati/prodotti_nomi_ricette.md` | I 177 prodotti: id, codice, nome, pagina catalogo, ricetta, descrizione |
 | `dati/prodotti_listini.md` | I tre listini per prodotto e il food cost |
 
