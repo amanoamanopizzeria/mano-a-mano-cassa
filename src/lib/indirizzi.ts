@@ -132,3 +132,49 @@ export async function geocodifica(testo: string): Promise<{ lat: number; lng: nu
   const g = j.results![0];
   return { lat: g.geometry.location.lat, lng: g.geometry.location.lng, place_id: g.place_id ?? null };
 }
+
+// ---- Minuti in motorino fra due punti (Edoardo, 25/10/2026: «la cosa vera da migliorare è Google Maps,
+// l'abbinamento delle consegne») ----
+// Google Routes API, computeRouteMatrix: i minuti veri per strada, coi sensi unici e il traffico. Serve che
+// sul progetto Google della chiave sia attiva la «Routes API»; finché non lo è, o se Google non risponde,
+// si torna alla linea d'aria × 1,4 a 22 km/h (la stessa stima della mappa rider) e lo si dice con fonte.
+export interface Punto { lat: number; lng: number }
+export interface Tempi { fonte: "google" | "linea"; minuti: (number | null)[][]; metri: (number | null)[][]; motivo?: string }
+
+export function metriInLinea(a: Punto, b: Punto) {
+  const r = (x: number) => (x * Math.PI) / 180;
+  const h = Math.sin(r(b.lat - a.lat) / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(r(b.lng - a.lng) / 2) ** 2;
+  return 2 * 6371000 * Math.asin(Math.sqrt(h));
+}
+function inLinea(o: Punto[], d: Punto[], motivo?: string): Tempi {
+  const metri = o.map((a) => d.map((b) => Math.round(metriInLinea(a, b) * 1.4)));
+  return { fonte: "linea", metri, minuti: metri.map((r) => r.map((m) => Math.max(1, Math.round(m! / (22000 / 60))))), motivo };
+}
+
+export async function tempiFra(origini: Punto[], destinazioni: Punto[]): Promise<Tempi> {
+  const chiave = chiaveGoogle();
+  if (!chiave) return inLinea(origini, destinazioni, "manca la chiave");
+  const wp = (p: Punto) => ({ waypoint: { location: { latLng: { latitude: p.lat, longitude: p.lng } } } });
+  try {
+    const r = await fetch("https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Goog-Api-Key": chiave, "X-Goog-FieldMask": "originIndex,destinationIndex,duration,distanceMeters,condition" },
+      // DRIVE e non TWO_WHEELER: il motorino Google lo dà solo in alcuni paesi; a Roma l'auto è la stima più vicina
+      body: JSON.stringify({ origins: origini.map(wp), destinations: destinazioni.map(wp), travelMode: "DRIVE", routingPreference: "TRAFFIC_AWARE" }),
+      cache: "no-store",
+    });
+    if (!r.ok) return inLinea(origini, destinazioni, `Google ${r.status}: ${(await r.text()).slice(0, 160)}`);
+    const righe = (await r.json()) as { originIndex?: number; destinationIndex?: number; duration?: string; distanceMeters?: number; condition?: string }[];
+    const minuti = origini.map(() => destinazioni.map(() => null as number | null));
+    const metri = origini.map(() => destinazioni.map(() => null as number | null));
+    for (const x of righe) {
+      if (x.condition !== "ROUTE_EXISTS") continue;
+      const i = x.originIndex ?? 0, j = x.destinationIndex ?? 0;
+      minuti[i][j] = Math.max(1, Math.round(parseInt(x.duration ?? "0", 10) / 60));
+      metri[i][j] = x.distanceMeters ?? null;
+    }
+    return { fonte: "google", minuti, metri };
+  } catch (e) {
+    return inLinea(origini, destinazioni, (e as Error).message);
+  }
+}

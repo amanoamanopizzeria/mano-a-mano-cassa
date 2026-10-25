@@ -961,3 +961,14 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .ordine-c .lo-sposta-f b { font-size: 17px; }
 .ordine-c .lo-sposta-f.piena { background: #fde8e8; border-color: #c62828; color: #8e1c1c; }
 .ordine-c .lo-sposta-f.attuale { outline: 3px solid var(--vino, #8a1538); opacity: .7; }
+
+/* Rider: prendere più comande insieme, «Parto» unico e il giro (Edoardo, 25/10/2026: come l'app Velocissimo RIDER) */
+.rider .r-giro { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; }
+.rider .r-spiega { margin: -4px 0 8px; font-size: 14px; }
+.rider .r-scheda.scelta { outline: 3px solid var(--oro); outline-offset: -3px; }
+.rider .r-aggiungi.on { background: var(--oro-velo); border-color: var(--oro); font-weight: 700; }
+.rider .r-var { color: var(--vino); font-weight: 600; }
+.rider .r-totale { margin: 2px 0 8px; font-size: 14px; }
+.rider .r-barra-scelte { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px -4px 0; padding: 10px 12px; border-radius: 14px 14px 0 0; background: var(--vino); color: #fff; font-weight: 600; }
+.rider .r-barra-scelte span { flex: 1 1 100%; font-size: 15px; }
+.rider .r-barra-scelte button { flex: 1; min-height: 52px; font-size: 17px; }

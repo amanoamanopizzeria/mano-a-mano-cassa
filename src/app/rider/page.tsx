@@ -28,6 +28,27 @@ function avvisa() {
 }
 
 const euro = (n: number) => n.toFixed(2).replace(".", ",") + " €";
+const PIZZERIA = { lat: 41.9138, lng: 12.50734 };   // Via Novara 5/7: da qui parte il giro
+const INSIEME_MIN = 5;                              // entro 5 minuti di strada due consegne vanno insieme
+type Matrice = { fonte: string; minuti: (number | null)[][] };
+const conPunto = (c: ConsegnaRider) => c.lat != null && c.lng != null;
+
+// Il giro più corto a occhio: dalla pizzeria sempre alla tappa più vicina che resta. Con 2–4 tappe è
+// quello che fa un rider; matrice[i][j] sono i minuti da i a j, con 0 = la pizzeria.
+function ordineGiro(n: number, minuti: (number | null)[][]) {
+  const resta = new Set(Array.from({ length: n }, (_, i) => i + 1)), giro: number[] = [];
+  let da = 0;
+  while (resta.size) {
+    let meglio = -1, m = Infinity;
+    for (const j of resta) { const t = minuti[da]?.[j] ?? Infinity; if (t < m || meglio < 0) { m = t; meglio = j; } }
+    giro.push(meglio - 1); resta.delete(meglio); da = meglio;
+  }
+  return giro;
+}
+async function chiediTempi(origini: { lat: number; lng: number }[], destinazioni: { lat: number; lng: number }[]): Promise<Matrice | null> {
+  const r = await fetch("/api/indirizzi/tempi", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ origini, destinazioni }) }).catch(() => null);
+  return r?.ok ? ((await r.json()) as Matrice) : null;
+}
 
 export default function RiderPagina() {
   return (
@@ -45,6 +66,11 @@ function Rider() {
   const supabaseRef = useRef<ReturnType<typeof supabaseBrowser> | null>(null);
   const visti = useRef<Set<string> | null>(null);
   const [daConfermare, setDaConfermare] = useState<string | null>(null);
+  // Come nell'app Velocissimo RIDER (Edoardo, 25/10/2026: «devono potersi assegnare le consegne esattamente
+  // come sull'app loro»): si spuntano le comande libere e si prendono insieme, poi un solo «Parto».
+  const [scelte, setScelte] = useState<Set<string>>(new Set());
+  const [vicine, setVicine] = useState<Map<string, { con: string; min: number }>>(new Map());
+  const [giro, setGiro] = useState<string | null>(null);
 
   const carica = useCallback(async () => {
     const supabase = supabaseRef.current!;
@@ -114,12 +140,20 @@ function Rider() {
     return () => { vivo = false; document.removeEventListener("visibilitychange", chiedi); blocco?.release().catch(() => {}); };
   }, [inCorso]);
 
-  async function prendi(id: string) {
-    // l'ha presa lui: niente suono (critico giro 24, vibrava anche al suo tocco)
-    visti.current?.add(id + "assegnata");
-    const { error } = await supabaseRef.current!.rpc("prendi_consegna", { p_id: id });
-    if (error) setErrore(error.message);
-    else carica();
+  async function prendi(ids: string[]) {
+    const presi: string[] = [];
+    for (const id of ids) {
+      // l'ha presa lui: niente suono (critico giro 24, vibrava anche al suo tocco)
+      visti.current?.add(id + "assegnata");
+      const { error } = await supabaseRef.current!.rpc("prendi_consegna", { p_id: id });
+      if (error) { setErrore(presi.length ? `Prese ${presi.length}; le altre no: ${error.message}` : error.message); break; }
+      presi.push(id);
+    }
+    setScelte(new Set());
+    carica();
+  }
+  function spunta(id: string) {
+    setScelte((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
 
   // L'avviso al cliente «è partito, seguilo qui» nasce quando il rider la ritira (mig. 0032) e resta
@@ -130,6 +164,14 @@ function Rider() {
     if (error) setErrore(error.message);
     else carica();
   }
+  // «Parto»: tutte quelle prese e non ancora ritirate in un tocco solo (a ognuna parte l'avviso al cliente)
+  async function parto(ids: string[]) {
+    for (const id of ids) {
+      const { error } = await supabaseRef.current!.rpc("aggiorna_consegna", { p_id: id, p_stato: "ritirata" });
+      if (error) { setErrore(error.message); break; }
+    }
+    carica();
+  }
 
   const libere = consegne.filter((c) => c.stato === "da_assegnare");
   const mie = consegne.filter((c) => c.stato === "assegnata" || c.stato === "ritirata");
@@ -138,6 +180,48 @@ function Rider() {
   const insieme = (c: ConsegnaRider) => mie.filter((x) => x.id !== c.id && chiave(x) && chiave(x) === chiave(c)).map(num);
   const contantiMie = mie.reduce((t, c) => t + (c.pagato_online ? 0 : Number(c.contanti_da_incassare)), 0);
   const daSaldare = consegne.filter((c) => c.stato === "consegnata");
+  const daRitirare = mie.filter((c) => c.stato === "assegnata");
+
+  // Quali libere stanno a pochi minuti da un'altra (libera o già mia): la doppia la propone l'app,
+  // coi minuti per strada di Google se ci sono, se no in linea d'aria. Si ricalcola quando cambia l'elenco.
+  const firmaLibere = consegne.filter((c) => c.stato !== "consegnata").map((c) => c.id).join(",");
+  useEffect(() => {
+    const libereP = libere.filter(conPunto).slice(0, 10);
+    const tutte = [...libereP, ...mie.filter(conPunto)].slice(0, 10);
+    if (!libereP.length || tutte.length < 2) { setVicine(new Map()); return; }
+    let vivo = true;
+    chiediTempi(libereP.map((c) => ({ lat: c.lat!, lng: c.lng! })), tutte.map((c) => ({ lat: c.lat!, lng: c.lng! }))).then((t) => {
+      if (!vivo || !t) return;
+      const m = new Map<string, { con: string; min: number }>();
+      libereP.forEach((c, i) => {
+        let meglio: { con: string; min: number } | null = null;
+        tutte.forEach((x, j) => {
+          const min = t.minuti[i]?.[j];
+          if (x.id !== c.id && min != null && min <= INSIEME_MIN && (!meglio || min < meglio.min)) meglio = { con: (mie.includes(x) ? "la tua " : "") + num(x), min };
+        });
+        if (meglio) m.set(c.id, meglio);
+      });
+      setVicine(m);
+    });
+    return () => { vivo = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firmaLibere]);
+
+  // «Naviga tutte»: Google Maps col giro dalla pizzeria, una tappa dopo l'altra nell'ordine più corto
+  async function navigaTutte() {
+    const tappe = mie.filter(conPunto);
+    if (!tappe.length) return;
+    setGiro("Calcolo il giro…");
+    const punti = [PIZZERIA, ...tappe.map((c) => ({ lat: c.lat!, lng: c.lng! }))];
+    const t = tappe.length > 1 ? await chiediTempi(punti, punti) : null;
+    const ordine = t ? ordineGiro(tappe.length, t.minuti) : tappe.map((_, i) => i);
+    const lista = ordine.map((i) => tappe[i]);
+    const ll = (c: ConsegnaRider) => `${c.lat},${c.lng}`;
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${PIZZERIA.lat},${PIZZERIA.lng}&destination=${ll(lista.at(-1)!)}`
+      + (lista.length > 1 ? `&waypoints=${encodeURIComponent(lista.slice(0, -1).map(ll).join("|"))}` : "") + "&travelmode=driving";
+    setGiro("Giro: " + lista.map(num).join(" → "));
+    window.open(url, "_blank", "noreferrer");
+  }
 
   return (
     <main className="rider" onPointerDown={sbloccaSuono}>
@@ -149,6 +233,13 @@ function Rider() {
       <h2>Le mie ({mie.length})</h2>
       {mie.length === 0 && <p className="muto">Nessuna consegna in corso.</p>}
       {mie.length > 1 && <p className="r-tutto"><span>In tutto da incassare in contanti</span><b>{euro(contantiMie)}</b></p>}
+      {mie.length > 0 && (
+        <div className="r-giro">
+          {daRitirare.length > 0 && <button className="primario r-azione" onClick={() => parto(daRitirare.map((c) => c.id))}>{daRitirare.length > 1 ? `Parto con tutte e ${daRitirare.length}` : "Parto"}</button>}
+          {mie.filter(conPunto).length > 1 && <button className="r-azione" onClick={navigaTutte}>Naviga tutte</button>}
+          {giro && <span className="muto">{giro}</span>}
+        </div>
+      )}
       <div className="griglia">
         {mie.map((c) => (
           <SchedaConsegna key={c.id} c={c} insieme={insieme(c)}>
@@ -164,13 +255,22 @@ function Rider() {
 
       <h2 className="r-sez">Disponibili ({libere.length})</h2>
       {libere.length === 0 && <p className="muto">Nessuna consegna libera. Quando arriva, compare qui.</p>}
+      {libere.length > 1 && <p className="muto r-spiega">Tocca «Aggiungi» su più comande e prendile insieme.</p>}
       <div className="griglia">
         {libere.map((c, i) => (
-          <SchedaConsegna key={c.id} c={c}>
-            <button className="primario r-azione" onClick={() => prendi(c.id)}>{i === 0 ? "La prendo io" : "Prendi"}</button>
+          <SchedaConsegna key={c.id} c={c} scelta={scelte.has(c.id)} vicina={vicine.get(c.id)}>
+            <button className="primario r-azione" onClick={() => prendi([c.id])}>{i === 0 ? "La prendo io" : "Prendi"}</button>
+            {libere.length > 1 && <button className={"r-azione r-aggiungi" + (scelte.has(c.id) ? " on" : "")} onClick={() => spunta(c.id)}>{scelte.has(c.id) ? "✓ Aggiunta" : "+ Aggiungi"}</button>}
           </SchedaConsegna>
         ))}
       </div>
+      {scelte.size > 0 && (
+        <div className="r-barra-scelte">
+          <span>{scelte.size} {scelte.size === 1 ? "comanda" : "comande"}: {libere.filter((c) => scelte.has(c.id)).map(num).join(", ")}</span>
+          <button className="primario" onClick={() => prendi(libere.filter((c) => scelte.has(c.id)).map((c) => c.id))}>Le prendo io</button>
+          <button onClick={() => setScelte(new Set())}>Annulla</button>
+        </div>
+      )}
 
       <h2 className="r-sez">Da saldare alla cassa ({daSaldare.length})</h2>
       {borsello && (
@@ -193,7 +293,7 @@ function Rider() {
   );
 }
 
-function SchedaConsegna({ c, children, insieme = [] }: { c: ConsegnaRider; children: React.ReactNode; insieme?: string[] }) {
+function SchedaConsegna({ c, children, insieme = [], scelta = false, vicina }: { c: ConsegnaRider; children: React.ReactNode; insieme?: string[]; scelta?: boolean; vicina?: { con: string; min: number } }) {
   const indirizzo = [c.via, c.civico, c.cap, c.citta].filter(Boolean).join(" ");
   const naviga = c.lat && c.lng
     ? `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`
@@ -201,7 +301,7 @@ function SchedaConsegna({ c, children, insieme = [] }: { c: ConsegnaRider; child
       ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(indirizzo)}`
       : null;
   return (
-    <article className="carta r-scheda">
+    <article className={"carta r-scheda" + (scelta ? " scelta" : "")}>
       <div className="r-intesta">
         <strong>{num(c)}</strong>
         <span className={`badge ${c.stato === "da_assegnare" ? "ricevuto" : "in_consegna"}`}>{c.stato.replace("_", " ")}</span>
@@ -215,6 +315,7 @@ function SchedaConsegna({ c, children, insieme = [] }: { c: ConsegnaRider; child
       </div>
       {indirizzo && <div className="r-via">{indirizzo}</div>}
       {insieme.length > 0 && <div className="r-insieme">Stesso indirizzo di <b>{insieme.join(", ")}</b>: portale insieme</div>}
+      {vicina && <div className="r-insieme">A {vicina.min} min da <b>{vicina.con}</b>: falle insieme</div>}
       {c.cliente_nome && <div className="r-nome">{c.cliente_nome}</div>}
       {c.cliente_note && <div className="r-avviso">⚠ {c.cliente_note}</div>}
       <div className="r-soldi">
@@ -231,10 +332,12 @@ function SchedaConsegna({ c, children, insieme = [] }: { c: ConsegnaRider; child
       </div>
       <ul className="muto r-righe">
         {c.righe.map((r, i) => (
-          <li key={i}>{Number(r.quantita)}× {r.descrizione}</li>
+          <li key={i}>{Number(r.quantita)}× {r.descrizione}
+            {r.variazioni?.length > 0 && <span className="r-var"> · {r.variazioni.map((v) => (v.tipo === "rimozione" ? "senza " : v.tipo === "aggiunta" ? "+ " : "") + v.nome).join(", ")}</span>}</li>
         ))}
       </ul>
       {c.note && <div className="r-note">Note: {c.note}</div>}
+      <div className="muto r-totale">Totale ordine {euro(Number(c.totale))}{c.stato === "assegnata" || c.stato === "da_assegnare" ? " · si ritira in pizzeria, Via Novara 5/7" : ""}</div>
       <div className="azioni r-azioni">
         {children}
         {naviga && <a href={naviga} target="_blank" rel="noreferrer"><button className="r-azione">Naviga</button></a>}

@@ -204,15 +204,31 @@ function Cassa() {
   // I quarti d'ora per il domicilio, col posto e la consegna già presa più vicina a questo indirizzo
   // (mig. 0052): in giallo dove c'è una consegna entro 1,5 km, così si propone la doppia allo stesso
   // rider (Edoardo, 25/10/2026). Due ordini restano due consegne: qui si suggerisce e basta.
-  type FasciaVicina = { ora: string; pizze_max: number; pizze_occupate: number; consegne_max: number; consegne_occupate: number; bloccata_produzione: boolean; bloccata_consegne: boolean; vicina_metri: number | null; vicina_numero: string | null };
+  type FasciaVicina = { ora: string; pizze_max: number; pizze_occupate: number; consegne_max: number; consegne_occupate: number; bloccata_produzione: boolean; bloccata_consegne: boolean; vicina_metri: number | null; vicina_numero: string | null; vicina_id?: string | null; vicina_lat?: number | null; vicina_lng?: number | null; vicina_minuti?: number | null };
   const [fasceVicine, setFasceVicine] = useState<FasciaVicina[]>([]);
   useEffect(() => {
     const ind = indirizzi.find((i) => i.id === idIndirizzo);
     if (tipo !== "domicilio" || !idNegozio || ind?.lat == null || ind?.lng == null) { setFasceVicine([]); return; }
     supabaseBrowser().rpc("fasce_con_vicine", { p_negozio: idNegozio, p_giorno: giorno || oggiISO(), p_lat: ind.lat, p_lng: ind.lng })
-      .then(({ data }) => setFasceVicine(((data ?? []) as FasciaVicina[]).map((f) => ({ ...f, ora: String(f.ora).slice(0, 5) }))));
+      .then(async ({ data }) => {
+        const fasce = ((data ?? []) as FasciaVicina[]).map((f) => ({ ...f, ora: String(f.ora).slice(0, 5) }));
+        setFasceVicine(fasce);
+        // Poi i minuti veri per strada (Edoardo, 25/10/2026: «la cosa vera da migliorare è Google Maps»):
+        // due vie vicine in linea d'aria possono stare di là da un binario o da un senso unico. Si chiedono
+        // una volta sola, per le consegne entro 3 km in linea d'aria, dall'indirizzo di questo cliente.
+        const cand = [...new Map(fasce.filter((f) => f.vicina_id && f.vicina_lat != null && f.vicina_metri != null && f.vicina_metri <= 3000)
+          .map((f) => [f.vicina_id!, { lat: f.vicina_lat!, lng: f.vicina_lng! }])).entries()].slice(0, 10);
+        if (!cand.length) return;
+        const r = await fetch("/api/indirizzi/tempi", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ origini: [{ lat: ind.lat, lng: ind.lng }], destinazioni: cand.map(([, p]) => p) }) }).catch(() => null);
+        const t = r?.ok ? ((await r.json()) as { fonte: string; minuti: (number | null)[][] }) : null;
+        if (!t || t.fonte !== "google") return;   // senza Google resta la linea d'aria di prima
+        const minDi = new Map(cand.map(([id], j) => [id, t.minuti[0][j]]));
+        setFasceVicine(fasce.map((f) => ({ ...f, vicina_minuti: f.vicina_id ? minDi.get(f.vicina_id) ?? null : null })));
+      });
   }, [tipo, idNegozio, idIndirizzo, indirizzi, giorno]);
   const VICINA_M = 1500;
+  const VICINA_MIN = 5;   // per strada: entro 5 minuti di motorino è una doppia
 
   const orarioTipo = orari.find((o) => o.tipo === (tipo === "domicilio" || tipo === "ritiro" ? tipo : "apertura")) ?? null;
   const quartiScelta = useMemo(() => {
@@ -680,9 +696,9 @@ function Cassa() {
               const pieno = piena(f);
               // critico giro 24: il giallo su un quarto d'ora pieno mandava a un rifiuto. Due consegne
               // occupano due posti (Edoardo): se la vicina sta in un quarto pieno, il giallo va a quelli accanto.
-              const vicinaDi = (x?: typeof f) => !!x && x.vicina_metri != null && x.vicina_metri <= VICINA_M;
+              const vicinaDi = (x?: typeof f) => !!x && (x.vicina_minuti != null ? x.vicina_minuti <= VICINA_MIN : x.vicina_metri != null && x.vicina_metri <= VICINA_M);
               const accanto = !pieno && !vicinaDi(f) ? [tutte[i - 1], tutte[i + 1]].find((x) => vicinaDi(x) && piena(x!)) : undefined;
-              if (accanto) f = { ...f, vicina_metri: accanto.vicina_metri, vicina_numero: accanto.vicina_numero };
+              if (accanto) f = { ...f, vicina_metri: accanto.vicina_metri, vicina_numero: accanto.vicina_numero, vicina_minuti: accanto.vicina_minuti };
               const vicina = !pieno && vicinaDi(f);
               const scelto = !!giorno && ora === f.ora;
               return (
@@ -690,7 +706,7 @@ function Cassa() {
                   onClick={() => { setGiorno(giorno || oggiISO()); setOra(f.ora); setErrore(null); }}>
                   <b>{f.ora}</b>
                   <span>{pieno ? "pieno" : `${f.consegne_occupate}/${f.consegne_max} cons.`}</span>
-                  {vicina && <span className="dove">{f.vicina_numero} a {f.vicina_metri! < 1000 ? `${Math.round(f.vicina_metri! / 50) * 50} m` : `${(f.vicina_metri! / 1000).toFixed(1).replace(".", ",")} km`}</span>}
+                  {vicina && <span className="dove">{f.vicina_numero} a {f.vicina_minuti != null ? `${f.vicina_minuti} min` : f.vicina_metri! < 1000 ? `${Math.round(f.vicina_metri! / 50) * 50} m` : `${(f.vicina_metri! / 1000).toFixed(1).replace(".", ",")} km`}</span>}
                 </button>
               );
             })}
