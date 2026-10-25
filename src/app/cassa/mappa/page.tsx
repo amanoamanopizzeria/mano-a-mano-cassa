@@ -28,6 +28,14 @@ const quandoPos = (iso: string) => {
   return (giorno === oggi ? "delle " + oraDi(iso) : `del ${giorno.slice(0, 5)} alle ${oraDi(iso)}`) + (vecchia ? " (vecchia)" : "");
 };
 const nomeOrdine = (o: ConsegnaInMappa["ordine"]) => o?.numero_visibile ?? `#${o?.numero ?? ""}`;
+// I minuti in motorino senza Google Routes: linea d'aria × 1,4 (le strade non sono dritte) a 22 km/h,
+// più 2 minuti per parcheggiare. Basta per dire «rientra verso le 21:40»; coi minuti veri di Google
+// (Routes API sulla chiave) si cambia solo questa funzione.
+const minutiFra = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) =>
+  Math.round(Math.hypot((a.lat - b.lat) * 111, (a.lng - b.lng) * 83) * 1.4 / 22 * 60 + 2);
+const ALLA_PIZZERIA = { lat: CENTRO[0], lng: CENTRO[1] };
+/** L'ultima consegna fatta da ogni rider nell'ultima ora: serve a dire quando rientra. */
+interface Consegnata { id_rider: string | null; consegnata_il: string; ordine: { indirizzo: { lat: number | null; lng: number | null } | null } | null }
 const iniziali = (nome: string) => nome.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("");
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -84,6 +92,10 @@ function Mappa() {
     return best?.id ?? null;
   }
   const [consegne, setConsegne] = useState<ConsegnaInMappa[]>([]);
+  const [fatte, setFatte] = useState<Consegnata[]>([]);
+  // ogni 30 secondi si rifà il conto dei minuti anche se nessuno si muove
+  const [, setOrologio] = useState(0);
+  useEffect(() => { const t = setInterval(() => setOrologio((n) => n + 1), 30_000); return () => clearInterval(t); }, []);
   const [errore, setErrore] = useState<string | null>(null);
   // Giro 12 del grafico: finché le tessere non arrivano (3–4 s al primo carico) si legge «Carico la mappa…».
   const [mappaPronta, setMappaPronta] = useState(false);
@@ -97,9 +109,10 @@ function Mappa() {
     let vivo = true;
 
     async function carica(L: any) {
-      const [{ data, error }, c] = await Promise.all([
+      const [{ data, error }, c, f] = await Promise.all([
         supabase.rpc("rider_in_mappa"),
         supabase.from("consegna").select("id, stato, id_rider, ordine(numero, numero_visibile, ora_consegna, indirizzo(via, civico, lat, lng))").in("stato", ["da_assegnare", "assegnata", "ritirata"]),
+        supabase.from("consegna").select("id_rider, consegnata_il, ordine(indirizzo(lat, lng))").eq("stato", "consegnata").gte("consegnata_il", new Date(Date.now() - 60 * 60_000).toISOString()).order("consegnata_il", { ascending: false }),
       ]);
       if (error) { setErrore(error.message); return; }
       const lista = (data ?? []) as RiderInMappa[];
@@ -109,6 +122,7 @@ function Mappa() {
       if (!vivo) return;
       setRiders(lista);
       setConsegne(listaC);
+      setFatte((f.data ?? []) as unknown as Consegnata[]);
       const mappa = mappaRef.current;
       // i rider: disco vino con le iniziali (grigio se non manda la posizione da più di 10 minuti)
       for (const r of lista) {
@@ -188,6 +202,28 @@ function Mappa() {
   }, []);
 
   const fermo = (r: RiderInMappa) => !r.aggiornata_il || Date.now() - new Date(r.aggiornata_il).getTime() > 10 * 60_000;
+  // «consegna C-80 fra 6 min», «consegnato, rientra fra 8 min (21:40)», «dovrebbe essere rientrato»
+  function previsione(r: RiderInMappa): string | null {
+    const fresca = r.lat != null && r.lng != null && r.aggiornata_il && Date.now() - new Date(r.aggiornata_il).getTime() < 3 * 60_000;
+    const qui = fresca ? { lat: r.lat as number, lng: r.lng as number } : null;
+    const inViaggio = consegne.filter((k) => k.id_rider === r.id && k.stato === "ritirata");
+    const conPunto = inViaggio.map((k) => ({ k, i: k.ordine?.indirizzo })).filter((x) => x.i?.lat != null && x.i?.lng != null);
+    if (inViaggio.length) {
+      if (!qui || !conPunto.length) return `in viaggio con ${inViaggio.map((k) => nomeOrdine(k.ordine)).join(", ")}`;
+      const prossima = conPunto.map((x) => ({ ...x, m: minutiFra(qui, { lat: x.i!.lat!, lng: x.i!.lng! }) })).sort((a, b) => a.m - b.m)[0];
+      return `consegna ${nomeOrdine(prossima.k.ordine)} fra ${prossima.m} min`;
+    }
+    if (consegne.some((k) => k.id_rider === r.id && k.stato === "assegnata")) return "deve ritirare in pizzeria";
+    const ultima = fatte.find((x) => x.id_rider === r.id);
+    if (!ultima) return null;
+    const da = qui ?? (ultima.ordine?.indirizzo?.lat != null && ultima.ordine.indirizzo.lng != null ? { lat: ultima.ordine.indirizzo.lat, lng: ultima.ordine.indirizzo.lng } : null);
+    if (!da) return `consegnato alle ${oraDi(ultima.consegnata_il)}`;
+    if (qui && minutiFra(qui, ALLA_PIZZERIA) <= 3) return "rientrato";
+    const arrivo = (qui ? Date.now() : new Date(ultima.consegnata_il).getTime()) + minutiFra(da, ALLA_PIZZERIA) * 60_000;
+    const mancano = Math.round((arrivo - Date.now()) / 60_000);
+    if (mancano <= 0) return `consegnato alle ${oraDi(ultima.consegnata_il)}, dovrebbe essere rientrato`;
+    return `consegnato, rientra fra ${mancano} min (${oraDi(new Date(arrivo).toISOString())})`;
+  }
   const nomeRider = (id: string | null) => (id ? riders.find((r) => r.id === id)?.nome ?? null : null);
 
   return (
@@ -221,6 +257,7 @@ function Mappa() {
                 {r.consegne_in_corso} {r.consegne_in_corso === 1 ? "consegna" : "consegne"} in corso ·{" "}
                 {r.aggiornata_il ? "posizione " + quandoPos(r.aggiornata_il) : "nessuna posizione"}
               </div>
+              {previsione(r) && <div className="m-previsione">{previsione(r)}</div>}
             </div>
             <span className={"m-stato " + (fermo(r) ? "fermo" : "in_giro")}>{fermo(r) ? "fermo" : "in giro"}</span>
           </div>

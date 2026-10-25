@@ -87,3 +87,4 @@
 .mappa-pagina .m-scheda strong { font-size: 19px; }
 .mappa-pagina .m-manca { color: var(--vino); }
 .mappa-pagina .leaflet-container .leaflet-control-zoom a { width: 44px; height: 44px; line-height: 44px; }
+.mappa-pagina .m-previsione { font-weight: 600; color: var(--vino); font-size: 15px; margin-top: 2px; }
