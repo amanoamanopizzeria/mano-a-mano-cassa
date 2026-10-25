@@ -119,9 +119,9 @@ export default function Segui({ params }: { params: Promise<{ token: string }> }
       {s && s.stato !== "annullata" && (
         <>
           <div className={"sg-grande " + s.stato}>
-            {s.stato === "ritirata" && <span className="sg-icona" aria-hidden>🛵</span>}
-            {PASSI[indice].t}
-            {s.stato === "ritirata" && s.rider && <span> con {s.rider}</span>}
+            {s.stato === "ritirata" && !s.prima_un_altra && <span className="sg-icona" aria-hidden>🛵</span>}
+            {s.stato === "ritirata" && s.prima_un_altra ? "Ordine preso, in attesa del rider" : PASSI[indice].t}
+            {s.stato === "ritirata" && !s.prima_un_altra && s.rider && <span> con {s.rider}</span>}
           </div>
           <div className="sg-sotto">
             {s.stato === "consegnata" && s.consegnata_il ? `alle ${ora(s.consegnata_il)}`
