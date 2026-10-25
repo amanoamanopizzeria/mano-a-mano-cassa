@@ -915,3 +915,34 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .menu-lettura .m-indice a:active { background: rgba(255,255,255,.14); }
 .menu-lettura .m-categorie .carta { scroll-margin-top: 56px; }
 @media (min-width: 900px) { .menu-lettura .m-indice { margin: 10px 0 0; border-radius: 10px; flex-wrap: wrap; overflow: visible; } .menu-lettura .m-categorie .carta { scroll-margin-top: 100px; } }
+
+/* ===== la prima schermata della cassa come 2Bit (Edoardo, 25/10/2026): a sinistra i quarti d'ora, a destra gli ordini ===== */
+.cassa-casa { display: grid; grid-template-columns: 270px 1fr; gap: 0; min-height: 100dvh; }
+.cassa-casa > main.lista-ordini { max-width: none; margin: 0; min-width: 0; }
+.cc-colonna { position: sticky; top: 0; height: 100dvh; overflow-y: auto; background: #fff; border-right: 1px solid var(--oro-chiaro, #e8d5b0); padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+.cc-nuovo { display: flex; align-items: center; justify-content: center; min-height: 64px; border-radius: 14px; background: var(--vino, #8a1538); color: #fff; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 22px; text-decoration: none; }
+.cc-chiamata { border: 1px dashed var(--bordo, #ddd); border-radius: 12px; padding: 10px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.cc-chiamata.squilla { border: 2px solid #f2c200; background: #fff8d6; }
+.cc-etichetta { font-size: 14px; color: var(--muto, #6b6259); }
+.cc-numero { font-size: 22px; font-variant-numeric: tabular-nums; }
+.cc-apri { display: block; padding: 10px; border-radius: 10px; background: #f2c200; color: #1a1715; font-weight: 700; text-decoration: none; min-height: 44px; }
+.cc-fasce { display: flex; flex-direction: column; gap: 3px; }
+.cc-riga { display: grid; grid-template-columns: 56px 1fr 1fr; gap: 4px; align-items: center; min-height: 40px; padding: 0 4px; border-radius: 8px; color: inherit; text-decoration: none; font-variant-numeric: tabular-nums; }
+.cc-intesta { min-height: 24px; font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 13px; letter-spacing: .05em; color: var(--muto, #6b6259); }
+.cc-riga.adesso { background: var(--vino-chiaro, #f6e6ea); outline: 2px solid var(--vino, #8a1538); }
+.cc-ora { font-weight: 700; font-size: 16px; }
+.cc-cella { text-align: center; padding: 6px 2px; border-radius: 6px; background: #f4efe6; font-size: 16px; font-weight: 600; }
+.cc-cella.usata { background: #fff3b0; }
+.cc-cella.piena { background: #c62828; color: #fff; }
+.cc-vuoto { font-size: 14px; color: var(--muto, #6b6259); }
+.lo-filtri { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
+.lo-filtro { min-height: 48px; padding: 8px 16px; border-radius: 999px; border: 2px solid var(--vino, #8a1538); background: #fff; color: var(--vino, #8a1538); font-size: 16px; font-weight: 700; }
+.lo-filtro b { margin-left: 4px; }
+.lo-filtro.attivo { background: var(--vino, #8a1538); color: #fff; }
+@media (max-width: 900px) {
+  .cassa-casa { grid-template-columns: 1fr; }
+  .cc-colonna { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--oro-chiaro, #e8d5b0); }
+  .cc-fasce { flex-direction: row; overflow-x: auto; gap: 4px; }
+  .cc-fasce .cc-intesta { display: none; }
+  .cc-fasce .cc-riga { grid-template-columns: 1fr; min-width: 76px; padding: 4px; }
+}

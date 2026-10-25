@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { CANALE_COMANDA } from "@/lib/comanda";
 import AuthGate from "@/components/AuthGate";
+import ColonnaCassa from "./ColonnaCassa";
 import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine } from "@/lib/types";
 
 // La comanda si stampa da sola a ogni ordine nuovo, se la cassa lo vuole (resta nel browser della
@@ -51,6 +52,13 @@ type OrdineCassa = Ordine & {
 const coloreTipo = (o: OrdineCassa) =>
   o.canale === "glovo" || o.canale === "deliveroo" ? " col-piattaforma" : o.tipo === "domicilio" ? " col-consegna" : "";
 
+const FILTRI = {
+  aperti: { t: "Da fare", s: ["ricevuto", "in_preparazione", "pronto", "in_consegna"] },
+  preparare: { t: "Da preparare", s: ["ricevuto", "in_preparazione"] },
+  pronti: { t: "Pronti", s: ["pronto"] },
+  uscita: { t: "In uscita", s: ["in_consegna"] },
+  chiusi: { t: "Chiusi", s: ["consegnato", "ritirato", "annullato"] },
+} as const;
 const passiOrdine = (o: OrdineCassa): StatoOrdine[] =>
   TRANSIZIONI_ORDINE[o.stato].filter((s) => (o.tipo === "domicilio" ? s !== "ritirato" : s !== "in_consegna"));
 /** La serata parte alle 6 di mattina: quello che c'è prima va sotto «Ieri e prima». */
@@ -93,6 +101,8 @@ function Cassa() {
   const [stampaAuto, setStampaAuto] = useState(false);
   const [inStampa, setInStampa] = useState<string[]>([]);
   const [vecchiAperti, setVecchiAperti] = useState(false);
+  // gli ordini divisi per stato, come le colonne di 2Bit (Edoardo, 25/10/2026)
+  const [filtro, setFiltro] = useState<keyof typeof FILTRI>("aperti");
 
   useEffect(() => { try { setStampaAuto(localStorage.getItem(STAMPA_LS) === "1"); } catch {} }, []);
   function cambiaStampaAuto(v: boolean) { setStampaAuto(v); try { localStorage.setItem(STAMPA_LS, v ? "1" : "0"); } catch {} }
@@ -201,6 +211,8 @@ function Cassa() {
   }
 
   return (
+    <div className="cassa-casa">
+    <ColonnaCassa />
     <main className="lista-ordini">
       <div className="lo-testa">
         <h1>Cassa — ordini</h1>
@@ -251,11 +263,20 @@ function Cassa() {
       )}
       {/* un preordine già consegnato, ritirato o annullato esce dall'area Preordini e sta qui (critico giro 15).
           Critico giro 16: a 390 la pagina era 19,6 schermate con gli ordini di ieri «in ritardo di 930 min»: in griglia solo stasera. */}
+      <div className="lo-filtri" role="tablist">
+        {(Object.keys(FILTRI) as (keyof typeof FILTRI)[]).map((k) => {
+          const n = ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && diStasera(o, adesso) && (FILTRI[k].s as readonly string[]).includes(o.stato)).length;
+          return <button key={k} role="tab" aria-selected={filtro === k} className={"lo-filtro" + (filtro === k ? " attivo" : "")} onClick={() => setFiltro(k)}>{FILTRI[k].t} <b>{n}</b></button>;
+        })}
+      </div>
       {ordini.some((o) => !diStasera(o, adesso) && !ePreordine(o, adesso)) && (
         <button className="vecchi" onClick={() => setVecchiAperti((v) => !v)}>{vecchiAperti ? "Nascondi ieri e prima" : `Ieri e prima (${ordini.filter((o) => !diStasera(o, adesso) && !ePreordine(o, adesso)).length})`}</button>
       )}
       <div className="griglia">
-        {ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && (diStasera(o, adesso) || vecchiAperti)).map((o) => (
+        {ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && (diStasera(o, adesso) || vecchiAperti) && (FILTRI[filtro].s as readonly string[]).includes(o.stato))
+          // i più urgenti prima: chi ha l'ora più vicina (o è entrato prima) in cima
+          .sort((a, b) => (a.ora_consegna ?? a.creato_il).localeCompare(b.ora_consegna ?? b.creato_il) * (filtro === "chiusi" ? -1 : 1))
+          .map((o) => (
           <article className={"carta ordine-c " + o.stato + coloreTipo(o) + ((() => { const c = (o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") ? contoAllaRovescia(o, adesso) : null; return c?.ritardo ? " ritardo" : ""; })())} key={o.id}>
             <header>
               <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
@@ -304,5 +325,6 @@ function Cassa() {
         ))}
       </div>
     </main>
+    </div>
   );
 }

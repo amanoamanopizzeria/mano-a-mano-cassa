@@ -48,8 +48,10 @@ export async function leggiMenu(soloTotem = false) {
     supabase.from("pacchetto_gruppo").select("id, id_pacchetto, etichetta, quantita, ordine, pacchetto_scelta(id_prodotto)").order("ordine"),
   ]);
   type PgRiga = { id: string; id_pacchetto: string; etichetta: string; quantita: number; ordine: number; pacchetto_scelta: { id_prodotto: string }[] };
+  // una categoria senza niente in vendita non si mostra (i burger spenti il 25/10/2026, grafico giro 24)
+  const conProdotti = new Set(((p.data ?? []) as ProdottoMenu[]).map((x) => x.id_categoria));
   return {
-    categorie: (c.data ?? []) as CategoriaMenu[],
+    categorie: ((c.data ?? []) as CategoriaMenu[]).filter((x) => conProdotti.has(x.id)),
     prodotti: ((p.data ?? []) as ProdottoMenu[]).map((x) => ({ ...x, prezzo: Number(x.prezzo), prezzo_tavolo: x.prezzo_tavolo == null ? null : Number(x.prezzo_tavolo) })),
     varianti: ((v.data ?? []) as VarianteMenu[]).map((x) => ({ ...x, prezzo: Number(x.prezzo) })),
     gruppi: (g.data ?? []) as GruppoCategoria[],
