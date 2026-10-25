@@ -46,13 +46,13 @@ function contoAllaRovescia(o: { ora_consegna?: string | null; creato_il: string;
   return min >= 0 ? { testo: `fra ${min} min`, ritardo: false } : { testo: `in ritardo di ${-min} min`, ritardo: true };
 }
 // la consegna col rider: la carta dice chi ce l'ha (critico giro 23)
-const SELECT_ORDINE = "*, cliente(nome, telefono, note), indirizzo(via, civico), zona(nome), tavolo(numero), consegna(stato, rider(nome))";
+const SELECT_ORDINE = "*, cliente(nome, telefono, note), indirizzo(via, civico, note), zona(nome), tavolo(numero), consegna(stato, rider(nome))";
 type OrdineCassa = Ordine & {
   consegna?: { stato: string; rider: { nome: string } | null }[] | null;
   pronto_il?: string | null;
   nome_cliente?: string | null; pagamento?: "contanti" | "pos" | null; paga_con?: number | null;
   cliente?: { nome: string | null; telefono: string | null; note: string | null } | null;
-  indirizzo?: { via: string; civico: string | null } | null;
+  indirizzo?: { via: string; civico: string | null; note?: string | null } | null;
   zona?: { nome: string } | null; costo_consegna?: number | null;
   tavolo?: { numero: string } | null; sconto?: number | null; modificato_il?: string | null;
 };
@@ -204,18 +204,22 @@ function Cassa() {
   // L'orologio a destra di ogni ordine (Edoardo, 25/10/2026): «questa me la metti in quell'altro quarto d'ora».
   const [spostaId, setSpostaId] = useState<string | null>(null);
   const [fasceSposta, setFasceSposta] = useState<CapacitaFascia[]>([]);
+  // il giorno è quello dell'ordine (critico giro 26: un preordine di domani finiva a oggi)
+  const giornoDi = (id: string) => { const o = ordini.find((x) => x.id === id); return new Date(o?.ora_consegna ?? Date.now()).toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }); };
   async function apriSposta(id: string) {
     if (spostaId === id) { setSpostaId(null); return; }
     setSpostaId(id);
     const supabase = supabaseBrowser();
     const { data: prof } = await supabase.from("profilo").select("id_negozio").maybeSingle();
-    const giorno = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+    const giorno = giornoDi(id);
+    const oggi = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
     const { data } = await supabase.rpc("capacita_giorno", { p_negozio: prof?.id_negozio, p_giorno: giorno });
     const ora = new Date().toLocaleTimeString("sv-SE", { timeZone: "Europe/Rome" }).slice(0, 5);
-    setFasceSposta(((data ?? []) as CapacitaFascia[]).filter((f) => f.ora.slice(0, 5) >= ora.slice(0, 3) + String(Math.floor(Number(ora.slice(3)) / 15) * 15).padStart(2, "0")));
+    const dal = giorno > oggi ? "00:00" : ora.slice(0, 3) + String(Math.floor(Number(ora.slice(3)) / 15) * 15).padStart(2, "0");
+    setFasceSposta(((data ?? []) as CapacitaFascia[]).filter((f) => f.ora.slice(0, 5) >= dal));
   }
   async function sposta(id: string, ora: string) {
-    const giorno = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+    const giorno = giornoDi(id);
     const { error } = await supabaseBrowser().rpc("ordine_sposta", { p_id: id, p_ora: new Date(`${giorno}T${ora.slice(0, 5)}:00`).toISOString() });
     if (error) setErrore(error.message);
     else { setSpostaId(null); setOrdini((os) => os.map((o) => (o.id === id ? { ...o, ora_consegna: new Date(`${giorno}T${ora.slice(0, 5)}:00`).toISOString() } : o))); }
@@ -289,7 +293,7 @@ function Cassa() {
                 {pannelloSposta(o)}
                 <div className="riga">{o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>}{o.modificato_il && <b className="vino"> · modificata {oraDi(o.modificato_il)}</b>} · {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"}{o.zona?.nome && <> · {o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""}</>}</div>
                 <div className="chi">{o.cliente?.nome ?? o.nome_cliente ?? ""}</div>
-                {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
+                {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}{o.indirizzo.note && <b className="vino"> · {o.indirizzo.note}</b>}</div>}
             {o.consegna?.[0]?.rider?.nome && <div className="riga">rider <b>{o.consegna[0].rider.nome}</b></div>}
                 {o.note && <div className="nota">Note: {o.note}</div>}
                 <div className="tot">{euro(o.totale)}</div>
@@ -344,7 +348,7 @@ function Cassa() {
                 {o.cliente?.nome ?? o.nome_cliente}{o.cliente?.telefono && <span className="tel"> · {o.cliente.telefono}</span>}{o.pagamento && <span className="paga">{(o.cliente?.nome || o.nome_cliente || o.cliente?.telefono) ? " · " : ""}{o.pagamento === "pos" ? "POS" : "contanti"}</span>}{o.pagamento === "contanti" && o.paga_con && Number(o.paga_con) > Number(o.totale) && <span className="resto"> · paga con {euro(Number(o.paga_con))}, resto {euro(Number(o.paga_con) - Number(o.totale))}</span>}
               </div>
             )}
-            {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
+            {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}{o.indirizzo.note && <b className="vino"> · {o.indirizzo.note}</b>}</div>}
             {o.consegna?.[0]?.rider?.nome && <div className="riga">rider <b>{o.consegna[0].rider.nome}</b></div>}
             {o.cliente?.note && <div className="avviso-cliente">⚠ {o.cliente.note}</div>}
             <div className="tot">{euro(o.totale)}{Number(o.sconto) > 0 && <small className="muto"> (sconto −{euro(Number(o.sconto))})</small>}</div>

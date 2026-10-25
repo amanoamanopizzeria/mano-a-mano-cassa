@@ -140,6 +140,8 @@ export function comandaEscPos(c: Comanda, o: OpzioniStampa): Uint8Array {
     const sotto = [c.indirizzo.cap, c.indirizzo.citta].filter(Boolean).join(" ");
     if (sotto.trim()) p.testo(sotto.trim());
     if (c.indirizzo.zona) p.grassetto(true).misura(1, 2).testo(`ZONA ${c.indirizzo.zona.toUpperCase()}`).misura(1, 1).grassetto(false);
+    // la nota di consegna dell'indirizzo (citofono, piano: mig. 0057), per il rider che ha la carta in mano
+    if (c.indirizzo.note) p.grassetto(true).testo(`CONSEGNA: ${c.indirizzo.note}`).grassetto(false);
   }
   if (c.cliente || c.telefono || c.indirizzo) p.linea();
   // la nota dell'ordine e la nota fissa del cliente (allergie, citofono) subito sopra le pizze

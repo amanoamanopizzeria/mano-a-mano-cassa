@@ -317,6 +317,7 @@ function Cassa() {
     setScorsa(null);
   }
   const inizioScorri = useRef<{ chiave: string; x: number } | null>(null);
+  const appenaScorsa = useRef(0);   // critico giro 26: il click dopo il trascinamento richiudeva «Elimina»
 
   function togliRiga() {
     if (!rigaSel) return;
@@ -433,7 +434,7 @@ function Cassa() {
       const pc = Number(pagaCon.replace(",", "."));
       await supabaseBrowser().rpc("ordine_pagamento", { p_id: r.id, p_pagamento: pagamento === "online" ? null : pagamento, p_paga_con: pc > 0 ? pc : null, p_pagato_online: pagamento === "online" });
     }
-    if (r.esito === "accettato") { svuota(); setGiorno(""); setOra(""); setPagamento(null); setPagaCon(""); setEsito(`Ordine n. ${r.numero}${tipo === "tavolo" ? ` · tavolo ${tavoli.find((t) => t.id === idTavolo)?.numero ?? ""}` : tipo === "ritiro" && (cliente?.nome || nomeCliente.trim()) ? ` · ${cliente?.nome ?? nomeCliente.trim()}` : ""} inviato in cucina${quando} · ${euro(Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - scontoManuale))}${pagamento ? (pagamento === "pos" ? " POS" : pagamento === "online" ? " già pagato" : " contanti") : ""}${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
+    if (r.esito === "accettato") { svuota(); setCliente(null); setIndirizzi([]); setIdIndirizzo(null); setGiorno(""); setOra(""); setPagamento(null); setPagaCon(""); setEsito(`Ordine n. ${r.numero}${tipo === "tavolo" ? ` · tavolo ${tavoli.find((t) => t.id === idTavolo)?.numero ?? ""}` : tipo === "ritiro" && (cliente?.nome || nomeCliente.trim()) ? ` · ${cliente?.nome ?? nomeCliente.trim()}` : ""} inviato in cucina${quando} · ${euro(Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - scontoManuale))}${pagamento ? (pagamento === "pos" ? " POS" : pagamento === "online" ? " già pagato" : " contanti") : ""}${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
     else if (r.esito === "pieno" && r.motivo === "consegne") setErrore(`Quarto d'ora pieno per le consegne${pOra ? ` alle ${ora}` : ""}: scegli un altro orario o un rider in più.`);
     else if (r.esito === "pieno" && r.massimo === 0) setErrore(`Per ${pOra ? (giorniScelta.find((g) => g.v === giorno)?.t.toLowerCase() ?? giorno) : "oggi"} non sono impostati i pizzaioli (0 posti): aprì Capacità e metti quanti sono.`);
     else if (r.esito === "pieno") setErrore(`Quarto d'ora pieno in cucina${pOra ? ` alle ${ora}` : ""}${r.libere ? `: ci stanno ancora ${r.libere} pizze` : ""}. Scegli un altro orario.`);
@@ -606,9 +607,9 @@ function Cassa() {
           {righe.map((r) => (
             <div key={r.chiave} className={"c-riga" + (scorsa === r.chiave ? " scorsa" : "")}
               onPointerDown={(e) => { inizioScorri.current = { chiave: r.chiave, x: e.clientX }; }}
-              onPointerMove={(e) => { const s = inizioScorri.current; if (s && s.chiave === r.chiave && s.x - e.clientX > 50) { setScorsa(r.chiave); inizioScorri.current = null; } else if (s && s.chiave === r.chiave && e.clientX - s.x > 50) { setScorsa(null); inizioScorri.current = null; } }}
+              onPointerMove={(e) => { const s = inizioScorri.current; if (s && s.chiave === r.chiave && s.x - e.clientX > 50) { setScorsa(r.chiave); appenaScorsa.current = Date.now(); inizioScorri.current = null; } else if (s && s.chiave === r.chiave && e.clientX - s.x > 50) { setScorsa(null); inizioScorri.current = null; } }}
               onPointerUp={() => { inizioScorri.current = null; }}>
-            <button onClick={() => (scorsa === r.chiave ? setScorsa(null) : toccaRiga(r))} style={{
+            <button onClick={() => { if (Date.now() - appenaScorsa.current < 400) return; if (scorsa === r.chiave) setScorsa(null); else toccaRiga(r); }} style={{
               width: "100%", display: "flex", gap: 8, alignItems: "flex-start", textAlign: "left", border: "none", borderRadius: 0,
               borderBottom: "1px solid var(--bordo)", padding: "9px 10px", minHeight: 44, background: r.chiave === selezionata ? "var(--oro-velo)" : "#fff", boxShadow: r.chiave === selezionata ? "inset 4px 0 0 var(--oro)" : undefined,
             }}>

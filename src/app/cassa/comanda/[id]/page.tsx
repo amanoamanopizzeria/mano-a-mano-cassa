@@ -79,6 +79,7 @@ function ComandaCarta({ id, stampaSubito }: { id: string; stampaSubito: boolean 
           <section className="dove">
             <div className="nome">{c.indirizzo.via} {c.indirizzo.civico ?? ""}</div>
             <div>{[c.indirizzo.cap, c.indirizzo.citta].filter(Boolean).join(" ")}{c.indirizzo.zona && ` · zona ${c.indirizzo.zona}`}</div>
+            {c.indirizzo.note && <div className="avviso">CONSEGNA: {c.indirizzo.note}</div>}
           </section>
         )}
 

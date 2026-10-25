@@ -18,7 +18,7 @@ export interface Comanda {
   /** quanti ordini ha fatto il cliente, questo compreso (comanda_per_stampa, mig. 0048): «[N ORD.]» come 2Bit */
   ordini_cliente?: number | null;
   righe_prima?: { id: string; id_riga_padre: string | null; descrizione: string; quantita: number; variazioni: Variazione[] | null }[] | null;
-  tavolo: number | string | null; indirizzo: { via: string; civico: string | null; cap: string | null; citta: string | null; zona: string | null } | null;
+  tavolo: number | string | null; indirizzo: { via: string; civico: string | null; cap: string | null; citta: string | null; zona: string | null; note?: string | null } | null;
   righe: RigaComanda[];
 }
 
