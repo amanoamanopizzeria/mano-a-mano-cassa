@@ -888,3 +888,30 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 /* a 390 i tasti della carta stanno su due colonne: l'ultimo, se resta da solo, prende tutta la riga
    (era «Link per il cliente» a metà con un buco accanto) */
 @media (max-width: 600px) { .lista-ordini .ordine-c .azioni > :last-child:nth-child(odd) { grid-column: 1 / -1; } }
+
+/* Edoardo, 25/10/2026: «devi ingrandire i tasti… le categorie li puoi anche raddoppiare quasi, i singoli prodotti
+   un 30% più grandi». Categorie da 44 a 84 px e da 14 a 20 px; prodotti da 68 a 88 px e da 14 a 18 px.
+   Solo l'aspetto: posti e tocchi restano gli stessi. */
+.cassa-nuovo .cn-categorie { gap: 6px; }
+.cassa-nuovo .cn-categorie .tessera.categoria { min-height: 84px; padding: 10px 6px; font-size: 20px; font-weight: 600; border-radius: 14px; }
+.cassa-nuovo .cn-griglia { gap: 6px; }
+.cassa-nuovo .cn-griglia .tessera { min-height: 88px; padding: 12px 8px; font-size: 18px; }
+.cassa-nuovo .cn-griglia .tessera .prezzo { font-size: 16px; }
+@media (max-width: 760px) {
+  .cassa-nuovo .cn-categorie .tessera.categoria { min-height: 70px; font-size: 16px; padding: 8px 4px; }
+  .cassa-nuovo .cn-griglia .tessera { min-height: 72px; font-size: 16px; padding: 8px 4px; }
+  .cassa-nuovo .cn-griglia .tessera .prezzo { font-size: 15px; }
+}
+
+/* ===== grafico, giro 24 (25/10/2026): /cassa/menu, l'indice delle categorie per gruppo.
+   8,4 schermate a 390 da scorrere per trovare i fritti: ora una striscia vino ferma in cima, come
+   quella di /ordina, col nome del gruppo e le sue categorie; un tocco porta alla carta. ===== */
+.menu-lettura .m-indice { position: sticky; top: 0; z-index: 4; display: flex; align-items: stretch; margin: 10px -16px 0; padding: 0 8px; background: var(--vino); overflow-x: auto; scrollbar-width: none; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
+.menu-lettura .m-indice::-webkit-scrollbar { display: none; }
+.menu-lettura .m-ind-gruppo { display: flex; align-items: stretch; flex-shrink: 0; }
+.menu-lettura .m-ind-gruppo + .m-ind-gruppo { border-left: 1px solid rgba(255,255,255,.25); margin-left: 4px; padding-left: 4px; }
+.menu-lettura .m-ind-gruppo .g { display: flex; align-items: center; padding: 0 6px 0 8px; font-family: "Oswald", sans-serif; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.65); white-space: nowrap; }
+.menu-lettura .m-indice a { display: flex; align-items: center; min-height: 44px; padding: 0 10px; color: #fff; font-family: "Oswald", sans-serif; font-weight: 500; font-size: 15px; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; text-decoration: none; }
+.menu-lettura .m-indice a:active { background: rgba(255,255,255,.14); }
+.menu-lettura .m-categorie .carta { scroll-margin-top: 56px; }
+@media (min-width: 900px) { .menu-lettura .m-indice { margin: 10px 0 0; border-radius: 10px; flex-wrap: wrap; overflow: visible; } }
