@@ -113,3 +113,22 @@ export function kmDallaPizzeria(lat: number, lng: number) {
   const a = Math.sin(dLat / 2) ** 2 + Math.cos((PIZZERIA.lat * Math.PI) / 180) * Math.cos((lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
+
+/** Da testo a coordinate (Google Geocoding), per le vie arrivate senza coordinate da Velocissimo. */
+export async function geocodifica(testo: string): Promise<{ lat: number; lng: number; place_id: string | null } | null> {
+  const chiave = chiaveGoogle();
+  if (!chiave) return null;
+  const u = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+  u.searchParams.set("address", testo);
+  u.searchParams.set("region", "it");
+  u.searchParams.set("language", "it");
+  u.searchParams.set("bounds", "41.80,12.35|42.03,12.65");
+  u.searchParams.set("key", chiave);
+  const r = await fetch(u, { cache: "no-store" });
+  if (!r.ok) throw new Error("Google geocoding " + r.status);
+  const j = (await r.json()) as { status: string; error_message?: string; results?: { place_id?: string; geometry: { location: { lat: number; lng: number } } }[] };
+  if (j.status === "ZERO_RESULTS") return null;
+  if (j.status !== "OK") throw new Error("Google geocoding " + j.status + (j.error_message ? ": " + j.error_message : ""));
+  const g = j.results![0];
+  return { lat: g.geometry.location.lat, lng: g.geometry.location.lng, place_id: g.place_id ?? null };
+}
