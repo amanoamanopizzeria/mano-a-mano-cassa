@@ -655,9 +655,15 @@ function Cassa() {
         )}
         {tipo === "domicilio" && fasceVicine.length > 0 && (
           <div className="c-vicine" aria-label="Quarti d'ora per la consegna">
-            {fasceVicine.filter((f) => quartiScelta.includes(f.ora)).slice(0, 16).map((f) => {
-              const pieno = f.bloccata_consegne || f.bloccata_produzione || f.consegne_occupate >= f.consegne_max || f.pizze_occupate >= f.pizze_max;
-              const vicina = f.vicina_metri != null && f.vicina_metri <= VICINA_M;
+            {fasceVicine.filter((f) => quartiScelta.includes(f.ora)).slice(0, 16).map((f, i, tutte) => {
+              const piena = (x: typeof f) => x.bloccata_consegne || x.bloccata_produzione || x.consegne_occupate >= x.consegne_max || x.pizze_occupate >= x.pizze_max;
+              const pieno = piena(f);
+              // critico giro 24: il giallo su un quarto d'ora pieno mandava a un rifiuto. Due consegne
+              // occupano due posti (Edoardo): se la vicina sta in un quarto pieno, il giallo va a quelli accanto.
+              const vicinaDi = (x?: typeof f) => !!x && x.vicina_metri != null && x.vicina_metri <= VICINA_M;
+              const accanto = !pieno && !vicinaDi(f) ? [tutte[i - 1], tutte[i + 1]].find((x) => vicinaDi(x) && piena(x!)) : undefined;
+              if (accanto) f = { ...f, vicina_metri: accanto.vicina_metri, vicina_numero: accanto.vicina_numero };
+              const vicina = !pieno && vicinaDi(f);
               const scelto = !!giorno && ora === f.ora;
               return (
                 <button key={f.ora} className={"c-fascia" + (vicina ? " vicina" : "") + (pieno ? " piena" : "") + (scelto ? " scelta" : "")}

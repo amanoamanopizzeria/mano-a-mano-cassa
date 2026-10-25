@@ -16,7 +16,7 @@ export interface IndirizzoTrovato {
   fonte: "google" | "osm";
 }
 
-export const PIZZERIA = { lat: 41.9176, lng: 12.5037 }; // Via Novara 5/7, 00198 Roma
+export const PIZZERIA = { lat: 41.9138, lng: 12.50734 }; // Via Novara 5/7, 00198 Roma
 const RAGGIO_M = 12_000;   // le zone arrivano a ~6 km; a 20 km entravano Frascati e Monterotondo (critico giro 3)
 
 export function chiaveGoogle() {

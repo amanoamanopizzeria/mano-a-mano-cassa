@@ -9,7 +9,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 
 const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
 const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-const PIZZERIA: [number, number] = [41.9176, 12.5037];   // Via Novara 5/7
+const PIZZERIA: [number, number] = [41.91380, 12.50734];   // Via Novara 5/7
 
 interface Stato {
   numero: string | null; stato: "da_assegnare" | "assegnata" | "ritirata" | "consegnata" | "annullata";
@@ -129,7 +129,7 @@ export default function Segui({ params }: { params: Promise<{ token: string }> }
           </div>
 
           <div ref={div} className="sg-mappa" />
-          {s.stato === "ritirata" && !fresca(s.rider_pos) && <p className="sg-nota">{s.rider_pos ? `Ultima posizione del rider alle ${ora(s.rider_pos.il)}: la mappa si aggiorna appena il suo telefono la rimanda.` : "La posizione del rider arriva appena il suo telefono la manda."}</p>}
+          {s.stato === "ritirata" && !fresca(s.rider_pos) && <p className="sg-nota">{s.rider_pos && (!s.partita_il || new Date(s.rider_pos.il) >= new Date(s.partita_il)) ? `Ultima posizione del rider alle ${ora(s.rider_pos.il)}: la mappa si aggiorna appena il suo telefono la rimanda.` : "La posizione del rider arriva appena il suo telefono la manda."}</p>}
           {google && <a className="sg-google" href={google} target="_blank" rel="noreferrer">Apri in Google Maps</a>}
 
           <ol className="sg-passi">

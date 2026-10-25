@@ -229,6 +229,7 @@ function Cassa() {
                   <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
                   <button onClick={() => stampa(o.id)}>Stampa ora</button>
                   <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>
+                  {o.tipo === "domicilio" && <button onClick={() => copiaLink(o.id)}>{linkCopiato === o.id ? "Link copiato" : "Link per il cliente"}</button>}
                   {/* critico giro 15: un preordine ritirato in anticipo non si poteva chiudere: gli stessi passi delle carte sotto */}
                   {passiOrdine(o).map((s) => (
                     <button key={s} className={s === "annullato" ? (daConfermare === o.id ? "primario annulla" : "annulla") : "azione"} onClick={() => cambiaStato(o.id, s)}>

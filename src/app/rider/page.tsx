@@ -115,6 +115,8 @@ function Rider() {
   }, [inCorso]);
 
   async function prendi(id: string) {
+    // l'ha presa lui: niente suono (critico giro 24, vibrava anche al suo tocco)
+    visti.current?.add(id + "assegnata");
     const { error } = await supabaseRef.current!.rpc("prendi_consegna", { p_id: id });
     if (error) setErrore(error.message);
     else carica();
