@@ -20,6 +20,13 @@ interface ConsegnaInMappa {
 }
 const STATO_CONSEGNA: Record<ConsegnaInMappa["stato"], string> = { da_assegnare: "da assegnare", assegnata: "assegnata", ritirata: "in viaggio" };
 const oraDi = (s: string) => new Date(s).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+// «delle 21:40» se è di stasera e fresca; il giorno e «vecchia» se no (critico giro 23: «delle 01:41» era di ieri)
+const quandoPos = (iso: string) => {
+  const d = new Date(iso), oggi = new Date().toLocaleDateString("it-IT", { timeZone: "Europe/Rome" });
+  const giorno = d.toLocaleDateString("it-IT", { timeZone: "Europe/Rome" });
+  const vecchia = Date.now() - d.getTime() > 3 * 60_000;
+  return (giorno === oggi ? "delle " + oraDi(iso) : `del ${giorno.slice(0, 5)} alle ${oraDi(iso)}`) + (vecchia ? " (vecchia)" : "");
+};
 const nomeOrdine = (o: ConsegnaInMappa["ordine"]) => o?.numero_visibile ?? `#${o?.numero ?? ""}`;
 const iniziali = (nome: string) => nome.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("");
 
@@ -109,7 +116,7 @@ function Mappa() {
         const pos: [number, number] = [r.lat, r.lng];
         const fermo = !r.aggiornata_il || Date.now() - new Date(r.aggiornata_il).getTime() > 10 * 60_000;
         const icona = L.divIcon({ className: "", html: `<div class="m-rider${fermo ? " fermo" : ""}" title="${r.nome}">${iniziali(r.nome)}</div>`, iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -22] });
-        const testo = `<b>${r.nome}</b><span class="p-stato ${fermo ? "fermo" : "in_giro"}">${fermo ? "fermo" : "in giro"}</span><div class="p-riga">${r.consegne_in_corso} consegne in corso</div>${r.aggiornata_il ? `<div class="p-riga">posizione delle <b>${oraDi(r.aggiornata_il)}</b></div>` : ""}`;
+        const testo = `<b>${r.nome}</b><span class="p-stato ${fermo ? "fermo" : "in_giro"}">${fermo ? "fermo" : "in giro"}</span><div class="p-riga">${r.consegne_in_corso} consegne in corso</div>${r.aggiornata_il ? `<div class="p-riga">posizione <b>${quandoPos(r.aggiornata_il)}</b></div>` : ""}`;
         const m = segnapostiRef.current.get(r.id);
         if (m) m.setLatLng(pos).setIcon(icona).bindPopup(testo);
         else segnapostiRef.current.set(r.id, L.marker(pos, { icon: icona }).addTo(mappa).bindPopup(testo));
@@ -212,7 +219,7 @@ function Mappa() {
               <strong>{r.nome}</strong>
               <div className="muto">
                 {r.consegne_in_corso} {r.consegne_in_corso === 1 ? "consegna" : "consegne"} in corso ·{" "}
-                {r.aggiornata_il ? "posizione delle " + oraDi(r.aggiornata_il) : "nessuna posizione"}
+                {r.aggiornata_il ? "posizione " + quandoPos(r.aggiornata_il) : "nessuna posizione"}
               </div>
             </div>
             <span className={"m-stato " + (fermo(r) ? "fermo" : "in_giro")}>{fermo(r) ? "fermo" : "in giro"}</span>

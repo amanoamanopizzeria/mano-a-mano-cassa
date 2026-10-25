@@ -97,6 +97,9 @@ export interface Consegna {
 /** Riga della lista consegne vista dal rider (funzione consegne_rider). */
 export interface ConsegnaRider {
   id: string;
+  /** «C-77» (consegne_rider3, mig. 0051) e lo stato dell'ordine in cucina */
+  numero_visibile?: string | null;
+  stato_ordine?: string | null;
   id_ordine: string;
   stato: StatoConsegna;
   id_rider?: string | null;

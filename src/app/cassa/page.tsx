@@ -33,7 +33,10 @@ function contoAllaRovescia(o: { ora_consegna?: string | null; creato_il: string;
   }
   return min >= 0 ? { testo: `fra ${min} min`, ritardo: false } : { testo: `in ritardo di ${-min} min`, ritardo: true };
 }
+// la consegna col rider: la carta dice chi ce l'ha (critico giro 23)
+const SELECT_ORDINE = "*, cliente(nome, telefono, note), indirizzo(via, civico), zona(nome), tavolo(numero), consegna(stato, rider(nome))";
 type OrdineCassa = Ordine & {
+  consegna?: { stato: string; rider: { nome: string } | null }[] | null;
   nome_cliente?: string | null; pagamento?: "contanti" | "pos" | null; paga_con?: number | null;
   cliente?: { nome: string | null; telefono: string | null; note: string | null } | null;
   indirizzo?: { via: string; civico: string | null } | null;
@@ -87,8 +90,16 @@ function Cassa() {
   useEffect(() => { try { setStampaAuto(localStorage.getItem(STAMPA_LS) === "1"); } catch {} }, []);
   function cambiaStampaAuto(v: boolean) { setStampaAuto(v); try { localStorage.setItem(STAMPA_LS, v ? "1" : "0"); } catch {} }
   function completa(id: string) {
-    supabaseBrowser().from("ordine").select("*, cliente(nome, telefono, note), indirizzo(via, civico), zona(nome), tavolo(numero)").eq("id", id).maybeSingle()
+    supabaseBrowser().from("ordine").select(SELECT_ORDINE).eq("id", id).maybeSingle()
       .then(({ data }) => { if (data) setOrdini((prev) => prev.map((o) => (o.id === id ? (data as OrdineCassa) : o))); });
+  }
+  // il link «segui la consegna» anche per chi ordina al telefono: si copia e si manda (critico giro 23)
+  const [linkCopiato, setLinkCopiato] = useState<string | null>(null);
+  async function copiaLink(id: string) {
+    const { data } = await supabaseBrowser().rpc("link_consegna", { p_id_ordine: id });
+    if (!data) { setErrore("Questo ordine non ha ancora una consegna."); return; }
+    try { await navigator.clipboard.writeText(String(data)); setLinkCopiato(id); setTimeout(() => setLinkCopiato((x) => (x === id ? null : x)), 4000); }
+    catch { setErrore("Link per il cliente: " + String(data)); }
   }
   function stampa(id: string) { setInStampa((p) => (p.includes(id) ? p : [...p, id])); setTimeout(() => setInStampa((p) => p.filter((x) => x !== id)), 15_000); }
   const [adesso, setAdesso] = useState(() => Date.now());
@@ -115,7 +126,7 @@ function Cassa() {
 
     supabase
       .from("ordine")
-      .select("*, cliente(nome, telefono, note), indirizzo(via, civico), zona(nome), tavolo(numero)")
+      .select(SELECT_ORDINE)
       .order("creato_il", { ascending: false })
       .limit(100)
       .then(({ data, error }) => {
@@ -150,6 +161,11 @@ function Cassa() {
           });
         }
       )
+      // il rider che prende o lascia la consegna: si rilegge l'ordine per il nome sulla carta
+      .on("postgres_changes", { event: "*", schema: "public", table: "consegna" }, (payload) => {
+        const id = ((payload.new ?? payload.old) as { id_ordine?: string } | null)?.id_ordine;
+        if (id) completa(id);
+      })
       .subscribe();
 
     return () => {
@@ -200,6 +216,7 @@ function Cassa() {
                 <div className="riga">{o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>}{o.modificato_il && <b className="vino"> · modificata {oraDi(o.modificato_il)}</b>} · {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"}{o.zona?.nome && <> · {o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""}</>}</div>
                 <div className="chi">{o.cliente?.nome ?? o.nome_cliente ?? ""}</div>
                 {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
+            {o.consegna?.[0]?.rider?.nome && <div className="riga">rider <b>{o.consegna[0].rider.nome}</b></div>}
                 {o.note && <div className="nota">Note: {o.note}</div>}
                 <div className="tot">{euro(o.totale)}</div>
                 <div className="riga">stampa alle {oraDi(stampaAlle(o)!.toISOString())}{o.stampato_il ? " · già stampata" : ""}</div>
@@ -242,6 +259,7 @@ function Cassa() {
               </div>
             )}
             {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
+            {o.consegna?.[0]?.rider?.nome && <div className="riga">rider <b>{o.consegna[0].rider.nome}</b></div>}
             {o.cliente?.note && <div className="avviso-cliente">⚠ {o.cliente.note}</div>}
             <div className="tot">{euro(o.totale)}{Number(o.sconto) > 0 && <small className="muto"> (sconto −{euro(Number(o.sconto))})</small>}</div>
             {o.note && <div className="nota">Note: {o.note}</div>}
@@ -255,6 +273,7 @@ function Cassa() {
             <div className="azioni">
               <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
               <button onClick={() => stampa(o.id)} disabled={inStampa.includes(o.id)}>{inStampa.includes(o.id) ? "Stampo…" : "Stampa"}</button>
+              {o.tipo === "domicilio" && o.stato !== "annullato" && <button onClick={() => copiaLink(o.id)}>{linkCopiato === o.id ? "Link copiato" : "Link per il cliente"}</button>}
               {(o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto") && <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>}
               {passiOrdine(o).map((s) => (
                 <button

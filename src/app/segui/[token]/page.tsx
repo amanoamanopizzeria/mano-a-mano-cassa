@@ -31,9 +31,14 @@ function caricaLeaflet(): Promise<any> {
 }
 const ora = (s: string) => new Date(s).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
 
+// una posizione vecchia non è «in tempo reale»: oltre 3 minuti il rider non si disegna (critico giro 23,
+// il cliente vedeva in viaggio il motorino fermo alla posizione del giorno prima)
+const FRESCA_MS = 3 * 60_000;
+const fresca = (p: Stato["rider_pos"]) => !!p && Date.now() - new Date(p.il).getTime() < FRESCA_MS;
+
 const PASSI = [
   { k: "ricevuto", t: "Ordine ricevuto" },
-  { k: "assegnata", t: "In preparazione, il rider è pronto" },
+  { k: "assegnata", t: "Il rider ha preso il tuo ordine" },
   { k: "ritirata", t: "In viaggio verso di te" },
   { k: "consegnata", t: "Consegnato. Buon appetito!" },
 ];
@@ -76,7 +81,7 @@ export default function Segui({ params }: { params: Promise<{ token: string }> }
         if (!segni.current.casa) segni.current.casa = L.marker(d, { icon: L.divIcon({ className: "", html: '<div class="sg-pin sg-casa">🏠</div>', iconSize: [40, 40], iconAnchor: [20, 20] }) }).addTo(m);
         punti.push(d);
       }
-      if (s.rider_pos && s.stato === "ritirata") {
+      if (s.rider_pos && fresca(s.rider_pos) && s.stato === "ritirata") {
         const r: [number, number] = [s.rider_pos.lat, s.rider_pos.lng];
         if (!segni.current.rider) segni.current.rider = L.marker(r, { icon: L.divIcon({ className: "", html: '<div class="sg-pin sg-rider">🛵</div>', iconSize: [48, 48], iconAnchor: [24, 24] }) }).addTo(m);
         else segni.current.rider.setLatLng(r);
@@ -92,7 +97,7 @@ export default function Segui({ params }: { params: Promise<{ token: string }> }
   }, [s]);
 
   const indice = !s ? 0 : s.stato === "consegnata" ? 3 : s.stato === "ritirata" ? 2 : s.stato === "assegnata" ? 1 : 0;
-  const google = s?.rider_pos && s.stato === "ritirata" ? `https://www.google.com/maps/search/?api=1&query=${s.rider_pos.lat},${s.rider_pos.lng}` : null;
+  const google = s?.rider_pos && fresca(s.rider_pos) && s.stato === "ritirata" ? `https://www.google.com/maps/search/?api=1&query=${s.rider_pos.lat},${s.rider_pos.lng}` : null;
 
   return (
     <div className="sg">
@@ -124,7 +129,7 @@ export default function Segui({ params }: { params: Promise<{ token: string }> }
           </div>
 
           <div ref={div} className="sg-mappa" />
-          {s.stato === "ritirata" && !s.rider_pos && <p className="sg-nota">La posizione del rider arriva appena il suo telefono la manda.</p>}
+          {s.stato === "ritirata" && !fresca(s.rider_pos) && <p className="sg-nota">{s.rider_pos ? `Ultima posizione del rider alle ${ora(s.rider_pos.il)}: la mappa si aggiorna appena il suo telefono la rimanda.` : "La posizione del rider arriva appena il suo telefono la manda."}</p>}
           {google && <a className="sg-google" href={google} target="_blank" rel="noreferrer">Apri in Google Maps</a>}
 
           <ol className="sg-passi">

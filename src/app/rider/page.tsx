@@ -10,6 +10,23 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 import type { ConsegnaRider, RiderBorsello } from "@/lib/types";
 
+const num = (c: ConsegnaRider) => c.numero_visibile ?? `#${c.numero}`;
+
+// Un «din» e una vibrazione quando arriva una consegna libera o la cassa me ne assegna una (critico
+// giro 23: il rider non sapeva niente se non guardava). Il suono parte solo dopo il primo tocco sulla
+// pagina: i telefoni non lasciano suonare una pagina che non è stata toccata.
+let audio: AudioContext | null = null;
+function sbloccaSuono() { try { audio ??= new AudioContext(); if (audio.state === "suspended") audio.resume(); } catch {} }
+function avvisa() {
+  try { navigator.vibrate?.([200, 100, 200]); } catch {}
+  if (!audio) return;
+  for (const [f, t] of [[880, 0], [1320, 0.18]] as const) {
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.frequency.value = f; g.gain.setValueAtTime(0.25, audio.currentTime + t); g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + t + 0.3);
+    o.connect(g).connect(audio.destination); o.start(audio.currentTime + t); o.stop(audio.currentTime + t + 0.32);
+  }
+}
+
 const euro = (n: number) => n.toFixed(2).replace(".", ",") + " €";
 
 export default function RiderPagina() {
@@ -26,14 +43,22 @@ function Rider() {
   const [gps, setGps] = useState<string>("GPS spento");
   const [borsello, setBorsello] = useState<RiderBorsello | null>(null);
   const supabaseRef = useRef<ReturnType<typeof supabaseBrowser> | null>(null);
+  const visti = useRef<Set<string> | null>(null);
+  const [daConfermare, setDaConfermare] = useState<string | null>(null);
 
   const carica = useCallback(async () => {
     const supabase = supabaseRef.current!;
-    const [{ data, error }, b, me] = await Promise.all([supabase.rpc("consegne_rider2"), supabase.rpc("rider_borsello"), supabase.from("profilo").select("ruolo, id_rider").maybeSingle()]);
+    const [{ data, error }, b, me] = await Promise.all([supabase.rpc("consegne_rider3"), supabase.rpc("rider_borsello"), supabase.from("profilo").select("ruolo, id_rider").maybeSingle()]);
     // È rider chi ha un rider collegato (mig. 0032): l'utenza della cassa fa anche da «Rider di prova».
     if (me.data && !me.data.id_rider) { setErrore(`Questa utenza è «${me.data.ruolo}» e non ha un rider collegato: le consegne si vedono entrando come rider. Da cassa: /cassa/rider e /cassa/mappa.`); return; }
     if (error) setErrore(error.message);
-    else setConsegne((data ?? []) as ConsegnaRider[]);
+    else {
+      const nuove = (data ?? []) as ConsegnaRider[];
+      const id = (c: ConsegnaRider) => c.id + c.stato;
+      if (visti.current && nuove.some((c) => (c.stato === "da_assegnare" || c.stato === "assegnata") && !visti.current!.has(id(c)))) avvisa();
+      visti.current = new Set(nuove.map(id));
+      setConsegne(nuove);
+    }
     const mio = ((b.data ?? []) as RiderBorsello[])[0];
     if (mio) setBorsello({ ...mio, in_mano: Number(mio.in_mano), da_saldare: Number(mio.da_saldare) });
   }, []);
@@ -77,6 +102,18 @@ function Rider() {
     };
   }, [carica]);
 
+  // Lo schermo resta acceso finché ho consegne in corso: col telefono bloccato il browser smette di
+  // mandare la posizione e il cliente vede il rider fermo (critico giro 23). In tasca serve l'app vera.
+  const inCorso = consegne.some((c) => c.stato === "assegnata" || c.stato === "ritirata");
+  useEffect(() => {
+    if (!inCorso || !("wakeLock" in navigator)) return;
+    let blocco: WakeLockSentinel | null = null, vivo = true;
+    const chiedi = () => { if (document.visibilityState === "visible") navigator.wakeLock.request("screen").then((b) => { if (vivo) blocco = b; else b.release(); }).catch(() => {}); };
+    chiedi();
+    document.addEventListener("visibilitychange", chiedi);
+    return () => { vivo = false; document.removeEventListener("visibilitychange", chiedi); blocco?.release().catch(() => {}); };
+  }, [inCorso]);
+
   async function prendi(id: string) {
     const { error } = await supabaseRef.current!.rpc("prendi_consegna", { p_id: id });
     if (error) setErrore(error.message);
@@ -96,14 +133,15 @@ function Rider() {
   const mie = consegne.filter((c) => c.stato === "assegnata" || c.stato === "ritirata");
   // critico giro 15: due consegne allo stesso indirizzo erano due schede uguali e nessuno diceva il contante totale
   const chiave = (c: ConsegnaRider) => [c.via, c.civico].filter(Boolean).join(" ").toLowerCase().trim();
-  const insieme = (c: ConsegnaRider) => mie.filter((x) => x.id !== c.id && chiave(x) && chiave(x) === chiave(c)).map((x) => `#${x.numero}`);
+  const insieme = (c: ConsegnaRider) => mie.filter((x) => x.id !== c.id && chiave(x) && chiave(x) === chiave(c)).map(num);
   const contantiMie = mie.reduce((t, c) => t + (c.pagato_online ? 0 : Number(c.contanti_da_incassare)), 0);
   const daSaldare = consegne.filter((c) => c.stato === "consegnata");
 
   return (
-    <main className="rider">
+    <main className="rider" onPointerDown={sbloccaSuono}>
       <h1>Rider — consegne</h1>
       <p className={"muto r-gps" + (gps.startsWith("GPS attivo") ? " on" : "")}>{gps}</p>
+      {inCorso && <p className="muto r-gps">Tieni aperta questa pagina mentre consegni: lo schermo resta acceso e il cliente ti vede sulla mappa.</p>}
       {errore && <p className="r-errore">{errore}</p>}
 
       <h2>Le mie ({mie.length})</h2>
@@ -116,7 +154,7 @@ function Rider() {
               <button className="primario r-azione" onClick={() => aggiorna(c.id, "ritirata")}>Ritirata</button>
             )}
             {c.stato === "ritirata" && (
-              <button className="primario r-azione" onClick={() => aggiorna(c.id, "consegnata")}>Consegnata</button>
+              <button className="primario r-azione" onClick={() => { if (daConfermare === c.id) { setDaConfermare(null); aggiorna(c.id, "consegnata"); } else { setDaConfermare(c.id); setTimeout(() => setDaConfermare((x) => (x === c.id ? null : x)), 4000); } }}>{daConfermare === c.id ? "Sicuro? Tocca ancora" : "Consegnata"}</button>
             )}
           </SchedaConsegna>
         ))}
@@ -144,8 +182,8 @@ function Rider() {
       <div className="griglia">
         {daSaldare.map((c) => (
           <article key={c.id} className="carta r-saldo">
-            <span className="chi"><strong>#{c.numero}</strong> <span className="muto">{c.consegnata_il ? new Date(c.consegnata_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : ""} · {[c.via, c.civico].filter(Boolean).join(" ")}</span></span>
-            <span className="cifra">{euro(Number(c.contanti_da_incassare))}</span>
+            <span className="chi"><strong>{num(c)}</strong> <span className="muto">{c.consegnata_il ? new Date(c.consegnata_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : ""} · {[c.via, c.civico].filter(Boolean).join(" ")}</span></span>
+            <span className="cifra">{c.pagato_online ? "già pagato" : c.pagamento === "pos" ? "POS" : euro(Number(c.contanti_da_incassare))}</span>
           </article>
         ))}
       </div>
@@ -163,8 +201,9 @@ function SchedaConsegna({ c, children, insieme = [] }: { c: ConsegnaRider; child
   return (
     <article className="carta r-scheda">
       <div className="r-intesta">
-        <strong>#{c.numero}</strong>
+        <strong>{num(c)}</strong>
         <span className={`badge ${c.stato === "da_assegnare" ? "ricevuto" : "in_consegna"}`}>{c.stato.replace("_", " ")}</span>
+        {c.stato !== "ritirata" && c.stato_ordine === "pronto" && <span className="badge pronto">pronto in cucina</span>}
       </div>
       <div className="muto r-quando">
         {c.zona ?? "—"} ·{" "}
