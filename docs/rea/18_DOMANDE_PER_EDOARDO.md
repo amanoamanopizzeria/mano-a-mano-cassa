@@ -38,3 +38,14 @@
 
 17. **Le otto immagini del 24–25/10 (`242332d1`, `242a8a6c`, `46e3aec0`, `5d030198`, `a4692fc7`, `de18a4c6`, `f030cd98` e `b89b9074`) sono tutte schermate della cassa o dello scanner?** Oggi ho guardato solo `b89b9074` (scanner) e `8b01d49e` (cassa). *Cosa cambia:* le altre possono contenere le schermate di Documento, Preconto o Consegna in dettaglio: è il pezzo che manca alla sezione 1.
 18. **I video del 23/10 (`1927466c`, `d1ec04b3`) e i vecchi `IMG_0674`**: quale mostra la cassa e quale il menu? I fotogrammi di `img674/` sono gli stessi? *Cosa cambia:* il REA di oggi usa solo i due video del 25/10.
+
+## Coupon, punti e card (25/10, 03:12: la transizione deve essere completa)
+
+*Il perimetro è in `19_COUPON_PUNTI_CARD.md`. La domanda 9 di `16` (punti per euro) resta la prima: senza quella il motore dei punti non si fa.*
+
+14. **Il coupon «NON CUCINO» (WhatsApp, 50 usi)**: chi lo manda, il tuo WhatsApp marketing o un altro strumento? *Cosa cambia:* se lo manda un altro strumento, la cassa nuova deve riconoscere lo stesso codice senza rompere niente.
+15. **Coupon ottenuti ma non usati al giorno del passaggio**: quando il cliente passa al nuovo sistema, il coupon che ha in tasca deve restare valido? Proposta: sì, si sposta una volta sola, e il vecchio lo segna come usato. *Cosa cambia:* senza questa regola un cliente può usarlo due volte.
+16. **Punti durante il parallelo**: quale sistema è la fonte del saldo finché non passiamo? Proposta: il vecchio, il nuovo legge e non scrive. *Cosa cambia:* decide se i due saldi possono divergere.
+17. **Coupon «Benvenuto da …» per canale**: li mantieni con il canale di acquisizione (volantino, app, sito, centralino, WhatsApp, Instagram, Facebook)? *Cosa cambia:* senza il canale non si misura quale canale porta clienti.
+18. **Credito prepagato**: lo usate davvero? L'app ha «Card prepagata» spenta, il back-office ha il saldo credito. *Cosa cambia:* se non si usa, il campo non si importa.
+19. **La card fisica**: la date ancora ai clienti, o basta il QR nell'app? *Cosa cambia:* decide se in cassa serve il lettore o basta la ricerca per telefono e numero card.
