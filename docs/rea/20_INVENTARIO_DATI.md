@@ -16,7 +16,7 @@ Stato: **coperto** = c'è e i numeri tornano · **parziale** = c'è il posto, ma
 
 | Dato | Fonte | Quanti | Nella cassa nuova | Stato |
 |---|---|---|---|---|
-| Clienti | Velocissimo `/customer` | 19.521, di cui **9.491** veri con telefono (tolti i finti di Deliverect) | `import_cliente_velocissimo` (appoggio): **9.491**; `cliente`: **3.799** importati | **parziale**: 5.692 clienti veri sono ancora solo nell'appoggio |
+| Clienti | Velocissimo `/customer` | 19.543 (giro del 25/10), di cui **14.640 da Glovo e Deliveroo** con 2 soli telefoni di servizio | `import_cliente_velocissimo` (appoggio): 9.491, ma **5.623 hanno uno dei 2 telefoni di servizio** (il filtro su email e nome non li aveva presi); telefoni veri distinti: **3.835**. `cliente`: **3.799** importati, nessuno col telefono di servizio | **quasi coperto** per i clienti richiamabili; da riconciliare con il conto del 25/10 (circa 4.900 richiamabili): la differenza va spiegata cliente per cliente |
 | Indirizzi dei clienti | Velocissimo (colonna nascosta 14) e stradario del 2Bit | 3.219 con via | `indirizzo`: 3.178 | **parziale**: da riconciliare con i 3.219 |
 | **Saldo punti** | Velocissimo `/customer` | **1.385 clienti con punti, 37.908 punti in tutto** (nell'appoggio) | `cliente.punti`: **190 punti in tutto**, su 3 clienti (sono prove) | **mancante**: l'import ha portato i clienti **senza i punti**. 1.371 clienti con punti sono già in `cliente` con saldo 0, altri 14 non sono stati importati |
 | Movimenti punti (storico) | Velocissimo, «punti della transazione» | non contati | `cliente_punti_movimento`: 27 (prove) | **mancante**: serve almeno il saldo iniziale come primo movimento |
