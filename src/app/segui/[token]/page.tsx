@@ -15,6 +15,7 @@ interface Stato {
   numero: string | null; stato: "da_assegnare" | "assegnata" | "ritirata" | "consegnata" | "annullata";
   stato_ordine: string; ora_consegna: string | null;
   assegnata_il: string | null; partita_il: string | null; consegnata_il: string | null;
+  prima_un_altra?: boolean;   // mig. 0061: il rider ha preso questa dopo un'altra consegna, parte quando la finisce
   rider: string | null;
   rider_pos: { lat: number; lng: number; il: string } | null;
   destinazione: { lat: number; lng: number } | null;
@@ -125,6 +126,7 @@ export default function Segui({ params }: { params: Promise<{ token: string }> }
           <div className="sg-sotto">
             {s.stato === "consegnata" && s.consegnata_il ? `alle ${ora(s.consegnata_il)}`
               : s.stato === "ritirata" && s.partita_il ? `partito alle ${ora(s.partita_il)}${s.ora_consegna ? ` · previsto per le ${ora(s.ora_consegna)}` : ""}`
+              : s.stato === "ritirata" && s.prima_un_altra ? `il rider sta finendo un'altra consegna: parte per te dopo`
               : s.ora_consegna ? `previsto per le ${ora(s.ora_consegna)}` : ""}
           </div>
 

@@ -74,7 +74,7 @@ function Rider() {
 
   const carica = useCallback(async () => {
     const supabase = supabaseRef.current!;
-    const [{ data, error }, b, me] = await Promise.all([supabase.rpc("consegne_rider3"), supabase.rpc("rider_borsello"), supabase.from("profilo").select("ruolo, id_rider").maybeSingle()]);
+    const [{ data, error }, b, me] = await Promise.all([supabase.rpc("consegne_rider4"), supabase.rpc("rider_borsello"), supabase.from("profilo").select("ruolo, id_rider").maybeSingle()]);
     // È rider chi ha un rider collegato (mig. 0032): l'utenza della cassa fa anche da «Rider di prova».
     if (me.data && !me.data.id_rider) { setErrore(`Questa utenza è «${me.data.ruolo}» e non ha un rider collegato: le consegne si vedono entrando come rider. Da cassa: /cassa/rider e /cassa/mappa.`); return; }
     if (error) setErrore(error.message);
@@ -164,12 +164,12 @@ function Rider() {
     if (error) setErrore(error.message);
     else carica();
   }
-  // «Parto»: tutte quelle prese e non ancora ritirate in un tocco solo (a ognuna parte l'avviso al cliente)
+  // «Parto»: tutte quelle prese in un tocco, nell'ordine del giro più corto. Parte solo la prima: l'avviso
+  // al cliente della seconda nasce quando la prima è consegnata (mig. 0061, Edoardo 25/10/2026).
   async function parto(ids: string[]) {
-    for (const id of ids) {
-      const { error } = await supabaseRef.current!.rpc("aggiorna_consegna", { p_id: id, p_stato: "ritirata" });
-      if (error) { setErrore(error.message); break; }
-    }
+    const ordine = await girOrdinato(ids.map((id) => mie.find((c) => c.id === id)!).filter(Boolean));
+    const { error } = await supabaseRef.current!.rpc("parto_giro", { p_ids: ordine.map((c) => c.id) });
+    if (error) setErrore(error.message);
     carica();
   }
 
@@ -181,6 +181,8 @@ function Rider() {
   const contantiMie = mie.reduce((t, c) => t + (c.pagato_online ? 0 : Number(c.contanti_da_incassare)), 0);
   const daSaldare = consegne.filter((c) => c.stato === "consegnata");
   const daRitirare = mie.filter((c) => c.stato === "assegnata");
+  // la tappa in viaggio è quella di cui il rider ha già l'avviso; le altre aspettano la consegna prima
+  const inViaggio = mie.find((c) => c.stato === "ritirata" && c.in_viaggio_il);
 
   // Quali libere stanno a pochi minuti da un'altra (libera o già mia): la doppia la propone l'app,
   // coi minuti per strada di Google se ci sono, se no in linea d'aria. Si ricalcola quando cambia l'elenco.
@@ -207,15 +209,21 @@ function Rider() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firmaLibere]);
 
+  // Il giro più corto fra le consegne date, partendo dalla pizzeria (con i minuti di Google se ci sono)
+  async function girOrdinato(cons: ConsegnaRider[]): Promise<ConsegnaRider[]> {
+    const tappe = cons.filter(conPunto);
+    if (tappe.length < 2) return cons;
+    const punti = [PIZZERIA, ...tappe.map((c) => ({ lat: c.lat!, lng: c.lng! }))];
+    const t = await chiediTempi(punti, punti);
+    return t ? ordineGiro(tappe.length, t.minuti).map((i) => tappe[i]) : tappe;
+  }
+
   // «Naviga tutte»: Google Maps col giro dalla pizzeria, una tappa dopo l'altra nell'ordine più corto
   async function navigaTutte() {
     const tappe = mie.filter(conPunto);
     if (!tappe.length) return;
     setGiro("Calcolo il giro…");
-    const punti = [PIZZERIA, ...tappe.map((c) => ({ lat: c.lat!, lng: c.lng! }))];
-    const t = tappe.length > 1 ? await chiediTempi(punti, punti) : null;
-    const ordine = t ? ordineGiro(tappe.length, t.minuti) : tappe.map((_, i) => i);
-    const lista = ordine.map((i) => tappe[i]);
+    const lista = await girOrdinato(tappe);
     const ll = (c: ConsegnaRider) => `${c.lat},${c.lng}`;
     const url = `https://www.google.com/maps/dir/?api=1&origin=${PIZZERIA.lat},${PIZZERIA.lng}&destination=${ll(lista.at(-1)!)}`
       + (lista.length > 1 ? `&waypoints=${encodeURIComponent(lista.slice(0, -1).map(ll).join("|"))}` : "") + "&travelmode=driving";
@@ -246,8 +254,11 @@ function Rider() {
             {c.stato === "assegnata" && (
               <button className="primario r-azione" onClick={() => aggiorna(c.id, "ritirata")}>Ritirata</button>
             )}
-            {c.stato === "ritirata" && (
+            {c.stato === "ritirata" && c.in_viaggio_il && (
               <button className="primario r-azione" onClick={() => { if (daConfermare === c.id) { setDaConfermare(null); aggiorna(c.id, "consegnata"); } else { setDaConfermare(c.id); setTimeout(() => setDaConfermare((x) => (x === c.id ? null : x)), 4000); } }}>{daConfermare === c.id ? "Sicuro? Tocca ancora" : "Consegnata"}</button>
+            )}
+            {c.stato === "ritirata" && !c.in_viaggio_il && (
+              <span className="muto r-attesa">In attesa: prima {inViaggio ? num(inViaggio) : "la consegna in corso"}. Il cliente sarà avvisato quando parti.</span>
             )}
           </SchedaConsegna>
         ))}

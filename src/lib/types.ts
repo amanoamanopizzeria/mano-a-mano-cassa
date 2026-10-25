@@ -126,6 +126,9 @@ export interface ConsegnaRider {
   pagato_online?: boolean;
   paga_con?: number | null;
   consegnata_il?: string | null;
+  /** mig. 0061: l'ordine nel giro del rider e quando è davvero in viaggio verso questo cliente */
+  tappa?: number | null;
+  in_viaggio_il?: string | null;
 }
 
 /** Il borsello di un rider visto dalla cassa (funzione rider_borsello, mig. 0024). */

@@ -972,3 +972,4 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .rider .r-barra-scelte { position: sticky; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px -4px 0; padding: 10px 12px; border-radius: 14px 14px 0 0; background: var(--vino); color: #fff; font-weight: 600; }
 .rider .r-barra-scelte span { flex: 1 1 100%; font-size: 15px; }
 .rider .r-barra-scelte button { flex: 1; min-height: 52px; font-size: 17px; }
+.rider .r-attesa { font-size: 14px; line-height: 1.3; padding: 8px 0; }
