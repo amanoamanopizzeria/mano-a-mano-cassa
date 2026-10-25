@@ -4,6 +4,7 @@
 // ricaricare la pagina. Primo mattone della PWA cassa.
 import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { CANALE_COMANDA } from "@/lib/comanda";
 import AuthGate from "@/components/AuthGate";
 import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine } from "@/lib/types";
 
@@ -262,7 +263,7 @@ function Cassa() {
               {(o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") && (() => { const c = contoAllaRovescia(o, adesso); return c ? <b className={"tempo" + (c.ritardo ? " ritardo" : "")}>{c.testo}</b> : null; })()}
             </header>
             <div className="riga">
-              {o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>} · {o.canale} · {new Date(o.creato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{o.modificato_il && <> · <b className="vino">modificata {new Date(o.modificato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</b></>}
+              {o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>} · <b className={"origine o-" + o.canale}>{CANALE_COMANDA[o.canale] ?? o.canale}</b>{(o.canale === "glovo" || o.canale === "deliveroo") && " (ritira il loro rider)"} · {new Date(o.creato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{o.modificato_il && <> · <b className="vino">modificata {new Date(o.modificato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</b></>}
               {o.ora_consegna && <> · <b className={quando(o.ora_consegna).startsWith("per") ? "" : "vino"}>{quando(o.ora_consegna)}</b></>}
             </div>
             {(o.cliente?.nome || o.nome_cliente || o.cliente?.telefono || o.pagamento) && (

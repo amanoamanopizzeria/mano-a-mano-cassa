@@ -867,3 +867,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
    piattaforme rosa/arancio. Una fascia a sinistra, così lo stato (colore del bordo) resta leggibile. */
 .ordine-c.col-consegna { background-image: linear-gradient(to right, #f2c200 0 7px, transparent 7px); padding-left: 16px; }
 .ordine-c.col-piattaforma { background-image: linear-gradient(to right, #f08a5d 0 7px, transparent 7px); padding-left: 16px; }
+
+/* Origine dell'ordine (Edoardo 25/10/2026: «devi capire da che fonte arriva»), una pastiglia leggibile */
+.ordine-c .origine { padding: 1px 7px; border-radius: 999px; background: #eee6d8; font-weight: 700; }
+.ordine-c .origine.o-glovo, .ordine-c .origine.o-deliveroo { background: #f08a5d; color: #fff; }
+.ordine-c .origine.o-justeat { background: #ff8000; color: #fff; }
+.ordine-c .origine.o-app, .ordine-c .origine.o-web { background: #8a1538; color: #fff; }
+.ordine-c .origine.o-telefono { background: #f2c200; }
