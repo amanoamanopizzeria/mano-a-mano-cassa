@@ -10,7 +10,7 @@
    alla colonna che scorre; i tasti della comanda (Adesso, Contanti, POS, Applica, Svuota…) non scendono
    sotto i 44 px nemmeno con lo stile in riga. */
 @media (min-width: 601px) {
-  .cassa-comanda .c-fondo { position: sticky; bottom: 0; background: #fff; z-index: 2; padding-top: 4px; }
+  .cassa-comanda .c-fondo { position: sticky; bottom: 0; background: #fff; z-index: 2; padding-top: 4px; display: flex; flex-direction: column; } /* INVIA largo quanto la colonna, come prima del blocco (grafico giro 23) */
   .cassa-comanda .c-totale { position: static; }
   .cassa-comanda .c-invia { position: static; }
   .cassa-comanda button { min-height: 44px !important; }
