@@ -41,3 +41,13 @@
   .cassa-comanda .c-fondo .c-invia { align-self: stretch; }
   .cassa-comanda.aperta .c-fondo { border-top: 1px solid var(--oro-chiaro); box-shadow: 0 -10px 18px -6px rgba(26,23,21,.18); padding-top: 6px; }
 }
+
+/* I quarti d'ora del domicilio (mig. 0052): in giallo, come le consegne in 2Bit, quelli dove c'è già
+   una consegna vicina a questo indirizzo; grigi quelli pieni. Si sceglie con un tocco. */
+.cassa-comanda .c-vicine { display: flex; gap: 4px; overflow-x: auto; margin: 0 6px 6px; padding-bottom: 2px; scrollbar-width: thin; }
+.cassa-comanda .c-fascia { flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-height: 44px !important; min-width: 74px; padding: 5px 8px !important; font-size: 13px !important; line-height: 1.2; text-align: left; background: #fff; border: 1px solid var(--oro-chiaro, #e8d5b0); border-radius: 8px; }
+.cassa-comanda .c-fascia b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.cassa-comanda .c-fascia.vicina { background: #fff3b0; border-color: #d4a017; }
+.cassa-comanda .c-fascia .dove { font-weight: 700; color: #6b4e00; }
+.cassa-comanda .c-fascia.piena { opacity: .5; }
+.cassa-comanda .c-fascia.scelta { outline: 3px solid var(--vino); outline-offset: -1px; }

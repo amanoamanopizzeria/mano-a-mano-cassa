@@ -53,7 +53,7 @@ function Cassa() {
   // Il cliente che ha chiamato (da /cassa/cliente, «Prendi l'ordine»): si lega all'ordine.
   const [cliente, setCliente] = useState<{ id: string; nome: string | null; telefono: string; indirizzo: string | null } | null>(null);
   // Gli indirizzi del cliente, con la zona vera: a domicilio se ne sceglie uno (la zona dà costo e minimo).
-  type Indirizzo = { id: string; via: string; civico: string | null; id_zona: string | null };
+  type Indirizzo = { id: string; via: string; civico: string | null; id_zona: string | null; lat?: number | null; lng?: number | null };
   type Zona = { id: string; nome: string; costo_consegna: number; minimo_ordine: number };
   const [indirizzi, setIndirizzi] = useState<Indirizzo[]>([]);
   const [idIndirizzo, setIdIndirizzo] = useState<string | null>(null);
@@ -197,6 +197,19 @@ function Cassa() {
     }
     return out;
   }, [preordiniGiorni]);
+
+  // I quarti d'ora per il domicilio, col posto e la consegna già presa più vicina a questo indirizzo
+  // (mig. 0052): in giallo dove c'è una consegna entro 1,5 km, così si propone la doppia allo stesso
+  // rider (Edoardo, 25/10/2026). Due ordini restano due consegne: qui si suggerisce e basta.
+  type FasciaVicina = { ora: string; pizze_max: number; pizze_occupate: number; consegne_max: number; consegne_occupate: number; bloccata_produzione: boolean; bloccata_consegne: boolean; vicina_metri: number | null; vicina_numero: string | null };
+  const [fasceVicine, setFasceVicine] = useState<FasciaVicina[]>([]);
+  useEffect(() => {
+    const ind = indirizzi.find((i) => i.id === idIndirizzo);
+    if (tipo !== "domicilio" || !idNegozio || ind?.lat == null || ind?.lng == null) { setFasceVicine([]); return; }
+    supabaseBrowser().rpc("fasce_con_vicine", { p_negozio: idNegozio, p_giorno: giorno || oggiISO(), p_lat: ind.lat, p_lng: ind.lng })
+      .then(({ data }) => setFasceVicine(((data ?? []) as FasciaVicina[]).map((f) => ({ ...f, ora: String(f.ora).slice(0, 5) }))));
+  }, [tipo, idNegozio, idIndirizzo, indirizzi, giorno]);
+  const VICINA_M = 1500;
 
   const orarioTipo = orari.find((o) => o.tipo === (tipo === "domicilio" || tipo === "ritiro" ? tipo : "apertura")) ?? null;
   const quartiScelta = useMemo(() => {
@@ -638,6 +651,23 @@ function Cassa() {
               <option value="">Ora…</option>
               {quartiScelta.map((q) => <option key={q} value={q}>{q}</option>)}
             </select>
+          </div>
+        )}
+        {tipo === "domicilio" && fasceVicine.length > 0 && (
+          <div className="c-vicine" aria-label="Quarti d'ora per la consegna">
+            {fasceVicine.filter((f) => quartiScelta.includes(f.ora)).slice(0, 16).map((f) => {
+              const pieno = f.bloccata_consegne || f.bloccata_produzione || f.consegne_occupate >= f.consegne_max || f.pizze_occupate >= f.pizze_max;
+              const vicina = f.vicina_metri != null && f.vicina_metri <= VICINA_M;
+              const scelto = !!giorno && ora === f.ora;
+              return (
+                <button key={f.ora} className={"c-fascia" + (vicina ? " vicina" : "") + (pieno ? " piena" : "") + (scelto ? " scelta" : "")}
+                  onClick={() => { setGiorno(giorno || oggiISO()); setOra(f.ora); setErrore(null); }}>
+                  <b>{f.ora}</b>
+                  <span>{pieno ? "pieno" : `${f.consegne_occupate}/${f.consegne_max} cons.`}</span>
+                  {vicina && <span className="dove">{f.vicina_numero} a {f.vicina_metri! < 1000 ? `${Math.round(f.vicina_metri! / 50) * 50} m` : `${(f.vicina_metri! / 1000).toFixed(1).replace(".", ",")} km`}</span>}
+                </button>
+              );
+            })}
           </div>
         )}
         {/* critico giro 16: dal telefono il banco partiva senza contanti/POS. Il tavolo paga col conto. */}
