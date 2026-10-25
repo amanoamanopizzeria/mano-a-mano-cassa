@@ -37,6 +37,7 @@ function contoAllaRovescia(o: { ora_consegna?: string | null; creato_il: string;
 const SELECT_ORDINE = "*, cliente(nome, telefono, note), indirizzo(via, civico), zona(nome), tavolo(numero), consegna(stato, rider(nome))";
 type OrdineCassa = Ordine & {
   consegna?: { stato: string; rider: { nome: string } | null }[] | null;
+  pronto_il?: string | null;
   nome_cliente?: string | null; pagamento?: "contanti" | "pos" | null; paga_con?: number | null;
   cliente?: { nome: string | null; telefono: string | null; note: string | null } | null;
   indirizzo?: { via: string; civico: string | null } | null;
@@ -179,6 +180,11 @@ function Cassa() {
   }, []);
 
   const [daConfermare, setDaConfermare] = useState<string | null>(null);   // id dell'ordine su cui «Annullato» aspetta il secondo tocco
+  async function segnaPronto(id: string) {
+    const { data, error } = await supabaseBrowser().rpc("ordine_segna_pronto", { p_id: id });
+    if (error) setErrore(error.message);
+    else setOrdini((os) => os.map((o) => (o.id === id ? { ...o, pronto_il: data as string } : o)));
+  }
   async function cambiaStato(id: string, stato: StatoOrdine) {
     if (stato === "annullato" && daConfermare !== id) { setDaConfermare(id); setTimeout(() => setDaConfermare((d) => (d === id ? null : d)), 4000); return; }
     setDaConfermare(null);
@@ -228,7 +234,7 @@ function Cassa() {
                 <div className="azioni">
                   <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
                   <button onClick={() => stampa(o.id)}>Stampa ora</button>
-                  <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>
+                  {!["ritirata", "consegnata"].includes(o.consegna?.[0]?.stato ?? "") && <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>}
                   {o.tipo === "domicilio" && <button onClick={() => copiaLink(o.id)}>{linkCopiato === o.id ? "Link copiato" : "Link per il cliente"}</button>}
                   {/* critico giro 15: un preordine ritirato in anticipo non si poteva chiudere: gli stessi passi delle carte sotto */}
                   {passiOrdine(o).map((s) => (
@@ -281,6 +287,8 @@ function Cassa() {
               <button onClick={() => stampa(o.id)} disabled={inStampa.includes(o.id)}>{inStampa.includes(o.id) ? "Stampo…" : "Stampa"}</button>
               {o.tipo === "domicilio" && o.stato !== "annullato" && <button onClick={() => copiaLink(o.id)}>{linkCopiato === o.id ? "Link copiato" : "Link per il cliente"}</button>}
               {(o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto") && <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>}
+              {/* critico giro 25: il rider la prende mentre le pizze sono in forno; la cucina deve poter dire «pronto» lo stesso */}
+              {o.stato === "in_consegna" && !o.pronto_il && o.consegna?.[0]?.stato === "assegnata" && <button className="azione" onClick={() => segnaPronto(o.id)}>Pronto</button>}
               {passiOrdine(o).map((s) => (
                 <button
                   key={s}
