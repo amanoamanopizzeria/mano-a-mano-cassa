@@ -130,6 +130,8 @@ export default function Segui({ params }: { params: Promise<{ token: string }> }
 
           <div ref={div} className="sg-mappa" />
           {s.stato === "ritirata" && !fresca(s.rider_pos) && <p className="sg-nota">{s.rider_pos && (!s.partita_il || new Date(s.rider_pos.il) >= new Date(s.partita_il)) ? `Ultima posizione del rider alle ${ora(s.rider_pos.il)}: la mappa si aggiorna appena il suo telefono la rimanda.` : "La posizione del rider arriva appena il suo telefono la manda."}</p>}
+          {/* Edoardo, 25/10/2026: i due numeri della pizzeria; il primo per il tasto */}
+          <a className="sg-chiama" href="tel:+390689873556">Chiama la pizzeria · 06 8987 3556</a>
           {google && <a className="sg-google" href={google} target="_blank" rel="noreferrer">Apri in Google Maps</a>}
 
           <ol className="sg-passi">
@@ -177,6 +179,7 @@ const CSS = `
 .sg-casa { border: 3px solid var(--vino); }
 .sg .leaflet-control-attribution { font-size: 13px; }
 .sg-google { display: flex; align-items: center; justify-content: center; margin-top: 12px; min-height: 52px; padding: 0 16px; border-radius: 4px; background: var(--sabbia); color: var(--nero); font-weight: 700; text-decoration: none; font-size: 17px; box-shadow: 0 2px 6px rgba(0,0,0,.12); }
+.sg-chiama { display: block; margin: 14px 0 0; padding: 12px 16px; border-radius: 12px; background: var(--vino, #8a1538); color: #fff; text-align: center; font-weight: 700; text-decoration: none; }
 .sg-nota { color: var(--testo2); font-size: 15px; margin: 10px 0 0; }
 .sg-sez { text-align: center; font-weight: 700; font-size: 16px; padding-bottom: 5px; border-bottom: 1.5px solid var(--nero); margin: 18px 0 4px; }
 .sg-passi { list-style: none; padding: 0; margin: 14px 0 0; border-top: 1.5px solid var(--nero); }
