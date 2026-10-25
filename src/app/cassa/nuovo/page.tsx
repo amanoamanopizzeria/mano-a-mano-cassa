@@ -148,7 +148,9 @@ function Cassa() {
     supabaseBrowser().rpc("cerca_cliente", { p_telefono: tel }).then(({ data }) => {
       const s = data as { esito: string; cliente?: { id: string; nome: string | null; telefono: string }; indirizzi?: Indirizzo[] } | null;
       if (s?.esito === "trovato" && s.cliente) {
-        const i = s.indirizzi?.[0];
+        // dalla scheda appena salvata si arriva con l'indirizzo scelto (?indirizzo=)
+        const voluto = new URLSearchParams(window.location.search).get("indirizzo");
+        const i = s.indirizzi?.find((x) => x.id === voluto) ?? s.indirizzi?.[0];
         setCliente({ ...s.cliente, indirizzo: i ? `${i.via} ${i.civico ?? ""}`.trim() : null });
         setIndirizzi(s.indirizzi ?? []);
         setIdIndirizzo(i?.id ?? null);

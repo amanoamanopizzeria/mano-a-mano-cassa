@@ -946,3 +946,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
   .cc-fasce .cc-intesta { display: none; }
   .cc-fasce .cc-riga { grid-template-columns: 1fr; min-width: 76px; padding: 4px; }
 }
+/* la scheda del cliente nuovo (Edoardo, 25/10/2026) */
+.cliente-pagina .cl-cerca .nuovo { min-height: 48px; font-weight: 700; color: var(--vino, #8a1538); border: 2px solid var(--vino, #8a1538); background: #fff; }
+.cliente-pagina .cl-salva-fila { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+.cliente-pagina .cl-salva-fila button { min-height: 52px; font-size: 17px; }
+.cliente-pagina .cl-nota-consegna { color: var(--vino, #8a1538); font-weight: 600; }

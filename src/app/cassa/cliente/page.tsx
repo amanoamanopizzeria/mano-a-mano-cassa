@@ -13,7 +13,7 @@ interface Scheda {
   esito: "trovato" | "nuovo" | "numero_corto";
   telefono?: string;
   cliente?: { id: string; nome: string | null; telefono: string; note: string | null; punti?: number; credito?: number; tag?: string[]; black_list?: boolean; card?: string | null };
-  indirizzi?: { id: string; via: string; civico: string | null; cap: string | null; citta: string | null; lat: number | null; lng: number | null; id_zona: string | null }[];
+  indirizzi?: { id: string; via: string; civico: string | null; cap: string | null; citta: string | null; lat: number | null; lng: number | null; id_zona: string | null; note?: string | null }[];
   ultimi_ordini?: { numero: number; numero_visibile?: string | null; creato_il: string; totale: number; tipo: string; canale: string }[];
 }
 interface Suggerimento {
@@ -36,6 +36,8 @@ function Cliente() {
   const [scheda, setScheda] = useState<Scheda | null>(null);
   const [nome, setNome] = useState("");
   const [note, setNote] = useState("");
+  // note di consegna: stanno sull'indirizzo (citofono, scala, piano), mig. 0057
+  const [noteConsegna, setNoteConsegna] = useState("");
   const [cercaVia, setCercaVia] = useState("");
   const [suggerimenti, setSuggerimenti] = useState<Suggerimento[]>([]);
   const [fonte, setFonte] = useState<"google" | "osm" | null>(null);
@@ -54,6 +56,7 @@ function Cliente() {
     setScheda(s);
     setNome(s.cliente?.nome ?? "");
     setNote(s.cliente?.note ?? "");
+    setNoteConsegna("");
   }, []);
 
   // Dalla cassa («Serve l'indirizzo») si arriva col numero già nell'indirizzo della pagina.
@@ -133,15 +136,29 @@ function Cliente() {
     setSuggerimenti([]);
   }
 
-  async function salva() {
+  // Edoardo, 25/10/2026: un cliente che non conosco lo devo poter compilare tutto, anche senza cercarlo prima.
+  function nuovoCliente() {
+    setErrore(null); setSalvato(false);
+    setScheda({ esito: "nuovo", telefono });
+    setNome(""); setNote(""); setNoteConsegna(""); setCercaVia(""); setScelto(null); setCivico("");
+  }
+
+  async function salva(eVai = false) {
     setErrore(null);
+    if (telefono.replace(/\D/g, "").length < 6) { setErrore("Scrivi il numero di telefono del cliente."); return; }
     const via = scelto?.via ?? (cercaVia.trim() || null);
-    const { error } = await supabaseBrowser().rpc("salva_cliente2", {
+    const { data, error } = await supabaseBrowser().rpc("salva_cliente3", {
       p_telefono: telefono, p_nome: nome || null, p_note: note || null,
       p_via: via, p_civico: civico || scelto?.civico || null, p_cap: scelto?.cap ?? null, p_citta: scelto?.citta ?? "Roma",
       p_lat: scelto?.lat ?? null, p_lng: scelto?.lng ?? null, p_place_id: scelto?.place_id ?? null,
+      p_note_consegna: noteConsegna || null,
     });
     if (error) { setErrore(error.message); return; }
+    const r = data as { id_indirizzo: string | null };
+    if (eVai) {
+      window.location.href = "/cassa/nuovo?telefono=" + encodeURIComponent(telefono) + (r.id_indirizzo ? "&indirizzo=" + r.id_indirizzo : "");
+      return;
+    }
     setSalvato(true);
     setCercaVia(""); setScelto(null); setCivico("");
     await cerca(telefono);
@@ -179,6 +196,7 @@ function Cliente() {
           onChange={(e) => setTelefono(e.target.value)}
         />
         <button className="primario cerca" type="submit">Cerca</button>
+        <button type="button" className="nuovo" onClick={nuovoCliente}>+ Nuovo cliente</button>
         <button type="button" onClick={provaChiamata} title="Simula una telefonata in arrivo con questo numero" className="prova">Prova chiamata</button>
       </form>
 
@@ -213,6 +231,7 @@ function Cliente() {
             {(scheda.indirizzi ?? []).map((i) => (
               <li key={i.id}>
                 {i.via} {i.civico ?? ""} {i.cap ?? ""} {i.citta ?? ""}
+                {i.note && <span className="cl-nota-consegna"> · {i.note}</span>}
                 {i.lat != null && i.lng != null && (
                   <a className="mappa-link" target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${i.lat},${i.lng}`}>Mappa ↗</a>
                 )}
@@ -232,9 +251,10 @@ function Cliente() {
 
       {scheda && scheda.esito !== "numero_corto" && (
         <div className="carta cl-modulo">
-          <strong className="titolo">{scheda.esito === "nuovo" ? "Cliente nuovo: crea la scheda" : "Modifica la scheda"}</strong>
-          <input placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} />
-          <textarea placeholder="Note fisse (es. citofono rotto, non suonare)" value={note} onChange={(e) => setNote(e.target.value)} />
+          <strong className="titolo">{scheda.esito === "nuovo" ? "Cliente nuovo: crea la scheda" : "Modifica la scheda o aggiungi un indirizzo"}</strong>
+          {scheda.esito === "nuovo" && <input type="tel" inputMode="tel" placeholder="Telefono" value={telefono} onChange={(e) => setTelefono(e.target.value)} />}
+          <input placeholder="Nome e cognome" value={nome} onChange={(e) => setNome(e.target.value)} />
+          <textarea placeholder="Note del cliente (es. allergico al lattosio, paga sempre col POS)" value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="cl-via-box">
             <div className="cl-via-fila">
               <input
@@ -270,7 +290,11 @@ function Cliente() {
               )}
             </div>
           )}
-          <button className="primario salva" onClick={salva}>{salvato ? "Salvato" : "Salva scheda"}</button>
+          <input placeholder="Note di consegna (citofono, scala, piano…)" value={noteConsegna} onChange={(e) => setNoteConsegna(e.target.value)} />
+          <div className="cl-salva-fila">
+            <button className="primario salva" onClick={() => salva(true)}>Salva e prendi l&apos;ordine</button>
+            <button className="salva" onClick={() => salva(false)}>{salvato ? "Salvato" : "Salva soltanto"}</button>
+          </div>
         </div>
       )}
     </main>
