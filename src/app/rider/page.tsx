@@ -344,7 +344,7 @@ function SchedaConsegna({ c, children, insieme = [], scelta = false, vicina }: {
       <ul className="muto r-righe">
         {c.righe.map((r, i) => (
           <li key={i}>{Number(r.quantita)}× {r.descrizione}
-            {r.variazioni?.length > 0 && <span className="r-var"> · {r.variazioni.map((v) => (v.tipo === "rimozione" ? "senza " : v.tipo === "aggiunta" ? "+ " : "") + v.nome).join(", ")}</span>}</li>
+            {r.variazioni?.length > 0 && <span className="r-var"> · {r.variazioni.map((v) => (v.tipo === "aggiunta" && !v.nome.startsWith("+") ? "+ " : "") + v.nome).join(", ")}</span>}</li>
         ))}
       </ul>
       {c.note && <div className="r-note">Note: {c.note}</div>}
