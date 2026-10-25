@@ -66,12 +66,29 @@ function Menu() {
       <p className="muto">Sola lettura: il menù si cambia dal back office e dal database.</p>
       {errore && <p className="m-errore">{errore}</p>}
 
+      {/* grafico giro 24: l'indice, come la striscia delle categorie di /ordina. Un tocco porta alla
+          categoria; solo quelle con qualcosa in vendita (i burger spenti non ci sono). */}
+      {gruppi.length > 0 && (
+        <nav className="m-indice" aria-label="Indice del menù">
+          {gruppi.map((g) => {
+            const cat = categorie.filter((c) => c.id_gruppo === g.id && prodotti.some((p) => p.id_categoria === c.id && p.attivo));
+            if (cat.length === 0) return null;
+            return (
+              <span key={g.id} className="m-ind-gruppo">
+                <span className="g">{g.nome}</span>
+                {cat.map((c) => <a key={c.id} href={`#cat-${c.id}`}>{c.nome}</a>)}
+              </span>
+            );
+          })}
+        </nav>
+      )}
+
       {gruppi.map((g) => (
         <section key={g.id} className="m-gruppo">
           <h2>{g.nome}</h2>
           <div className="m-categorie">
           {categorie.filter((c) => c.id_gruppo === g.id).map((c) => (
-            <div key={c.id} className="carta">
+            <div key={c.id} id={`cat-${c.id}`} className="carta">
               <strong className="cat">{c.nome}</strong>
               {(() => {
                 const della = prodotti.filter((p) => p.id_categoria === c.id);
