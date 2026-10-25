@@ -7,7 +7,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { CANALE_COMANDA } from "@/lib/comanda";
 import AuthGate from "@/components/AuthGate";
 import ColonnaCassa from "./ColonnaCassa";
-import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine } from "@/lib/types";
+import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine, type CapacitaFascia } from "@/lib/types";
 
 // La comanda si stampa da sola a ogni ordine nuovo, se la cassa lo vuole (resta nel browser della
 // cassa): si apre la pagina /cassa/comanda/<id>?stampa=1 in un riquadro nascosto e quella chiama
@@ -201,6 +201,44 @@ function Cassa() {
   }, []);
 
   const [daConfermare, setDaConfermare] = useState<string | null>(null);   // id dell'ordine su cui «Annullato» aspetta il secondo tocco
+  // L'orologio a destra di ogni ordine (Edoardo, 25/10/2026): «questa me la metti in quell'altro quarto d'ora».
+  const [spostaId, setSpostaId] = useState<string | null>(null);
+  const [fasceSposta, setFasceSposta] = useState<CapacitaFascia[]>([]);
+  async function apriSposta(id: string) {
+    if (spostaId === id) { setSpostaId(null); return; }
+    setSpostaId(id);
+    const supabase = supabaseBrowser();
+    const { data: prof } = await supabase.from("profilo").select("id_negozio").maybeSingle();
+    const giorno = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+    const { data } = await supabase.rpc("capacita_giorno", { p_negozio: prof?.id_negozio, p_giorno: giorno });
+    const ora = new Date().toLocaleTimeString("sv-SE", { timeZone: "Europe/Rome" }).slice(0, 5);
+    setFasceSposta(((data ?? []) as CapacitaFascia[]).filter((f) => f.ora.slice(0, 5) >= ora.slice(0, 3) + String(Math.floor(Number(ora.slice(3)) / 15) * 15).padStart(2, "0")));
+  }
+  async function sposta(id: string, ora: string) {
+    const giorno = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+    const { error } = await supabaseBrowser().rpc("ordine_sposta", { p_id: id, p_ora: new Date(`${giorno}T${ora.slice(0, 5)}:00`).toISOString() });
+    if (error) setErrore(error.message);
+    else { setSpostaId(null); setOrdini((os) => os.map((o) => (o.id === id ? { ...o, ora_consegna: new Date(`${giorno}T${ora.slice(0, 5)}:00`).toISOString() } : o))); }
+  }
+  const pannelloSposta = (o: OrdineCassa) => spostaId === o.id && (
+    <div className="lo-sposta" role="dialog" aria-label="Sposta in un altro quarto d'ora">
+      <div className="lo-sposta-titolo">Sposta {o.numero_visibile ?? `#${o.numero}`} alle…</div>
+      <div className="lo-sposta-fasce">
+        {fasceSposta.map((f) => {
+          const piena = (o.tipo === "domicilio" ? f.bloccata_consegne || f.consegne_occupate >= f.consegne_max : false) || f.bloccata_produzione || f.pizze_occupate >= f.pizze_max;
+          const attuale = !!o.ora_consegna && oraDi(o.ora_consegna) === f.ora.slice(0, 5);
+          return (
+            <button key={f.ora} className={"lo-sposta-f" + (piena ? " piena" : "") + (attuale ? " attuale" : "")} onClick={() => sposta(o.id, f.ora)} disabled={attuale}>
+              <b>{f.ora.slice(0, 5)}</b>
+              <span>{f.pizze_occupate}/{f.pizze_max} pizze</span>
+              {o.tipo === "domicilio" && <span>{f.consegne_occupate}/{f.consegne_max} cons.</span>}
+            </button>
+          );
+        })}
+        {fasceSposta.length === 0 && <span className="muto">Nessun quarto d&apos;ora aperto da adesso.</span>}
+      </div>
+    </div>
+  );
   async function segnaPronto(id: string) {
     const { data, error } = await supabaseBrowser().rpc("ordine_segna_pronto", { p_id: id });
     if (error) setErrore(error.message);
@@ -246,7 +284,9 @@ function Cassa() {
                 <header>
                   <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
                   <b className="tempo attesa">{quando(o.ora_consegna!)}</b>
+                  <button className="lo-orologio" aria-label="Sposta in un altro quarto d'ora" title="Sposta orario" onClick={() => apriSposta(o.id)}>🕒</button>
                 </header>
+                {pannelloSposta(o)}
                 <div className="riga">{o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>}{o.modificato_il && <b className="vino"> · modificata {oraDi(o.modificato_il)}</b>} · {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"}{o.zona?.nome && <> · {o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""}</>}</div>
                 <div className="chi">{o.cliente?.nome ?? o.nome_cliente ?? ""}</div>
                 {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}</div>}
@@ -292,7 +332,9 @@ function Cassa() {
               <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
               <span className={`badge ${o.stato}`}>{ETICHETTE[o.stato]}</span>
               {(o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") && (() => { const c = contoAllaRovescia(o, adesso); return c ? <b className={"tempo" + (c.ritardo ? " ritardo" : "")}>{c.testo}</b> : null; })()}
+              {PREORDINE_ATTIVO(o) && <button className="lo-orologio" aria-label="Sposta in un altro quarto d'ora" title="Sposta orario" onClick={() => apriSposta(o.id)}>🕒</button>}
             </header>
+            {pannelloSposta(o)}
             <div className="riga">
               {o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>} · <b className={"origine o-" + o.canale}>{CANALE_COMANDA[o.canale] ?? o.canale}</b>{(o.canale === "glovo" || o.canale === "deliveroo") && " (ritira il loro rider)"} · {new Date(o.creato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{o.modificato_il && <> · <b className="vino">modificata {new Date(o.modificato_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</b></>}
               {o.ora_consegna && <> · <b className={quando(o.ora_consegna).startsWith("per") ? "" : "vino"}>{quando(o.ora_consegna)}</b></>}
