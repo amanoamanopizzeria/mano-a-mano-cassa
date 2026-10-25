@@ -20,8 +20,18 @@ const PREORDINE_MIN = 60;
 const ATTESA_MIN = 30;
 const ePreordine = (o: { ora_consegna?: string | null }, adesso: number) =>
   !!o.ora_consegna && new Date(o.ora_consegna).getTime() - adesso > PREORDINE_MIN * 60_000;
-/** Quando va stampato un preordine: all'ora di consegna meno l'attesa. */
-const stampaAlle = (o: { ora_consegna?: string | null }) => (o.ora_consegna ? new Date(new Date(o.ora_consegna).getTime() - ATTESA_MIN * 60_000) : null);
+/**
+ * Quando si stampa la comanda (Edoardo, 25/10/2026): la cucina ha davanti la mezz'ora. Consegne (anche Just Eat)
+ * e ordini con un'ora si stampano a blocchi: alle 18:30 tutto il quarto d'ora delle 19:00, alle 18:45 quello delle
+ * 19:15. Quello che entra in un blocco già partito esce subito. Senza ora (banco, «subito») e i ritiri di Glovo e
+ * Deliveroo, che passano in 12–13 minuti, si stampano appena entrano: null vuol dire «adesso».
+ */
+const stampaAlle = (o: { ora_consegna?: string | null; canale?: string }) => {
+  if (!o.ora_consegna || o.canale === "glovo" || o.canale === "deliveroo") return null;
+  const quarto = Math.floor(new Date(o.ora_consegna).getTime() / (15 * 60_000)) * 15 * 60_000;
+  return new Date(quarto - ATTESA_MIN * 60_000);
+};
+const daStampareOra = (o: { ora_consegna?: string | null; canale?: string }, adesso: number) => { const q = stampaAlle(o); return !q || q.getTime() <= adesso; };
 /** «fra 12 min» / «in ritardo di 5 min» sugli ordini in corso (Velocissimo: minuti mancanti e colore del ritardo). */
 function contoAllaRovescia(o: { ora_consegna?: string | null; creato_il: string; tipo?: string }, adesso: number): { testo: string; ritardo: boolean } | null {
   const scadenza = o.ora_consegna ? new Date(o.ora_consegna).getTime() : new Date(o.creato_il).getTime() + ATTESA_MIN * 60_000;
@@ -161,8 +171,8 @@ function Cassa() {
           setOrdini((prev) => {
             if (payload.eventType === "INSERT") {
               const n = payload.new as OrdineCassa;
-              // un preordine non si stampa all'arrivo: lo fa l'orologio quando manca l'attesa
-              try { if (localStorage.getItem(STAMPA_LS) === "1" && !ePreordine(n, Date.now())) stampa(n.id); } catch {}
+              // un ordine per un quarto d'ora non ancora arrivato non si stampa all'arrivo: lo fa l'orologio col suo blocco
+              try { if (localStorage.getItem(STAMPA_LS) === "1" && daStampareOra(n, Date.now())) { stampatiDaMe.current.add(n.id); stampa(n.id); } } catch {}
               completa(n.id);   // il realtime non porta cliente e indirizzo: si rileggono
               return [n, ...prev];
             }
@@ -243,7 +253,7 @@ function Cassa() {
             {o.consegna?.[0]?.rider?.nome && <div className="riga">rider <b>{o.consegna[0].rider.nome}</b></div>}
                 {o.note && <div className="nota">Note: {o.note}</div>}
                 <div className="tot">{euro(o.totale)}</div>
-                <div className="riga">stampa alle {oraDi(stampaAlle(o)!.toISOString())}{o.stampato_il ? " · già stampata" : ""}</div>
+                <div className="riga">{stampaAlle(o) ? <>stampa alle {oraDi(stampaAlle(o)!.toISOString())}</> : "si stampa subito"}{o.stampato_il ? " · già stampata" : ""}</div>
                 <div className="azioni">
                   <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
                   <button onClick={() => stampa(o.id)}>Stampa ora</button>
