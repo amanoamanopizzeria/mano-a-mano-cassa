@@ -52,3 +52,9 @@
 .cassa-comanda .c-fascia .dove { font-weight: 700; color: #6b4e00; }
 .cassa-comanda .c-fascia.piena { opacity: .5; }
 .cassa-comanda .c-fascia.scelta { outline: 3px solid var(--vino); outline-offset: -1px; }
+/* togliere una riga (Edoardo, 25/10/2026): la ✕ sempre a destra, e scorrendo a sinistra compare «Elimina» */
+.cassa-comanda .c-riga { position: relative; display: flex; align-items: stretch; touch-action: pan-y; }
+.cassa-comanda .c-riga > button:first-child { flex: 1; min-width: 0; }
+.cassa-comanda .c-x { flex: none; width: 44px; min-height: 44px; border: none; border-bottom: 1px solid var(--bordo); border-radius: 0; background: #fff; color: var(--vino); font-size: 18px; font-weight: 700; padding: 0; }
+.cassa-comanda .c-elimina { position: absolute; top: 0; right: 0; bottom: 0; width: 110px; border: none; border-radius: 0; background: #c62828; color: #fff; font-weight: 700; font-size: 16px; animation: c-entra .15s ease-out; }
+@keyframes c-entra { from { transform: translateX(100%); } to { transform: none; } }

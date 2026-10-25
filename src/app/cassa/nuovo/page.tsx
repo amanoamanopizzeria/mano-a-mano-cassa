@@ -4,7 +4,7 @@
 // barra delle categorie colorate in alto, griglia di tessere grandi, comanda a destra con
 // tastierino (il numero digitato è la quantità del prossimo tocco), varianti CON / SENZA a gruppi.
 // Passa dalla stessa capacità di app, sito e totem (funzione ordine_da_cassa).
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
@@ -43,6 +43,7 @@ function Cassa() {
   const [categoria, setCategoria] = useState<string | null>(null);
   const [righe, setRighe] = useState<RigaOrdine[]>([]);
   const [selezionata, setSelezionata] = useState<string | null>(null);   // chiave della riga
+  const [scorsa, setScorsa] = useState<string | null>(null);   // la riga scorsa a sinistra, che mostra «Elimina»
   const [modoVarianti, setModoVarianti] = useState(false);
   const [segno, setSegno] = useState<"con" | "senza">("con");
   const [gruppo, setGruppo] = useState<string | null>(null);
@@ -305,6 +306,15 @@ function Cassa() {
     setRighe((prev) => prev.map((r) => (r.chiave === rigaSel.chiave ? { ...r, quantita: n } : r)).filter((r) => r.quantita > 0));
     if (n <= 0) { setSelezionata(null); setModoVarianti(false); }
   }
+
+  // Edoardo, 25/10/2026: «metto una pizza e la voglio eliminare»: la ✕ su ogni riga e lo scorrere a sinistra
+  // tolgono quella riga senza doverla prima selezionare. «Togli» sotto resta per chi ci è abituato.
+  function eliminaRiga(chiave: string) {
+    setRighe((prev) => prev.filter((r) => r.chiave !== chiave));
+    if (selezionata === chiave) { setSelezionata(null); setModoVarianti(false); }
+    setScorsa(null);
+  }
+  const inizioScorri = useRef<{ chiave: string; x: number } | null>(null);
 
   function togliRiga() {
     if (!rigaSel) return;
@@ -592,7 +602,11 @@ function Cassa() {
         <div className="scorri" style={{ flex: 1, minHeight: 160, borderTop: "1px solid var(--bordo)", borderBottom: "1px solid var(--bordo)" }}>
           {righe.length === 0 && <p className="muto" style={{ padding: 12 }}>Tocca un prodotto per iniziare la comanda.</p>}
           {righe.map((r) => (
-            <button key={r.chiave} onClick={() => toccaRiga(r)} style={{
+            <div key={r.chiave} className={"c-riga" + (scorsa === r.chiave ? " scorsa" : "")}
+              onPointerDown={(e) => { inizioScorri.current = { chiave: r.chiave, x: e.clientX }; }}
+              onPointerMove={(e) => { const s = inizioScorri.current; if (s && s.chiave === r.chiave && s.x - e.clientX > 50) { setScorsa(r.chiave); inizioScorri.current = null; } else if (s && s.chiave === r.chiave && e.clientX - s.x > 50) { setScorsa(null); inizioScorri.current = null; } }}
+              onPointerUp={() => { inizioScorri.current = null; }}>
+            <button onClick={() => (scorsa === r.chiave ? setScorsa(null) : toccaRiga(r))} style={{
               width: "100%", display: "flex", gap: 8, alignItems: "flex-start", textAlign: "left", border: "none", borderRadius: 0,
               borderBottom: "1px solid var(--bordo)", padding: "9px 10px", minHeight: 44, background: r.chiave === selezionata ? "var(--oro-velo)" : "#fff", boxShadow: r.chiave === selezionata ? "inset 4px 0 0 var(--oro)" : undefined,
             }}>
@@ -618,6 +632,9 @@ function Cassa() {
               </span>
               <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{euro(prezzoRiga(r))}</span>
             </button>
+            <button className="c-x" aria-label={"Togli " + r.descrizione} onClick={() => eliminaRiga(r.chiave)}>✕</button>
+            {scorsa === r.chiave && <button className="c-elimina" onClick={() => eliminaRiga(r.chiave)}>Elimina</button>}
+            </div>
           ))}
         </div>
 
