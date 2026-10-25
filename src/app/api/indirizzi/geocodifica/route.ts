@@ -5,7 +5,6 @@
 // fuori da Roma, si segna «geo-non-trovata» e non si riprova.
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { geocodifica, kmDallaPizzeria } from "@/lib/indirizzi";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +19,8 @@ export async function POST() {
   const { data: profilo } = await supabase.from("profilo").select("ruolo").maybeSingle();
   if (!profilo || !["cassa", "admin"].includes(profilo.ruolo)) return NextResponse.json({ errore: "solo la cassa" }, { status: 403 });
 
-  const db = supabaseAdmin();
+  // con l'utenza della cassa (policy indirizzo_staff): la chiave service_role non è su Vercel
+  const db = supabase;
   const { data: vie, error } = await db.from("indirizzo").select("id, via, civico, cap, citta, id_zona")
     .is("lat", null).or(`place_id.is.null,place_id.neq.${NON_TROVATA}`).limit(PACCO);
   if (error) return NextResponse.json({ errore: error.message }, { status: 500 });
@@ -35,13 +35,9 @@ export async function POST() {
       nonTrovate++;
       continue;
     }
-    const agg: Record<string, unknown> = { lat: g.lat, lng: g.lng, place_id: g.place_id };
-    if (!v.id_zona) {
-      const { data: z } = await db.rpc("zona_per_punto", { p_lat: g.lat, p_lng: g.lng });
-      const zona = (z as { id: string; nome: string }[] | null)?.[0];
-      if (zona?.id) { agg.id_zona = zona.id; zone++; }
-    }
-    await db.from("indirizzo").update(agg).eq("id", v.id);
+    // la zona la mette il trigger indirizzo_zona_auto (mig. 0020) appena arrivano le coordinate
+    await db.from("indirizzo").update({ lat: g.lat, lng: g.lng, place_id: g.place_id }).eq("id", v.id);
+    if (!v.id_zona) zone++;
     fatte++;
   }
   const { count } = await db.from("indirizzo").select("id", { count: "exact", head: true })
