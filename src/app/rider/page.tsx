@@ -50,6 +50,18 @@ async function chiediTempi(origini: { lat: number; lng: number }[], destinazioni
   return r?.ok ? ((await r.json()) as Matrice) : null;
 }
 
+/** Il ponte dell'app Android dei rider (Capacitor): c'è solo dentro l'app, non nel browser. */
+interface CapacitorPonte {
+  isNativePlatform?: () => boolean;
+  Plugins?: {
+    BackgroundGeolocation?: {
+      addWatcher: (o: Record<string, unknown>, cb: (loc?: { latitude: number; longitude: number }, err?: { code?: string }) => void) => Promise<string>;
+      removeWatcher: (o: { id: string }) => Promise<void>;
+    };
+    CapacitorHttp?: { request: (o: { method: string; url: string; headers: Record<string, string>; data: unknown }) => Promise<unknown> };
+  };
+}
+
 export default function RiderPagina() {
   return (
     <AuthGate>
@@ -113,7 +125,8 @@ function Rider() {
     supabaseRef.current = supabaseBrowser();
     carica();
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw-rider.js", { scope: "/rider" }).catch(() => {});
-    setInstallata(window.matchMedia("(display-mode: standalone)").matches);
+    // dentro l'app Android dei rider è già «installata»: niente invito
+    setInstallata(window.matchMedia("(display-mode: standalone)").matches || !!(window as unknown as { Capacitor?: CapacitorPonte }).Capacitor?.isNativePlatform?.());
     const suInvito = (e: Event) => { e.preventDefault(); setInvito(e as unknown as { prompt: () => Promise<void> }); };
     window.addEventListener("beforeinstallprompt", suInvito);
 
@@ -126,7 +139,33 @@ function Rider() {
     // posizione: inviata quando cambia, al massimo una volta ogni 10 secondi
     let ultimoInvio = 0;
     let watchId: number | null = null;
-    if ("geolocation" in navigator) {
+    // Dentro l'app Android dei rider (app-rider/, 26/10/2026) la posizione la prende il telefono anche a
+    // schermo spento, con l'avviso fisso «Posizione del rider»; il browser la perde appena si blocca.
+    // L'invio passa dall'HTTP nativo: dopo 5 minuti in tasca Android rallenta quello della pagina.
+    const nativo = (window as unknown as { Capacitor?: CapacitorPonte }).Capacitor;
+    let watcherNativo: string | null = null;
+    if (nativo?.isNativePlatform?.() && nativo.Plugins?.BackgroundGeolocation) {
+      const bg = nativo.Plugins.BackgroundGeolocation;
+      bg.addWatcher(
+        { backgroundTitle: "A Mano a Mano · consegne", backgroundMessage: "Mando la tua posizione alla cassa mentre consegni.", requestPermissions: true, stale: false, distanceFilter: 20 },
+        async (loc, err) => {
+          if (err) { setGps(err.code === "NOT_AUTHORIZED" ? "GPS negato: consenti la posizione «Sempre» all'app nelle impostazioni" : "GPS lento: riprovo"); return; }
+          if (!loc) return;
+          const ora = Date.now();
+          if (ora - ultimoInvio < 10_000) return;
+          ultimoInvio = ora;
+          setGps(`GPS attivo anche a schermo spento · ${loc.latitude.toFixed(4)}, ${loc.longitude.toFixed(4)}`);
+          const { data } = await supabaseRef.current!.auth.getSession();
+          const token = data.session?.access_token;
+          if (!token || !nativo.Plugins?.CapacitorHttp) { await supabaseRef.current!.rpc("segnala_posizione", { p_lat: loc.latitude, p_lng: loc.longitude }); return; }
+          await nativo.Plugins.CapacitorHttp.request({
+            method: "POST", url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/segnala_posizione`,
+            headers: { "Content-Type": "application/json", apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${token}` },
+            data: { p_lat: loc.latitude, p_lng: loc.longitude },
+          }).catch(() => {});
+        },
+      ).then((id) => { watcherNativo = id; });
+    } else if ("geolocation" in navigator) {
       watchId = navigator.geolocation.watchPosition(
         async (pos) => {
           const ora = Date.now();
@@ -145,6 +184,7 @@ function Rider() {
     return () => {
       supabaseRef.current?.removeChannel(canale);
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      if (watcherNativo) nativo?.Plugins?.BackgroundGeolocation?.removeWatcher({ id: watcherNativo });
       window.removeEventListener("beforeinstallprompt", suInvito);
     };
   }, [carica]);

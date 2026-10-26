@@ -1,0 +1,17 @@
+{
+  "appId": "it.amanoamano.rider",
+  "appName": "A Mano Rider",
+  "webDir": "www",
+  "server": {
+    "url": "https://mano-a-mano-cassa.vercel.app/rider",
+    "errorPath": "senza-rete.html"
+  },
+  "android": {
+    "useLegacyBridge": true
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": false
+    }
+  }
+}
