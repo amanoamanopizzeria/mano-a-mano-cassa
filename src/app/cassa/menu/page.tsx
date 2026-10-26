@@ -11,6 +11,7 @@ interface Prodotto {
   nome: string;
   prezzo: number;
   attivo: boolean;
+  esaurito_fino: string | null;
 }
 interface Categoria { id: string; nome: string; id_gruppo: string | null; ordine: number }
 interface Gruppo { id: string; nome: string; ordine: number }
@@ -42,7 +43,7 @@ function Menu() {
       const [g, c, p, v, gv, k] = await Promise.all([
         supabase.from("gruppo_categoria").select("id, nome, ordine").order("ordine"),
         supabase.from("categoria").select("id, nome, id_gruppo, ordine").order("ordine"),
-        supabase.from("prodotto").select("id, id_categoria, nome, prezzo, attivo").order("ordine"),
+        supabase.from("prodotto").select("id, id_categoria, nome, prezzo, attivo, esaurito_fino").order("ordine"),
         supabase.from("variazione").select("id, nome, prezzo, tipo, gruppo, id_categoria"),
         supabase.from("categoria_gruppo_variazione").select("id_categoria, gruppo, ordine").order("ordine"),
         supabase.from("pacchetto_componente").select("id_pacchetto, etichetta, id_categoria, quantita, ordine").order("ordine"),
@@ -58,12 +59,21 @@ function Menu() {
     })();
   }, []);
 
+  // «Esaurito per stasera» (mig. 0070): sparisce dal sito e dal totem, in cassa diventa grigio; torna alle 6.
+  const esaurito = (p: Prodotto) => !!p.esaurito_fino && new Date(p.esaurito_fino).getTime() > Date.now();
+  async function segnaEsaurito(p: Prodotto, si: boolean) {
+    const { data, error } = await supabaseBrowser().rpc("prodotto_esaurito", { p_id: p.id, p_esaurito: si });
+    if (error) { setErrore(error.message); return; }
+    const fino = (data as { esaurito_fino: string | null }).esaurito_fino;
+    setProdotti((ps) => ps.map((x) => (x.id === p.id ? { ...x, esaurito_fino: fino } : x)));
+  }
+
   const nomeCategoria = (id: string) => categorie.find((c) => c.id === id)?.nome ?? "?";
 
   return (
     <main className="menu-lettura">
       <h1>Menù</h1>
-      <p className="muto">Sola lettura: il menù si cambia dal back office e dal database.</p>
+      <p className="muto">Prezzi e prodotti si cambiano dal database. Qui si segna un prodotto «esaurito stasera»: sparisce dal sito e dal totem, in cassa diventa grigio, e torna da solo alle 6 di mattina.</p>
       {errore && <p className="m-errore">{errore}</p>}
 
       {/* grafico giro 24: l'indice, come la striscia delle categorie di /ordina. Un tocco porta alla
@@ -95,8 +105,13 @@ function Menu() {
                 const riga = (p: Prodotto) => {
                   const pacchetto = componenti.filter((k) => k.id_pacchetto === p.id);
                   return (
-                    <li key={p.id} className={p.attivo ? undefined : "spento"}>
+                    <li key={p.id} className={!p.attivo ? "spento" : esaurito(p) ? "esaurito" : undefined}>
                       <span className="nome">{p.nome}</span><span className="prezzo">{Number(p.prezzo).toFixed(2).replace(".", ",")} €</span>
+                      {p.attivo && (
+                        <button className={"esaurito-tasto" + (esaurito(p) ? " primario" : "")} onClick={() => segnaEsaurito(p, !esaurito(p))}>
+                          {esaurito(p) ? "Rimetti in vendita" : "Esaurito stasera"}
+                        </button>
+                      )}
                       {pacchetto.length > 0 && (
                         <div className="muto">
                           Pacchetto: {pacchetto.map((k) => `${k.quantita}× ${k.etichetta} (${nomeCategoria(k.id_categoria)})`).join(" + ")}

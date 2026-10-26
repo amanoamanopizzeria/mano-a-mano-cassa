@@ -995,3 +995,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .sala .coperti-velo { z-index: 60; }
 .sala .link-coperti { background: none; border: none; padding: 0; min-height: 0; font: inherit; color: inherit; text-decoration: underline dotted; cursor: pointer; }
 .sala .conto .mancano-coperti { width: 100%; min-height: 48px; margin-top: 10px; border: 2px solid var(--vino, #8a1538); color: var(--vino, #8a1538); background: #fff; font-weight: 700; }
+
+/* «Esaurito per stasera» (mig. 0070): in cassa il prodotto resta al suo posto ma grigio e non si tocca */
+.tessera.esaurito { opacity: .45; filter: grayscale(1); cursor: not-allowed; }
+.menu-lettura .esaurito-tasto { margin-left: 8px; min-height: 36px; padding: 0 10px; font-size: 13px; }
+.menu-lettura li.esaurito .nome { text-decoration: line-through; color: var(--muto, #6f6a63); }

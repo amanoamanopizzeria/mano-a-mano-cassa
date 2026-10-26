@@ -11,7 +11,10 @@ export interface ProdottoMenu {
   id: string; id_categoria: string | null; nome: string; descrizione: string | null;
   prezzo: number; prezzo_tavolo: number | null; foto_url: string | null; visibile_totem: boolean;
   incluso?: string | null;      // i menu: «1 supplì, 1 crocchetta, 3 mozzarelline» in omaggio (mig. 0023)
+  esaurito_fino?: string | null; // «esaurito per stasera» (mig. 0070): fino a quest'ora non si vende
 }
+/** Esaurito per stasera: segnato da /cassa/menu, torna da solo alle 6 di mattina. */
+export const esaurito = (p: ProdottoMenu) => !!p.esaurito_fino && new Date(p.esaurito_fino).getTime() > Date.now();
 /** I listini di Velocissimo: L1 asporto (banco, ritiro, domicilio, totem), L2 sala/tavoli, L3 piattaforme (Deliverect). */
 export type Listino = "asporto" | "tavolo";
 export function prezzoDi(p: ProdottoMenu, listino: Listino) {
@@ -39,7 +42,7 @@ export interface RigaOrdine {
 export async function leggiMenu(soloTotem = false) {
   const supabase = supabaseBrowser();
   let qc = supabase.from("categoria").select("id, nome, ordine, colore, destinazione, visibile_totem").order("ordine");
-  let qp = supabase.from("prodotto").select("id, id_categoria, nome, descrizione, prezzo, prezzo_tavolo, foto_url, visibile_totem, incluso").eq("attivo", true).order("ordine").order("nome");
+  let qp = supabase.from("prodotto").select("id, id_categoria, nome, descrizione, prezzo, prezzo_tavolo, foto_url, visibile_totem, incluso, esaurito_fino").eq("attivo", true).order("ordine").order("nome");
   if (soloTotem) { qc = qc.eq("visibile_totem", true); qp = qp.eq("visibile_totem", true); }
   const [c, p, v, g, pg] = await Promise.all([
     qc, qp,

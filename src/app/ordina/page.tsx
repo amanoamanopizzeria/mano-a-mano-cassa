@@ -198,7 +198,7 @@ export default function Ordina() {
     });
     setInvio(false);
     if (error) { setErrore("Non siamo riusciti a mandare l'ordine. Riprova, o chiamaci."); return; }
-    const r = data as { esito: string; numero?: string; segui?: string | null; totale?: number; motivo?: string; minimo?: number; dalle?: string; alle?: string; libere?: number };
+    const r = data as { esito: string; numero?: string; segui?: string | null; totale?: number; motivo?: string; minimo?: number; dalle?: string; alle?: string; libere?: number; prodotti?: string };
     switch (r.esito) {
       case "accettato":
         setEsito({ ok: true, titolo: `Grazie ${nome.trim().split(" ")[0]}!`, numero: r.numero, segui: r.segui, righe: carrello, totale: Number(r.totale ?? totale), consegna: costoConsegna,
@@ -214,6 +214,8 @@ export default function Ordina() {
         setFascia(null); vai("quando"); return;
       case "fuori_orario": case "ora_passata": case "manca_ora": case "giorno_non_ammesso":
         setErrore("Quell'orario non va più bene: scegline un altro."); setFascia(null); vai("quando"); return;
+      case "esaurito":
+        setErrore(`Stasera è finito: ${r.prodotti ?? "un prodotto del carrello"}. Toglilo dal carrello e riprova.`); vai("carrello"); return;
       case "minimo":
         setErrore(`A casa tua l'ordine minimo è ${euro(Number(r.minimo))}: aggiungi qualcosa.`); vai("carrello"); return;
       case "manca_civico": setErrore("Manca il numero civico."); setIndirizzo((i) => (i ? { ...i, civico: null } : i)); vai("tipo"); return;

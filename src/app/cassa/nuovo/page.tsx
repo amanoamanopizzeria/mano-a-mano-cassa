@@ -12,6 +12,7 @@ import "./nuovo.css";
 import {
   aggiungiRiga, chiaveRiga, euro, figlieDaScelte, gruppiDi, gruppiPacchetto, gruppiPerCategoria, leggiMenu, menuCompleto, nuovaRiga, prezzoDi, prezzoRiga, righePerInvio, riprezzaRighe, totaleRighe, variantiPer,
   type CategoriaMenu, type GruppoCategoria, type PacchettoGruppo, type ProdottoMenu, type RigaFiglia, type RigaOrdine, type VarianteMenu,
+  esaurito,
 } from "@/lib/menu";
 import type { Variazione } from "@/lib/types";
 
@@ -521,9 +522,9 @@ function Cassa() {
             </div>
             <div className="scorri cn-griglia">
               {prodotti.filter((p) => p.id_categoria === categoria).map((p) => (
-                <button key={p.id} className="tessera colonna riga" onClick={() => toccaProdotto(p)} style={striscia(catCorrente?.colore)}>
+                <button key={p.id} className={"tessera colonna riga" + (esaurito(p) ? " esaurito" : "")} onClick={() => toccaProdotto(p)} disabled={esaurito(p)} style={striscia(catCorrente?.colore)}>
                   <span>{p.nome}</span>
-                  <span className="prezzo">{prezzoDi(p, listino) > 0 ? euro(prezzoDi(p, listino)) : "da impostare"}</span>
+                  <span className="prezzo">{esaurito(p) ? "ESAURITO" : prezzoDi(p, listino) > 0 ? euro(prezzoDi(p, listino)) : "da impostare"}</span>
                 </button>
               ))}
             </div>
