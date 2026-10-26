@@ -1,0 +1,12 @@
+{
+  "appId": "it.webapp.amanoamanopugliese",
+  "appName": "A Mano A Mano Pugliese",
+  "webDir": "www",
+  "server": {
+    "url": "https://mano-a-mano-cassa.vercel.app/ordina",
+    "errorPath": "senza-rete.html",
+    "cleartext": false
+  },
+  "ios": { "contentInset": "never" },
+  "android": { "allowMixedContent": false }
+}

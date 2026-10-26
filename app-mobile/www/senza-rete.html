@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>A Mano A Mano Pugliese</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; box-sizing: border-box; background: #f6efe3; color: #1a1715; font-family: -apple-system, system-ui, sans-serif; text-align: center; }
+  h1 { font-size: 22px; margin: 0; text-transform: uppercase; letter-spacing: .04em; }
+  p { font-size: 17px; margin: 0; max-width: 320px; line-height: 1.4; }
+  a { display: block; width: 100%; max-width: 320px; padding: 16px; border-radius: 14px; font-size: 18px; font-weight: 700; text-decoration: none; box-sizing: border-box; }
+  .riprova { background: #8a1538; color: #fff; }
+  .chiama { background: #fff; color: #8a1538; border: 2px solid #8a1538; }
+</style>
+</head>
+<body>
+  <!-- Si vede quando l'app non raggiunge il server (niente rete, o il server giù): il cliente
+       deve sempre avere un modo per ordinare, quindi il telefono della pizzeria è qui. -->
+  <h1>A Mano A Mano Pugliese</h1>
+  <p>Non riusciamo a collegarci. Controlla la connessione e riprova, oppure chiamaci: prendiamo l'ordine al telefono.</p>
+  <a class="riprova" href="https://mano-a-mano-cassa.vercel.app/ordina">Riprova</a>
+  <a class="chiama" href="tel:+390689873556">Chiama 06 8987 3556</a>
+</body>
+</html>

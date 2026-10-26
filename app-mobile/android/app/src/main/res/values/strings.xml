@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">A Mano A Mano Pugliese</string>
+    <string name="title_activity_main">A Mano A Mano Pugliese</string>
+    <string name="package_name">it.webapp.amanoamanopugliese</string>
+    <string name="custom_url_scheme">it.webapp.amanoamanopugliese</string>
+</resources>

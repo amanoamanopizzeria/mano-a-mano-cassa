@@ -1,0 +1,18 @@
+{
+  "name": "mano-a-mano-app",
+  "version": "2.0.0",
+  "private": true,
+  "description": "L'app A Mano A Mano Pugliese nostra (iPhone e Android), guscio Capacitor sulle pagine della cassa nuova",
+  "scripts": {
+    "sync": "cap sync",
+    "android:debug": "cap sync android && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/ios": "^7.6.9"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.6.9"
+  }
+}
