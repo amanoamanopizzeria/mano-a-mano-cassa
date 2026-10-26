@@ -228,3 +228,5 @@
    larga circa 258 a 390, in una fascia da 56. */
 .o-sabbia { height: 56px; }
 .o-sabbia img { height: 36px; }
+/* il SOLD OUT si legge bene: il disabilitato generico (opacità .45) lo sbiadiva troppo (critico giro 30) */
+.o-fasce button.piena:disabled { opacity: 1; }

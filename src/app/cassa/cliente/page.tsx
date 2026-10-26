@@ -185,6 +185,8 @@ function Cliente() {
     setScheda({ esito: "nuovo", telefono: eNumero ? scritto : "" });
     if (!eNumero) setTelefono("");
     setNome(eNumero ? "" : scritto); setNote(""); setNoteConsegna(""); setCercaVia(""); setScelto(null); setCivico("");
+    // il cursore va al nome, così il tocco dopo non finisce nella ricerca (critico giro 30)
+    setTimeout(() => document.querySelector<HTMLInputElement>('input[placeholder="Nome e cognome"]')?.focus(), 50);
   }
 
   async function salva(eVai = false) {

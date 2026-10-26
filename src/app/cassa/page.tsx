@@ -522,7 +522,7 @@ function Cassa() {
                 <section className={"lo-quarto" + (q < quartoAdesso ? " passato" : q === quartoAdesso ? " adesso" : "")}>
                   <header className="lo-quarto-ora">
                     <b>{oraDi(new Date(q).toISOString())}</b>
-                    <span>{consegne > 0 ? `consegna entro le ${oraDi(new Date(q + 30 * 60_000).toISOString())}` : q < quartoAdesso ? "passato" : `fra ${Math.round((q - adesso) / 60_000)} min`}</span>
+                    <span>{consegne > 0 ? `consegna entro le ${oraDi(new Date(q + 30 * 60_000).toISOString())}` : q < quartoAdesso ? "passato" : q - adesso <= 120 * 60_000 ? `fra ${Math.round((q - adesso) / 60_000)} min` : ""}</span>
                     <span>{os.length === 1 ? "1 ordine" : `${os.length} ordini`}{consegne > 0 ? ` · ${consegne} ${consegne === 1 ? "consegna" : "consegne"}` : ""}</span>
                   </header>
                   <div className="lo-quarto-fila">
