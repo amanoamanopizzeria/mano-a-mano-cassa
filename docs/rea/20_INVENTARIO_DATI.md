@@ -102,13 +102,20 @@ l'export di Edoardo («export 28», 26/10) 37.798, il back-office letto dal Mac 
   punti in tutto sui loro saldi), 25 il 24/10 e 13 il 23/10. L'appoggio era stato letto prima del
   servizio del 25/10: quei 19 saldi lì sono di prima, e un premio riscattato fa scendere il totale.
   Tre letture fatte in tre momenti non possono coincidere.
-- **Le card nell'export sono 1.558 «FIDELITY CARD»**, tutte con numero diverso, più una riga
-  «cardgenerica». Il back-office ne contava 1.576–1.578: la ventina di differenza non si spiega senza
-  la lista del back-office card per card (la sessione del Mac è chiusa).
+- **Le card: spiegate card per card (26/10, 02:10 Roma).** Letta in sola lettura dal Chrome del Mac
+  la lista intera di `/customer`: 19.543 clienti, **1.578 card** (00001–01578 senza la 01533, più
+  «cardgenerica»), 37.877 punti su 1.387 clienti. L'export ha 1.558 card + «cardgenerica»: **mancano
+  esattamente 19 card**, 01545–01554, 01562–01564, 01567, 01570, 01572–01574, 01578, tutte di clienti
+  **registrati fra il 25/09 e il 25/10/2026**, con **90 punti** in tutto (la differenza «19 card e 91
+  punti» che aveva visto Edoardo). L'export di Velocissimo ha anche 515 clienti in meno del
+  back-office (19.028 contro 19.543): **l'export non è completo** e lascia fuori una parte dei clienti
+  più recenti. I punti che restano (37.877 − 90 = 37.787 contro 37.798) differiscono di 11: i saldi
+  del 25/10 sera.
 
-**Regola che ne esce:** il passaggio si fa da **una sola fotografia**, l'export clienti di Velocissimo
-scaricato a servizio finito, la sera prima del passaggio. Da quella si caricano clienti, card, saldo
-punti e consensi (l'appoggio letto da `/customer` non ha le card e resta solo come controllo). Dopo il
+**Regola che ne esce:** il passaggio si fa da **una sola fotografia**, presa a servizio finito la sera
+prima, e la fonte è la **lista del back-office `/customer`** (completa: 19.543 clienti e tutte le
+card, col numero card in colonna 8 e i punti in colonna 10), **non l'export**, che lascia fuori i
+clienti più recenti. L'export serve solo per i consensi, che la lista non mostra. Dopo il
 caricamento si confrontano somma dei punti e numero di card con lo stesso file: devono coincidere al
 punto e alla card.
 
