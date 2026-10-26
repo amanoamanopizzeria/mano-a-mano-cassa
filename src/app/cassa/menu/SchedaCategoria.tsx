@@ -93,7 +93,7 @@ export default function SchedaCategoria({ iniziale, gruppi, tutte, onChiudi, onS
       <form className="me-scheda carta" onSubmit={(e) => { e.preventDefault(); salva(); }}>
         <h2>{nuova ? "Nuova categoria" : "Modifica categoria"}</h2>
         <label className="me-campo">Nome
-          <input autoFocus value={c.nome} onChange={(e) => cambia("nome", e.target.value)} placeholder="es. Pizze d'autunno" />
+          <input autoFocus={typeof window !== "undefined" && window.innerWidth > 700} value={c.nome} onChange={(e) => cambia("nome", e.target.value)} placeholder="es. Pizze d'autunno" />
         </label>
         <label className="me-campo">Gruppo
           <select value={c.id_gruppo ?? ""} onChange={(e) => {

@@ -35,6 +35,8 @@ interface OrdineDeliverect {
   items: ArticoloDeliverect[];
   status?: number;
   testOrder?: boolean;
+  payment?: { amount?: number };       // centesimi, quello che ha pagato il cliente
+  deliveryCost?: number; serviceCharge?: number; tip?: number; discountTotal?: number;
 }
 
 function firmaValida(corpo: string, ricevuta: string | null): boolean {
@@ -73,15 +75,25 @@ export async function POST(req: Request) {
   // il prodotto si riconosce dal PLU (src/lib/deliverect/ordine.ts); quello che non conosciamo entra col
   // suo nome e il suo prezzo, e la nota lo dice alla cassa
   const admin = supabaseAdmin();
-  const [pr, va] = await Promise.all([
-    admin.from("prodotto").select("id, nome, codice, id_velocissimo, categoria(destinazione)"),
+  const [pr, va, pg] = await Promise.all([
+    admin.from("prodotto").select("id, nome, codice, id_velocissimo, attivo, categoria(destinazione)"),
     admin.from("variazione").select("nome, id_velocissimo, tipo"),
+    admin.from("pacchetto_gruppo").select("id_pacchetto"),
   ]);
-  type PrRiga = { id: string; nome: string; codice: string | null; id_velocissimo: number | null; categoria: { destinazione: "cucina" | "cassa" | "nessuna" } | null };
+  type PrRiga = { id: string; nome: string; codice: string | null; id_velocissimo: number | null; attivo: boolean; categoria: { destinazione: "cucina" | "cassa" | "nessuna" } | null };
   const catalogo = ((pr.data ?? []) as unknown as PrRiga[]).map((p) => ({ ...p, destinazione: p.categoria?.destinazione ?? "cucina" }));
-  const { righe, sconosciuti } = traduciArticoli(ordine.items ?? [], catalogo, (va.data ?? []) as VariazioneCatalogo[]);
+  const combo = new Set(((pg.data ?? []) as { id_pacchetto: string }[]).map((x) => x.id_pacchetto));
+  const { righe, sconosciuti, totale } = traduciArticoli(ordine.items ?? [], catalogo, (va.data ?? []) as VariazioneCatalogo[], combo);
+  // il totale si confronta con quello di Deliverect (critico giro 36, M6): consegna, servizio e mancia sono
+  // loro, lo sconto è della piattaforma; se i prodotti non tornano, la cassa lo vede scritto
+  const cent = (x?: number) => (Number.isFinite(x) ? (x as number) : 0);
+  const pagato = ordine.payment?.amount;
+  const atteso = pagato == null ? null
+    : (pagato - cent(ordine.deliveryCost) - cent(ordine.serviceCharge) - cent(ordine.tip) + Math.abs(cent(ordine.discountTotal))) / 100;
+  const scarto = atteso == null ? 0 : Math.round((atteso - totale) * 100) / 100;
   const note = [
     sconosciuti.length && `NON IN MENÙ: ${sconosciuti.join(", ")}`,
+    Math.abs(scarto) >= 0.01 && `TOTALE DIVERSO: Deliverect ${atteso!.toFixed(2)} €, righe ${totale.toFixed(2)} €`,
     ordine.note, ordine.customer?.name && `Cliente: ${ordine.customer.name}`, ordine.customer?.phoneNumber && `Tel: ${ordine.customer.phoneNumber}`,
   ].filter(Boolean).join(" · ") || null;
 
@@ -95,6 +107,12 @@ export async function POST(req: Request) {
     p_righe: righe,
   });
   if (error) return NextResponse.json({ errore: error.message }, { status: 500 });
+  // un ordine che la cassa non ha preso non è «OK» (critico giro 36, G2: per Glovo arrivava, in cassa no).
+  // Deliverect lo segna fallito e il ristorante lo vede: meglio che un ordine pagato e perso.
+  const esito = (data as { esito: string; motivo?: string }).esito;
+  if (esito !== "accettato" && esito !== "duplicato") {
+    return NextResponse.json({ errore: `ordine non accettato: ${esito}`, dettaglio: data }, { status: 409 });
+  }
 
   // Risposta a Deliverect: 200 = ricevuto. L'accettazione (ACCEPTED 20) verso Deliverect
   // non è ancora implementata: va fatta con OAuth una volta che le credenziali sono pronte.

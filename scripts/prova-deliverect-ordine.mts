@@ -1,32 +1,53 @@
-// Prova di src/lib/deliverect/ordine.ts con un ordine Glovo finto: npx --yes tsx scripts/prova-deliverect-ordine.mts
+// Prova di src/lib/deliverect/ordine.ts con ordini Glovo finti: npx --yes tsx scripts/prova-deliverect-ordine.mts
+// Il catalogo è come quello vero del 26/10: nessun codice nel database, solo l'id di Velocissimo.
 import { traduciArticoli } from "../src/lib/deliverect/ordine.ts";
 import assert from "node:assert/strict";
 
+const P = (id: string, nome: string, idv: number, attivo = true, destinazione: "cucina" | "cassa" = "cucina") =>
+  ({ id, nome, codice: null, id_velocissimo: idv, attivo, destinazione });
 const prodotti = [
-  { id: "p-arr", nome: "L'arrabbiata", codice: "142", id_velocissimo: 264, destinazione: "cucina" as const },
-  { id: "p-fin", nome: "La finocchiona", codice: null, id_velocissimo: 260, destinazione: "cucina" as const },
-  { id: "p-m1", nome: "Menu classico X1", codice: null, id_velocissimo: 210, destinazione: "cucina" as const },
-  { id: "p-mar", nome: "Margherita", codice: "C001", id_velocissimo: 11, destinazione: "cucina" as const },
-  { id: "p-coca", nome: "Coca cola 33cl", codice: null, id_velocissimo: 150, destinazione: "cassa" as const },
+  P("p-fin", "La finocchiona", 260, false), P("p-arr", "L'arrabbiata", 264),
+  P("p-m1", "Menu classico X1", 210), P("p-mar-vecchia", "Margherita", 999, false), P("p-mar", "Margherita", 11),
+  P("p-coca", "Coca cola 33cl", 150, true, "cassa"), P("p-chips", "Chips di patate", 300),
 ];
-const variazioni = [{ nome: "Mozzarella di bufala", id_velocissimo: 7, tipo: "aggiunta" as const }];
+const variazioni = [
+  { nome: "Mozzarella di bufala", id_velocissimo: 7, tipo: "aggiunta" as const },
+  { nome: "Cipolla", id_velocissimo: 8, tipo: "aggiunta" as const },
+];
+const combo = new Set(["p-m1"]);
 
-const { righe, sconosciuti } = traduciArticoli([
-  { plu: "142", name: "Arrabbiata", price: 990, quantity: 2, subItems: [{ plu: "VAR7", name: "Bufala", price: 250, quantity: 1 }] },
-  { plu: "V210", name: "Menu Classico X1", price: 1200, quantity: 1, subItems: [
-    { plu: "M-C001", name: "Margherita", price: 0, quantity: 1, subItems: [{ plu: "VAR7", name: "Bufala", price: 250, quantity: 1 }] },
-    { plu: "M-V150", name: "Coca Cola", price: 0, quantity: 1 },
-  ] },
-  { plu: "c001", name: "margherita", price: 850, quantity: 1, remark: "ben cotta" },
-  { plu: "ZZZ", name: "Pizza misteriosa", price: 1100, quantity: 1 },
-], prodotti, variazioni);
+// 1) il PLU di oggi (codice Velocissimo): 142 è di due prodotti, vince l'acceso
+let t = traduciArticoli([{ plu: "142", name: "Arrabbiata", price: 990, quantity: 2,
+  subItems: [{ plu: "B7", name: "Mozzarella di bufala", price: 250, quantity: 1 }, { name: "Cipolla", price: 0, quantity: 1, modifierAction: "NO" }] }],
+  prodotti, variazioni, combo);
+assert.equal(t.righe[0].id_prodotto, "p-arr");
+assert.deepEqual(t.righe[0].variazioni, [{ nome: "Mozzarella di bufala", prezzo: 2.5, tipo: "aggiunta" }, { nome: "Cipolla", prezzo: 0, tipo: "rimozione" }]);
+assert.equal(t.totale, 24.8);
 
-assert.equal(righe[0].id_prodotto, "p-arr"); assert.equal(righe[0].descrizione, "L'arrabbiata");
-assert.deepEqual(righe[0].variazioni, [{ nome: "Mozzarella di bufala", prezzo: 2.5, tipo: "aggiunta" }]);
-assert.equal(righe[1].id_prodotto, "p-m1"); assert.equal(righe[1].figlie?.length, 2);
-assert.equal(righe[1].figlie?.[0].id_prodotto, "p-mar"); assert.equal(righe[1].figlie?.[0].variazioni[0].prezzo, 2.5);
-assert.equal(righe[1].figlie?.[1].destinazione, "cassa");
-assert.equal(righe[2].id_prodotto, "p-mar"); assert.equal(righe[2].note, "ben cotta");
-assert.equal(righe[3].id_prodotto, null); assert.equal(righe[3].prezzo_unit, 11);
-assert.deepEqual(sconosciuti, ["Pizza misteriosa (PLU ZZZ)"]);
-console.log("ok: PLU, varianti, menu con figlie, maiuscole, prodotto sconosciuto");
+// 2) un menu: la pizza scelta CON l'extra resta una riga figlia, dentro un gruppo P-
+t = traduciArticoli([{ plu: "24", name: "Menu Classico X1", price: 1200, quantity: 1, subItems: [
+  { plu: "P-abc", name: "Scegli la pizza", price: 0, quantity: 1, productType: 3, subItems: [
+    { plu: "C001", name: "Margherita", price: 0, quantity: 1, subItems: [{ plu: "VAR7", name: "Bufala", price: 250, quantity: 2 }] }] },
+  { name: "Coca Cola 33cl", price: 0, quantity: 1 },
+] }], prodotti, variazioni, combo);
+assert.equal(t.righe[0].id_prodotto, "p-m1");
+assert.equal(t.righe[0].figlie?.length, 2);
+assert.equal(t.righe[0].figlie?.[0].id_prodotto, "p-mar");
+assert.equal(t.righe[0].figlie?.[0].variazioni.length, 2);
+assert.equal(t.righe[0].figlie?.[1].destinazione, "cassa");
+assert.equal(t.totale, 17);
+
+// 3) un extra che si chiama come un prodotto non diventa una riga, fuori da un menu
+t = traduciArticoli([{ plu: "C001", name: "Margherita", price: 850, quantity: 1, remark: "ben cotta",
+  subItems: [{ name: "Chips di patate", price: 150, quantity: 1 }] }], prodotti, variazioni, combo);
+assert.equal(t.righe[0].id_prodotto, "p-mar");
+assert.equal(t.righe[0].figlie, undefined);
+assert.equal(t.righe[0].variazioni[0].nome, "Chips di patate");
+assert.equal(t.righe[0].note, "ben cotta");
+
+// 4) per nome vince l'acceso; lo sconosciuto entra col suo prezzo e si segnala
+t = traduciArticoli([{ name: "margherita", price: 850, quantity: 1 }, { plu: "ZZZ", name: "Pizza misteriosa", price: 1100, quantity: 1 }], prodotti, variazioni, combo);
+assert.equal(t.righe[0].id_prodotto, "p-mar");
+assert.equal(t.righe[1].id_prodotto, null);
+assert.deepEqual(t.sconosciuti, ["Pizza misteriosa (PLU ZZZ)"]);
+console.log("ok: codici Velocissimo, doppioni, senza, menu con gruppi ed extra, extra-prodotto, nomi doppi, sconosciuti, totali");

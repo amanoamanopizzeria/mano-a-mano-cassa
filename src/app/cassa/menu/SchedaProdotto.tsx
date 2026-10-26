@@ -109,7 +109,7 @@ export default function SchedaProdotto({ iniziale, categorie, gruppi, onChiudi, 
         <h2>{nuovo ? (iniziale.nome ? "Copia di un prodotto" : "Nuovo prodotto") : "Modifica prodotto"}</h2>
 
         <label className="me-campo">Nome
-          <input autoFocus value={p.nome} onChange={(e) => cambia("nome", e.target.value)} placeholder="es. La patate e salsiccia" />
+          <input autoFocus={typeof window !== "undefined" && window.innerWidth > 700} value={p.nome} onChange={(e) => cambia("nome", e.target.value)} placeholder="es. La patate e salsiccia" />
         </label>
         <label className="me-campo">Categoria
           <select value={p.id_categoria ?? ""} onChange={(e) => cambia("id_categoria", e.target.value || null)}>

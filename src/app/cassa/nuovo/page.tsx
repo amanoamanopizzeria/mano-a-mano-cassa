@@ -213,14 +213,17 @@ function Cassa() {
       // «Modifica» di APP-4 si svuotava dicendo «spento nel menù»)
       const spenta = (r: RigaOrdine) => !!r.id_prodotto && !vivi.has(r.id_prodotto);
       const tolte = prev.filter(spenta);
-      if (tolte.length) setErrore(`Tolto dalla comanda perché spento nel menù: ${tolte.map((r) => r.descrizione).join(", ")}.`);
+      if (tolte.length) { toltiDaSolo.current = true; setErrore(`Tolto dalla comanda perché spento nel menù: ${tolte.map((r) => r.descrizione).join(", ")}.`); }
       return riprezzaRighe(prev.filter((r) => !spenta(r)), prodotti, tipo === "tavolo" ? "tavolo" : "asporto");
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [riletto]);
 
   // l'avviso «Tolto dalla comanda» non resta sopra una comanda già vuota (critico giro 34)
+  // (critico giro 36, M7: se a svuotarla è stato proprio il controllo, l'avviso deve restare)
+  const toltiDaSolo = useRef(false);
   useEffect(() => {
+    if (toltiDaSolo.current) { toltiDaSolo.current = false; return; }
     if (righe.length === 0) setErrore((e) => (e?.startsWith("Tolto dalla comanda") ? null : e));
   }, [righe.length]);
   // la bozza ripresa all'apertura si controlla subito, non dopo due minuti (critico giro 34)
@@ -232,7 +235,7 @@ function Cassa() {
     const vivi = new Set(prodotti.map((p) => p.id));
     setRighe((prev) => {
       const tolte = prev.filter((r) => !!r.id_prodotto && !vivi.has(r.id_prodotto));
-      if (tolte.length) setErrore(`Tolto dalla comanda perché spento nel menù: ${tolte.map((r) => r.descrizione).join(", ")}.`);
+      if (tolte.length) { toltiDaSolo.current = true; setErrore(`Tolto dalla comanda perché spento nel menù: ${tolte.map((r) => r.descrizione).join(", ")}.`); }
       return tolte.length ? prev.filter((r) => !tolte.includes(r)) : prev;
     });
   }, [prodotti]);
