@@ -1124,7 +1124,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 /* /cassa/menu/deliverect: anteprima del menù per le piattaforme (26/10/2026) */
 .dx-frase { font-size: 18px; }
 .dx-avvisi ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
-.dx-avvisi li.grave { color: #A3452F; font-weight: 600; }
+.dx-avvisi li.grave { color: var(--vino); font-weight: 600; }
 .dx-cat summary { display: flex; justify-content: space-between; gap: 8px; cursor: pointer; font-weight: 700; min-height: 36px; align-items: center; }
 .dx-cat table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
 .dx-cat th, .dx-cat td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--bordo); vertical-align: top; }
@@ -1183,3 +1183,25 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .me-azioni button { min-height: 44px; padding: 0 18px; white-space: nowrap; }
 .me-colore.scelto { border-color: var(--vino); }
 .me-colore.nessuno.scelto { border-color: var(--vino); }
+
+/* ===== /cassa/menu/deliverect (grafico giro 26, 26/10/2026) =====
+   L'avviso grave nel vino (la terracotta #A3452F è dell'OS, qui l'accento è il vino), su velo vino col filo
+   a sinistra perché un PLU doppio si veda fra gli avvisi grigi; categorie in Oswald vino col «+» oro e il
+   conto in pastiglia, intestazioni della tabella come le etichette, prezzi nel vino; «← Menù» e «Scarica»
+   a pillola da 44 (erano 19 e 37); le schede staccate di 10 px invece che attaccate. */
+.dx > p:first-child a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid var(--vino); border-radius: 999px; background: #fff; color: var(--vino); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.dx h1 { padding-bottom: 8px; border-bottom: 3px solid var(--oro); }
+.dx .carta { margin: 0 0 10px; }
+.dx-frase strong { color: var(--vino); }
+.dx-avvisi h2 { margin-top: 0; color: var(--vino); }
+.dx-avvisi li.grave { background: var(--vino-chiaro); border-left: 4px solid var(--vino); border-radius: 8px; padding: 6px 10px; margin-left: -18px; list-style: none; }
+.dx-cat summary { min-height: 44px; font-family: "Oswald", sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: 18px; color: var(--vino); list-style: none; }
+.dx-cat summary::-webkit-details-marker { display: none; }
+.dx-cat summary > span:first-child::before { content: "+"; display: inline-block; width: 1.1em; color: var(--oro); font-weight: 700; }
+.dx-cat[open] summary > span:first-child::before { content: "−"; }
+.dx-cat summary .muto { font-family: "Figtree", sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0; min-width: 32px; text-align: center; padding: 2px 8px; border-radius: 999px; background: var(--oro-velo); border: 1px solid var(--oro-chiaro); color: var(--testo); }
+.dx-cat th { font-family: "Oswald", sans-serif; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; font-size: 13px; color: var(--muto); }
+.dx-cat td.num { color: var(--vino); font-weight: 700; }
+.dx-cat tr.spento td.num { color: var(--muto); font-weight: 400; }
+.dx-cat > ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.dx > p:last-child button { min-height: 44px; padding: 0 18px; border-color: var(--vino); color: var(--vino); white-space: nowrap; }
