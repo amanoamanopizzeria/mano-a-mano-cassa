@@ -122,6 +122,32 @@ function Menu() {
     setTimeout(() => document.getElementById(`prod-${x.id}`)?.scrollIntoView({ block: "center", behavior: "smooth" }), 100);
   }
 
+  // critico giro 36: a 390 px la pagina è 19 schermate; si cerca per nome o codice
+  const [cerca, setCerca] = useState("");
+  const parole = cerca.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const trovati = parole.length
+    ? prodotti.filter((p) => parole.every((w) => p.nome.toLowerCase().includes(w) || (p.codice ?? "").toLowerCase() === w)).sort((a, b) => Number(b.attivo) - Number(a.attivo))
+    : [];
+  const rigaProdotto = (p: Prodotto) => {
+    const pacchetto = componenti.filter((k) => k.id_pacchetto === p.id);
+    return (
+      <li key={p.id} id={`prod-${p.id}`} className={!p.attivo ? "spento" : esaurito(p) ? "esaurito" : undefined}>
+        <button type="button" className="nome me-nome" onClick={() => setScheda(p)} title="Cambia il prodotto">{p.nome}</button><span className="prezzo">{Number(p.prezzo).toFixed(2).replace(".", ",")} €</span>
+        <button type="button" className="me-copia" onClick={() => setScheda({ ...p, id: undefined, ordine: undefined, codice: null, foto_url: null, nome: p.nome + " (copia)", attivo: true, visibile_app: false, visibile_web: false, visibile_totem: false })}>Copia</button>
+        {p.attivo && (
+          <button className={"esaurito-tasto" + (esaurito(p) ? " primario" : "")} onClick={() => segnaEsaurito(p, !esaurito(p))}>
+            {esaurito(p) ? "Rimetti in vendita" : "Esaurito stasera"}
+          </button>
+        )}
+        {pacchetto.length > 0 && (
+          <div className="muto">
+            Pacchetto: {pacchetto.map((k) => `${k.quantita}× ${k.etichetta} (${nomeCategoria(k.id_categoria)})`).join(" + ")}
+          </div>
+        )}
+      </li>
+    );
+  };
+
   return (
     <main className="menu-lettura">
       <div className="me-testa">
@@ -140,6 +166,13 @@ function Menu() {
         <SchedaProdotto iniziale={scheda} categorie={categorie} gruppi={gruppi} onChiudi={() => setScheda(null)} onSalvato={dopoSalvataggio} />
       )}
 
+      <input className="me-cerca" type="search" value={cerca} onChange={(e) => setCerca(e.target.value)} placeholder="Cerca un prodotto (nome o codice)" aria-label="Cerca un prodotto" />
+      {parole.length > 0 && (
+        <section className="carta">
+          <strong className="cat">{trovati.length ? `Trovati: ${trovati.length}` : "Nessun prodotto con questo nome"}</strong>
+          <ul className="prodotti">{trovati.slice(0, 40).map(rigaProdotto)}</ul>
+        </section>
+      )}
       {/* grafico giro 24: l'indice, come la striscia delle categorie di /ordina. Un tocco porta alla
           categoria; solo quelle con qualcosa in vendita (i burger spenti non ci sono). */}
       {gruppi.length > 0 && (
@@ -175,25 +208,7 @@ function Menu() {
               </div>
               {(() => {
                 const della = prodotti.filter((p) => p.id_categoria === c.id);
-                const riga = (p: Prodotto) => {
-                  const pacchetto = componenti.filter((k) => k.id_pacchetto === p.id);
-                  return (
-                    <li key={p.id} id={`prod-${p.id}`} className={!p.attivo ? "spento" : esaurito(p) ? "esaurito" : undefined}>
-                      <button type="button" className="nome me-nome" onClick={() => setScheda(p)} title="Cambia il prodotto">{p.nome}</button><span className="prezzo">{Number(p.prezzo).toFixed(2).replace(".", ",")} €</span>
-                      <button type="button" className="me-copia" onClick={() => setScheda({ ...p, id: undefined, ordine: undefined, codice: null, foto_url: null, nome: p.nome + " (copia)", attivo: true, visibile_app: false, visibile_web: false, visibile_totem: false })}>Copia</button>
-                      {p.attivo && (
-                        <button className={"esaurito-tasto" + (esaurito(p) ? " primario" : "")} onClick={() => segnaEsaurito(p, !esaurito(p))}>
-                          {esaurito(p) ? "Rimetti in vendita" : "Esaurito stasera"}
-                        </button>
-                      )}
-                      {pacchetto.length > 0 && (
-                        <div className="muto">
-                          Pacchetto: {pacchetto.map((k) => `${k.quantita}× ${k.etichetta} (${nomeCategoria(k.id_categoria)})`).join(" + ")}
-                        </div>
-                      )}
-                    </li>
-                  );
-                };
+                const riga = rigaProdotto;
                 const spenti = della.filter((p) => !p.attivo);
                 return (
                   <>
