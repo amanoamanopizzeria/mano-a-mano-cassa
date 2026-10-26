@@ -1,0 +1,105 @@
+"use client";
+
+// La scheda di una categoria (26/10/2026): nome, gruppo, colore del tasto in cassa, dove si stampa,
+// se impegna il forno, dove si vede. Le varianti restano attaccate alla categoria (mig. 0021).
+import { useState } from "react";
+import { supabaseBrowser } from "@/lib/supabase/client";
+
+export interface CategoriaCompleta {
+  id?: string; nome: string; id_gruppo: string | null; ordine: number; colore: string | null;
+  destinazione: "cucina" | "cassa" | "nessuna"; impegna_forno: boolean;
+  visibile_app: boolean; visibile_web: boolean; visibile_totem: boolean;
+}
+export const categoriaVuota = (idGruppo: string | null): CategoriaCompleta => ({
+  nome: "", id_gruppo: idGruppo, ordine: 0, colore: null, destinazione: "cucina", impegna_forno: true,
+  visibile_app: true, visibile_web: true, visibile_totem: true,
+});
+
+// i colori dei tasti della cassa 2Bit, più la terracotta del marchio
+const COLORI = ["#A3452F", "#C0392B", "#E67E22", "#D4A017", "#27AE60", "#16A085", "#2980B9", "#8E44AD", "#7F8C8D", "#5D4037"];
+
+export default function SchedaCategoria({ iniziale, gruppi, onChiudi, onSalvata }: {
+  iniziale: CategoriaCompleta;
+  gruppi: { id: string; nome: string }[];
+  onChiudi: () => void;
+  onSalvata: (c: CategoriaCompleta & { id: string }) => void;
+}) {
+  const nuova = !iniziale.id;
+  const [c, setC] = useState<CategoriaCompleta>(iniziale);
+  const [salvo, setSalvo] = useState(false);
+  const [errore, setErrore] = useState<string | null>(null);
+  const cambia = <K extends keyof CategoriaCompleta>(k: K, v: CategoriaCompleta[K]) => { setErrore(null); setC((x) => ({ ...x, [k]: v })); };
+
+  async function salva() {
+    const nome = c.nome.trim();
+    if (!nome) { setErrore("Scrivi il nome della categoria."); return; }
+    if (!c.id_gruppo) { setErrore("Scegli il gruppo (Pizze, Cucina, Bere…)."); return; }
+    setSalvo(true);
+    const supabase = supabaseBrowser();
+    let ordine = c.ordine;
+    if (nuova || c.id_gruppo !== iniziale.id_gruppo) {
+      const { data: ultima } = await supabase.from("categoria").select("ordine").order("ordine", { ascending: false }).limit(1);
+      ordine = ((ultima?.[0]?.ordine as number | undefined) ?? 0) + 1;
+    }
+    const riga = {
+      nome, id_gruppo: c.id_gruppo, ordine, colore: c.colore, destinazione: c.destinazione, impegna_forno: c.impegna_forno,
+      visibile_app: c.visibile_app, visibile_web: c.visibile_web, visibile_totem: c.visibile_totem,
+    };
+    const r = nuova
+      ? await supabase.from("categoria").insert(riga).select("id").single()
+      : await supabase.from("categoria").update(riga).eq("id", c.id!).select("id").single();
+    setSalvo(false);
+    if (r.error || !r.data) { setErrore("Non salvata: " + (r.error?.message ?? "nessuna risposta")); return; }
+    onSalvata({ ...c, ...riga, id: (r.data as { id: string }).id });
+  }
+
+  return (
+    <div className="me-velo" role="dialog" aria-modal="true" aria-label={nuova ? "Nuova categoria" : `Modifica ${iniziale.nome}`}>
+      <form className="me-scheda carta" onSubmit={(e) => { e.preventDefault(); salva(); }}>
+        <h2>{nuova ? "Nuova categoria" : "Modifica categoria"}</h2>
+        <label className="me-campo">Nome
+          <input autoFocus value={c.nome} onChange={(e) => cambia("nome", e.target.value)} placeholder="es. Pizze d'autunno" />
+        </label>
+        <label className="me-campo">Gruppo
+          <select value={c.id_gruppo ?? ""} onChange={(e) => cambia("id_gruppo", e.target.value || null)}>
+            <option value="">Scegli…</option>
+            {gruppi.map((g) => <option key={g.id} value={g.id}>{g.nome}</option>)}
+          </select>
+        </label>
+
+        <fieldset className="me-dove">
+          <legend>Colore del tasto in cassa</legend>
+          <div className="me-colori">
+            {COLORI.map((col) => (
+              <button key={col} type="button" className={"me-colore" + (c.colore === col ? " scelto" : "")} style={{ background: col }}
+                aria-label={`Colore ${col}`} aria-pressed={c.colore === col} onClick={() => cambia("colore", col)} />
+            ))}
+            <button type="button" className={"me-colore nessuno" + (!c.colore ? " scelto" : "")} aria-pressed={!c.colore} onClick={() => cambia("colore", null)}>nessuno</button>
+          </div>
+        </fieldset>
+
+        <fieldset className="me-dove">
+          <legend>Comanda</legend>
+          <label><input type="radio" name="dest" checked={c.destinazione === "cucina"} onChange={() => cambia("destinazione", "cucina")} /> Si stampa in cucina</label>
+          <label><input type="radio" name="dest" checked={c.destinazione === "cassa"} onChange={() => cambia("destinazione", "cassa")} /> Si stampa in cassa <small>(bibite, dolci pronti)</small></label>
+          <label><input type="radio" name="dest" checked={c.destinazione === "nessuna"} onChange={() => cambia("destinazione", "nessuna")} /> Non si stampa</label>
+          <label><input type="checkbox" checked={c.impegna_forno} onChange={(e) => cambia("impegna_forno", e.target.checked)} /> Conta come pizza nei quarti d&apos;ora <small>(il forno)</small></label>
+        </fieldset>
+
+        <fieldset className="me-dove">
+          <legend>Dove si vede</legend>
+          <label><input type="checkbox" checked={c.visibile_app && c.visibile_web} onChange={(e) => setC((x) => ({ ...x, visibile_app: e.target.checked, visibile_web: e.target.checked }))} /> App e sito</label>
+          <label><input type="checkbox" checked={c.visibile_totem} onChange={(e) => cambia("visibile_totem", e.target.checked)} /> Totem</label>
+          <small>In cassa si vede sempre. Una categoria senza prodotti accesi non compare da nessuna parte.</small>
+        </fieldset>
+
+        {nuova && <p className="muto">Una categoria nuova parte senza varianti (impasto, aggiunte): per una pizza nuova conviene metterla in una categoria di pizze che c&apos;è già.</p>}
+        {errore && <p className="m-errore">{errore}</p>}
+        <div className="me-azioni">
+          <button type="button" onClick={onChiudi}>Annulla</button>
+          <button type="submit" className="primario" disabled={salvo}>{salvo ? "Salvo…" : "Salva"}</button>
+        </div>
+      </form>
+    </div>
+  );
+}

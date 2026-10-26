@@ -5,6 +5,7 @@
 // riga su app, sito e totem.
 import { useEffect, useState } from "react";
 import SchedaProdotto, { prodottoVuoto, type ProdottoScheda } from "./SchedaProdotto";
+import SchedaCategoria, { categoriaVuota, type CategoriaCompleta } from "./SchedaCategoria";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 
@@ -12,7 +13,7 @@ interface Prodotto extends ProdottoScheda {
   id: string;
   esaurito_fino: string | null;
 }
-interface Categoria { id: string; nome: string; id_gruppo: string | null; ordine: number }
+interface Categoria extends CategoriaCompleta { id: string }
 interface Gruppo { id: string; nome: string; ordine: number }
 interface Variazione { id: string; nome: string; prezzo: number; tipo: string; gruppo: string; id_categoria: string | null }
 interface GruppoVar { id_categoria: string; gruppo: string; ordine: number }
@@ -41,7 +42,7 @@ function Menu() {
     (async () => {
       const [g, c, p, v, gv, k] = await Promise.all([
         supabase.from("gruppo_categoria").select("id, nome, ordine").order("ordine"),
-        supabase.from("categoria").select("id, nome, id_gruppo, ordine").order("ordine"),
+        supabase.from("categoria").select("id, nome, id_gruppo, ordine, colore, destinazione, impegna_forno, visibile_app, visibile_web, visibile_totem").order("ordine"),
         supabase.from("prodotto").select("id, id_categoria, nome, descrizione, codice, prezzo, prezzo_tavolo, prezzo_piattaforme, aliquota_iva, foto_url, attivo, visibile_app, visibile_web, visibile_totem, ordine, esaurito_fino").order("ordine"),
         supabase.from("variazione").select("id, nome, prezzo, tipo, gruppo, id_categoria"),
         supabase.from("categoria_gruppo_variazione").select("id_categoria, gruppo, ordine").order("ordine"),
@@ -70,6 +71,14 @@ function Menu() {
   const nomeCategoria = (id: string) => categorie.find((c) => c.id === id)?.nome ?? "?";
   const [scheda, setScheda] = useState<ProdottoScheda | null>(null);
   const [salvato, setSalvato] = useState<string | null>(null);
+  const [schedaCat, setSchedaCat] = useState<CategoriaCompleta | null>(null);
+  function dopoCategoria(x: CategoriaCompleta & { id: string }) {
+    setCategorie((cs) => (cs.some((y) => y.id === x.id) ? cs.map((y) => (y.id === x.id ? x : y)) : [...cs, x]).sort((a, b) => a.ordine - b.ordine));
+    setSchedaCat(null);
+    setSalvato(`Categoria «${x.nome}» salvata.`);
+    setTimeout(() => setSalvato(null), 8000);
+    setTimeout(() => document.getElementById(`cat-${x.id}`)?.scrollIntoView({ block: "start", behavior: "smooth" }), 100);
+  }
   function dopoSalvataggio(x: ProdottoScheda & { id: string }) {
     setProdotti((ps) => {
       const vecchio = ps.find((y) => y.id === x.id);
@@ -97,6 +106,7 @@ function Menu() {
       {errore && <p className="m-errore">{errore}</p>}
       {salvato && <p className="me-salvato" role="status">{salvato}</p>}
       {!errore && gruppi.length === 0 && <p className="muto">Carico il menù…</p>}
+      {schedaCat && <SchedaCategoria iniziale={schedaCat} gruppi={gruppi} onChiudi={() => setSchedaCat(null)} onSalvata={dopoCategoria} />}
       {scheda && (
         <SchedaProdotto iniziale={scheda} categorie={categorie} gruppi={gruppi} onChiudi={() => setScheda(null)} onSalvato={dopoSalvataggio} />
       )}
@@ -120,12 +130,14 @@ function Menu() {
 
       {gruppi.map((g) => (
         <section key={g.id} className="m-gruppo">
-          <h2>{g.nome}</h2>
+          <div className="me-cat-testa"><h2>{g.nome}</h2><button type="button" className="me-aggiungi" onClick={() => setSchedaCat(categoriaVuota(g.id))}>+ categoria</button></div>
           <div className="m-categorie">
           {categorie.filter((c) => c.id_gruppo === g.id).map((c) => (
             <div key={c.id} id={`cat-${c.id}`} className="carta">
               <div className="me-cat-testa">
-                <strong className="cat">{c.nome}</strong>
+                <button type="button" className="cat me-nome-cat" onClick={() => setSchedaCat(c)} title="Cambia la categoria">
+                  {c.colore && <span className="me-pallino" style={{ background: c.colore }} aria-hidden />}{c.nome}
+                </button>
                 <button type="button" className="me-aggiungi" onClick={() => setScheda(prodottoVuoto(c.id))}>+ prodotto</button>
               </div>
               {(() => {
