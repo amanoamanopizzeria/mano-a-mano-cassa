@@ -86,7 +86,10 @@ function Menu() {
     <main className="menu-lettura">
       <div className="me-testa">
         <h1>Menù</h1>
-        <button className="primario" onClick={() => setScheda(prodottoVuoto(null))}>+ Nuovo prodotto</button>
+        <span className="me-testa-tasti">
+          <a className="tasto" href="/cassa/menu/deliverect">Menù per le piattaforme</a>
+          <button className="primario" onClick={() => setScheda(prodottoVuoto(null))}>+ Nuovo prodotto</button>
+        </span>
       </div>
       <p className="muto">Tocca un prodotto per cambiarlo, o «Copia» per farne uno simile in un attimo. Quello che salvi è subito in cassa, nell&apos;app, sul sito e sul totem. «Esaurito stasera» lo toglie fino alle 6 di mattina.</p>
       {errore && <p className="m-errore">{errore}</p>}
