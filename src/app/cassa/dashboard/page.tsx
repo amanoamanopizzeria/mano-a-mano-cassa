@@ -142,6 +142,8 @@ function Dashboard() {
     : periodo === "anno" ? iv.dal.slice(0, 4)
     : `dal ${new Date(iv.dal + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "short", year: iv.dal.slice(0, 4) !== iv.al.slice(0, 4) ? "numeric" : undefined })} al ${new Date(iv.al + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}`;
   const giorni = giorniFra(iv.dal, iv.al) + 1;
+  // la sera che corrisponde nel periodo di confronto: stesso giorno dell'anno prima, o spostata come il periodo
+  const giornoPrima = (g: string) => (confronto === "anno" ? unAnnoPrima(g) : piu(iv.primaDal, giorniFra(iv.dal, g)));
   const t = c?.totali;
   const tp = p?.totali;
   const venduto = Number(t?.venduto ?? 0);
@@ -244,9 +246,12 @@ function Dashboard() {
             </Ramo>
             {giorni > 1 && (
               <Ramo titolo="Andamento" riassunto={giorni > 62 ? `${c.per_mese.length} mesi` : `${c.per_giorno.length} sere aperte`}>
+                {p && <p className="muto">In grigio {iv.nomePrima}.</p>}
                 {giorni > 62
-                  ? <Colonne voci={c.per_mese.map((x) => ({ k: new Date(x.m + "-15T12:00:00").toLocaleDateString("it-IT", { month: "short", year: "2-digit" }), n: x.n, euro: x.euro }))} euroSopra />
-                  : <Colonne voci={c.per_giorno.map((x) => ({ k: giorni > 31 ? `${Number(x.g.slice(8))}/${Number(x.g.slice(5, 7))}` : x.g.slice(8), n: x.n, euro: x.euro }))} euroSopra />}
+                  ? <Colonne voci={c.per_mese.map((x) => ({ k: new Date(x.m + "-15T12:00:00").toLocaleDateString("it-IT", { month: "short", year: "2-digit" }), n: x.n, euro: x.euro }))} euroSopra
+                      prima={p && (confronto === "anno" || periodo === "anno") ? c.per_mese.map((x) => p.per_mese.find((y) => y.m === `${Number(x.m.slice(0, 4)) - 1}${x.m.slice(4)}`)?.euro ?? null) : undefined} />
+                  : <Colonne voci={c.per_giorno.map((x) => ({ k: giorni > 31 ? `${Number(x.g.slice(8))}/${Number(x.g.slice(5, 7))}` : x.g.slice(8), n: x.n, euro: x.euro }))} euroSopra
+                      prima={p ? c.per_giorno.map((x) => p.per_giorno.find((y) => y.g === giornoPrima(x.g))?.euro ?? null) : undefined} />}
                 <Progressivo righe={giorni > 62 ? c.per_mese.map((x) => x.euro) : c.per_giorno.map((x) => x.euro)} />
               </Ramo>
             )}
@@ -257,6 +262,7 @@ function Dashboard() {
                 <thead><tr><th>Prodotto</th><th>Categoria</th><th className="num">Pezzi</th><th className="num">nei menu</th><th className="num">Euro</th></tr></thead>
                 <tbody>{c.prodotti.map((x) => <tr key={x.nome}><td>{x.nome}</td><td className="muto">{x.categoria ?? ""}</td><td className="num">{x.pezzi}</td><td className="num">{x.nei_menu ?? ""}</td><td className="num">{euro(x.euro)}</td></tr>)}</tbody>
               </table></div>
+              <Scarica nome={`prodotti_${iv.dal}_${iv.al}`} intesta={["Prodotto", "Categoria", "Pezzi", "Nei menu", "Euro"]} righe={c.prodotti.map((x) => [x.nome, x.categoria, Number(x.pezzi), x.nei_menu == null ? null : Number(x.nei_menu), Number(x.euro)])} />
             </Ramo>
             <Ramo titolo="Categorie" riassunto={c.categorie[0] ? `${c.categorie[0].nome}, ${euroTondo(c.categorie[0].euro)}` : "—"}>
               <Barre voci={c.categorie.map((x) => ({ k: x.nome, n: x.pezzi, euro: x.euro }))} totale={c.categorie.reduce((s, x) => s + Number(x.euro), 0)} pezzi />
@@ -265,6 +271,7 @@ function Dashboard() {
             <Ramo titolo="Sconti" riassunto={`${euroTondo(t.sconti)} in ${c.sconti.reduce((s, x) => s + x.n, 0)} ordini`}>
               {c.sconti.length === 0 ? <p className="muto">Nessuno sconto.</p>
                 : c.sconti.map((x) => <div className="db-riga2" key={x.voce}><span>{x.voce}</span><span className="db-num">{x.n} volte · −{euro(x.euro)}</span></div>)}
+              <Scarica nome={`sconti_${iv.dal}_${iv.al}`} intesta={["Voce", "Volte", "Euro"]} righe={c.sconti.map((x) => [x.voce, x.n, Number(x.euro)])} />
             </Ramo>
             <Ramo titolo="Rider" riassunto={`${c.rider.reduce((s, x) => s + x.consegne, 0)} consegne`}>
               {c.rider.length === 0 ? <p className="muto">Nessuna consegna.</p> : (
@@ -273,6 +280,7 @@ function Dashboard() {
                   <tbody>{c.rider.map((x) => <tr key={x.nome}><td>{x.nome}</td><td className="num">{x.consegne}</td><td className="num">{euro(x.euro)}</td><td className="num">{euro(x.contanti)}</td><td className="num">{x.in_ritardo}</td><td className="num">{x.ritardo_medio == null ? "" : `${minuti(x.ritardo_medio)} min`}</td><td className="num">{x.viaggio_medio == null ? "" : `${minuti(x.viaggio_medio)} min`}</td><td className="num">{x.annullate}</td></tr>)}</tbody>
                 </table></div>
               )}
+              <Scarica nome={`rider_${iv.dal}_${iv.al}`} intesta={["Rider", "Consegne", "Euro", "Contanti", "In ritardo", "Ritardo medio", "Viaggio medio", "Annullate"]} righe={c.rider.map((x) => [x.nome, x.consegne, Number(x.euro), Number(x.contanti), x.in_ritardo, x.ritardo_medio, x.viaggio_medio, x.annullate])} />
               {periodo === "serata" && <p className="muto">Il dare-avere della serata coi rider è in <a href="/cassa/riepilogo">Riepilogo</a>.</p>}
             </Ramo>
             <Ramo titolo="Zone" riassunto={c.zone[0] ? `${c.zone[0].nome.toLowerCase()} prima, ${c.zone[0].n} consegne` : "—"}>
@@ -282,6 +290,7 @@ function Dashboard() {
                   <tbody>{c.zone.map((x) => <tr key={x.nome}><td>{x.nome}</td><td className="num">{x.n}</td><td className="num">{euro(x.euro)}</td><td className="num">{euro(x.medio)}</td><td className="num">{euro(x.consegna)}</td><td className="num">{x.ritardo_medio == null ? "" : `${minuti(x.ritardo_medio)} min`}</td></tr>)}</tbody>
                 </table></div>
               )}
+              <Scarica nome={`zone_${iv.dal}_${iv.al}`} intesta={["Zona", "Ordini", "Euro", "Scontrino medio", "Consegne pagate", "Ritardo medio"]} righe={c.zone.map((x) => [x.nome, x.n, Number(x.euro), Number(x.medio), Number(x.consegna), x.ritardo_medio])} />
             </Ramo>
             <Ramo titolo="Clienti" riassunto={`${c.clienti.nuovi} nuovi · ${c.clienti.ricorrenti} tornati`}>
               <div className="db-kpi db-kpi-piccoli">
@@ -323,6 +332,17 @@ function oreConZeri(xs: { h: number; n: number; euro: number }[]) {
   return Array.from({ length: a - da + 1 }, (_, i) => { const h = (da + i + 6) % 24; return xs.find((x) => x.h === h) ?? { h, n: 0, euro: 0 }; });
 }
 
+/** Il CSV di un ramo (prodotti, rider, zone, sconti): col punto e virgola, si apre già in Excel. */
+function Scarica({ nome, intesta, righe }: { nome: string; intesta: string[]; righe: (string | number | null)[][] }) {
+  function vai() {
+    const q = (v: unknown) => { const t = typeof v === "number" ? String(v).replace(".", ",") : String(v ?? ""); return `"${(/^[=+\-@\t\r]/.test(t) ? "'" + t : t).replace(/"/g, '""')}"`; };
+    const blob = new Blob(["\ufeff" + [intesta.map(q).join(";"), ...righe.map((r) => r.map(q).join(";"))].join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = nome + ".csv"; a.click(); URL.revokeObjectURL(a.href);
+  }
+  return <p><button onClick={vai} disabled={righe.length === 0}>Scarica CSV</button></p>;
+}
+
 function primo(xs: Voce[], nome: (k: string) => string) {
   const tot = xs.reduce((s, x) => s + Number(x.euro), 0);
   return xs[0] && tot > 0 ? `${nome(xs[0].k)} ${Math.round((Number(xs[0].euro) / tot) * 100)}%` : "—";
@@ -355,15 +375,19 @@ function Barre({ voci, totale, ordinate = true, pezzi }: { voci: Voce[]; totale:
   );
 }
 
-function Colonne({ voci, euroSopra }: { voci: Voce[]; euroSopra?: boolean }) {
+// prima: gli euro del periodo di confronto, colonna per colonna (la colonna grigia accanto, come «anno precedente» di Velocissimo)
+function Colonne({ voci, euroSopra, prima }: { voci: Voce[]; euroSopra?: boolean; prima?: (number | null)[] }) {
   if (voci.length === 0) return <p className="muto">Nessun ordine.</p>;
-  const max = Math.max(1, ...voci.map((x) => Number(x.euro)));
+  const max = Math.max(1, ...voci.map((x) => Number(x.euro)), ...(prima ?? []).map((x) => Number(x ?? 0)));
   return (
     <div className="db-colonne" role="img" aria-label="Grafico a colonne">
-      {voci.map((x) => (
+      {voci.map((x, i) => (
         <div className="db-col" key={x.k} title={`${x.k}: ${x.n} ordini, ${euro(x.euro)}`}>
           <small>{euroSopra ? euroTondo(x.euro) : x.n}</small>
-          <span style={{ height: `${Math.max(2, Math.round((Number(x.euro) / max) * 100))}%` }} />
+          <div className="db-col-coppia">
+            {prima && <i style={{ height: `${Math.round((Number(prima[i] ?? 0) / max) * 100)}%` }} title={prima[i] != null ? `prima: ${euro(Number(prima[i]))}` : undefined} />}
+            <span style={{ height: `${Math.max(2, Math.round((Number(x.euro) / max) * 100))}%` }} />
+          </div>
           <b>{x.k}</b>
         </div>
       ))}
@@ -423,6 +447,10 @@ function Ordini({ dal, al, canali, tipi, serata }: { dal: string; al: string; ca
   const [errore, setErrore] = useState<string | null>(null);
   const [cerca, setCerca] = useState("");
   const [stato, setStato] = useState("");
+  // gli altri filtri della lista Ordini di Velocissimo (REA 24 §24.5): pagamento, rider, zona
+  const [pag, setPag] = useState("");
+  const [rid, setRid] = useState("");
+  const [zon, setZon] = useState("");
   const [aperto, setAperto] = useState<string | null>(null);
   const [quanti, setQuanti] = useState(200);
 
@@ -451,9 +479,10 @@ function Ordini({ dal, al, canali, tipi, serata }: { dal: string; al: string; ca
   const filtrate = useMemo(() => {
     if (!righe) return [];
     const s = cerca.trim().toLowerCase();
-    return righe.filter((r) => (!stato || r.stato === stato) && (!s || [r.numero_visibile, String(r.numero), r.cliente?.nome, r.cliente?.telefono, r.nome_cliente, r.note,
+    return righe.filter((r) => (!stato || r.stato === stato) && (!pag || pagamentoDi(r) === pag)
+      && (!rid || (r.consegna?.[0]?.rider?.nome ?? "") === rid) && (!zon || (r.zona?.nome ?? "") === zon) && (!s || [r.numero_visibile, String(r.numero), r.cliente?.nome, r.cliente?.telefono, r.nome_cliente, r.note,
       r.indirizzo?.via, r.zona?.nome, r.consegna?.[0]?.rider?.nome].some((x) => x && x.toLowerCase().includes(s))));
-  }, [righe, cerca, stato]);
+  }, [righe, cerca, stato, pag, rid, zon]);
 
   function scarica() {
     const intesta = ["Numero", "Data", "Ora", "Per le", "Tipo", "Origine", "Stato", "Cliente", "Telefono", "Indirizzo", "Zona", "Pagamento", "Coperti", "Sconto", "Consegna", "Totale", "Rider", "Note"];
@@ -485,11 +514,28 @@ function Ordini({ dal, al, canali, tipi, serata }: { dal: string; al: string; ca
           <option value="">Tutti gli stati</option>
           {Object.entries(STATO).map(([k, n]) => <option key={k} value={k}>{n}</option>)}
         </select>
+        <select value={pag} onChange={(e) => setPag(e.target.value)} aria-label="Pagamento">
+          <option value="">Tutti i pagamenti</option>
+          {["contanti", "POS", "online", "non indicato"].map((k) => <option key={k} value={k}>{k}</option>)}
+        </select>
+        <select value={rid} onChange={(e) => setRid(e.target.value)} aria-label="Rider">
+          <option value="">Tutti i rider</option>
+          {[...new Set(righe.map((r) => r.consegna?.[0]?.rider?.nome).filter((x): x is string => !!x))].sort().map((k) => <option key={k} value={k}>{k}</option>)}
+        </select>
+        <select value={zon} onChange={(e) => setZon(e.target.value)} aria-label="Zona">
+          <option value="">Tutte le zone</option>
+          {[...new Set(righe.map((r) => r.zona?.nome).filter((x): x is string => !!x))].sort().map((k) => <option key={k} value={k}>{k}</option>)}
+        </select>
         <div className="db-scarica">
           <button onClick={scarica}>Scarica CSV ({filtrate.length})</button>
           {serata && <a href={`/api/ordini/csv?giornata=${serata}`}><button>CSV per mano-a-mano-os (40 colonne)</button></a>}
         </div>
       </div>
+      {/* i totali dell'elenco filtrato, come il riquadro «Metriche» dei report di Velocissimo */}
+      <p className="db-metriche">
+        {(() => { const vive = filtrate.filter((r) => r.stato !== "annullato"); const tot = vive.reduce((t, r) => t + r.totale, 0);
+          return <><b>{vive.length}</b> ordini · <b>{euro(tot)}</b> · medio {vive.length ? euro(tot / vive.length) : "—"} · {filtrate.length - vive.length} annullati</>; })()}
+      </p>
       {troppi && <p className="muto">Più di 5.000 ordini: ne mostro 5.000. Scegli un periodo più corto o un filtro.</p>}
       <div className="db-tabella">
         <table>

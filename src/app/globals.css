@@ -1243,7 +1243,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .db-riga2 { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,.06); font-size: 14px; }
 .db-colonne { display: flex; align-items: flex-end; gap: 4px; height: 180px; overflow-x: auto; padding-bottom: 2px; }
 .db-col { flex: 1 0 28px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 2px; font-size: 12px; }
-.db-col span { width: 70%; background: var(--vino, #8a1538); border-radius: 4px 4px 0 0; }
+.db-col-coppia { flex: 1; width: 80%; display: flex; align-items: flex-end; justify-content: center; gap: 2px; }
+.db-col-coppia > span { flex: 1; max-width: 22px; height: 0; background: var(--vino, #8a1538); border-radius: 4px 4px 0 0; }
+.db-col-coppia > i { flex: 1; max-width: 22px; background: #c9c1b8; border-radius: 4px 4px 0 0; }
 .db-col b { font-weight: 600; }
 .db-col small { color: var(--muto); white-space: nowrap; font-size: 12px; }
 .db-cerca { flex: 1; min-width: 200px; min-height: 44px; padding: 0 12px; border: 1px solid var(--bordo, #ddd); border-radius: 999px; font: inherit; }
@@ -1259,3 +1261,5 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .db-filtri .muto { flex-basis: auto; }
 @media (max-width: 600px) { .db-filtri .muto:not(:first-child) { flex-basis: 100%; margin-left: 0; } }
 .db-titolo::first-letter { text-transform: uppercase; }
+.db-metriche { margin: 6px 0; font-size: 15px; }
+.db-ordini-testa select { max-width: 100%; }
