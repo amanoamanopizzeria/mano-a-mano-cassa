@@ -686,7 +686,9 @@ function Contatore({ n, meno, piu }: { n: number; meno: () => void; piu: () => v
 }
 
 function Foto({ p, classe }: { p?: ProdottoMenu; classe: string }) {
-  if (p?.foto_url) return <img src={p.foto_url} alt="" className={classe} />;
+  // se il link della foto (ancora sul CDN di WebApp) non si carica, il bollino come quando manca (grafico giro 25)
+  const [rotta, setRotta] = useState<string | null>(null);
+  if (p?.foto_url && rotta !== p.foto_url) return <img src={p.foto_url} alt="" className={classe} onError={() => setRotta(p.foto_url)} />;
   return <div className="o-manca" aria-hidden><img src="/brand/bollino.png" alt="" style={{ width: "52%" }} /></div>;
 }
 
