@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { traduciArticoli, type ArticoloDx, type VariazioneCatalogo } from "@/lib/deliverect/ordine";
 
 export const dynamic = "force-dynamic";
 
@@ -20,14 +21,7 @@ const TIPI: Record<number, "domicilio" | "ritiro" | "tavolo" | "banco"> = {
   4: "ritiro",
 };
 
-interface ArticoloDeliverect {
-  plu?: string;
-  name: string;
-  price: number;        // centesimi
-  quantity: number;
-  remark?: string;
-  subItems?: { plu?: string; name: string; price: number; quantity: number }[];
-}
+type ArticoloDeliverect = ArticoloDx;
 
 interface OrdineDeliverect {
   _id?: string;
@@ -76,17 +70,22 @@ export async function POST(req: Request) {
   const negozio = process.env.DELIVERECT_ID_NEGOZIO;
   if (!negozio) return NextResponse.json({ errore: "negozio non configurato" }, { status: 500 });
 
-  const righe = (ordine.items ?? []).map((a) => ({
-    descrizione: a.name,
-    quantita: a.quantity,
-    prezzo_unit: a.price / 100,
-    destinazione: "cucina",
-    note: a.remark ?? null,
-  }));
-  const note = [ordine.note, ordine.customer?.name && `Cliente: ${ordine.customer.name}`, ordine.customer?.phoneNumber && `Tel: ${ordine.customer.phoneNumber}`]
-    .filter(Boolean).join(" · ") || null;
+  // il prodotto si riconosce dal PLU (src/lib/deliverect/ordine.ts); quello che non conosciamo entra col
+  // suo nome e il suo prezzo, e la nota lo dice alla cassa
+  const admin = supabaseAdmin();
+  const [pr, va] = await Promise.all([
+    admin.from("prodotto").select("id, nome, codice, id_velocissimo, categoria(destinazione)"),
+    admin.from("variazione").select("nome, id_velocissimo, tipo"),
+  ]);
+  type PrRiga = { id: string; nome: string; codice: string | null; id_velocissimo: number | null; categoria: { destinazione: "cucina" | "cassa" | "nessuna" } | null };
+  const catalogo = ((pr.data ?? []) as unknown as PrRiga[]).map((p) => ({ ...p, destinazione: p.categoria?.destinazione ?? "cucina" }));
+  const { righe, sconosciuti } = traduciArticoli(ordine.items ?? [], catalogo, (va.data ?? []) as VariazioneCatalogo[]);
+  const note = [
+    sconosciuti.length && `NON IN MENÙ: ${sconosciuti.join(", ")}`,
+    ordine.note, ordine.customer?.name && `Cliente: ${ordine.customer.name}`, ordine.customer?.phoneNumber && `Tel: ${ordine.customer.phoneNumber}`,
+  ].filter(Boolean).join(" · ") || null;
 
-  const { data, error } = await supabaseAdmin().rpc("accetta_ordine_esterno", {
+  const { data, error } = await admin.rpc("accetta_ordine_esterno", {
     p_negozio: negozio,
     p_canale: canale,
     p_tipo: tipo,
