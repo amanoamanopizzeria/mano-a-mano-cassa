@@ -1,16 +1,15 @@
 "use client";
 
-// Menù della cassa, in sola lettura: gruppi → categorie → prodotti, con varianti e pacchetti.
+// Menù della cassa: gruppi → categorie → prodotti, con varianti e pacchetti. Dal 26/10/2026 si aggiunge,
+// si copia e si cambia un prodotto da qui (SchedaProdotto): lo stesso prodotto è il tasto in cassa e la
+// riga su app, sito e totem.
 import { useEffect, useState } from "react";
+import SchedaProdotto, { prodottoVuoto, type ProdottoScheda } from "./SchedaProdotto";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 
-interface Prodotto {
+interface Prodotto extends ProdottoScheda {
   id: string;
-  id_categoria: string | null;
-  nome: string;
-  prezzo: number;
-  attivo: boolean;
   esaurito_fino: string | null;
 }
 interface Categoria { id: string; nome: string; id_gruppo: string | null; ordine: number }
@@ -43,7 +42,7 @@ function Menu() {
       const [g, c, p, v, gv, k] = await Promise.all([
         supabase.from("gruppo_categoria").select("id, nome, ordine").order("ordine"),
         supabase.from("categoria").select("id, nome, id_gruppo, ordine").order("ordine"),
-        supabase.from("prodotto").select("id, id_categoria, nome, prezzo, attivo, esaurito_fino").order("ordine"),
+        supabase.from("prodotto").select("id, id_categoria, nome, descrizione, codice, prezzo, prezzo_tavolo, prezzo_piattaforme, aliquota_iva, foto_url, attivo, visibile_app, visibile_web, visibile_totem, ordine, esaurito_fino").order("ordine"),
         supabase.from("variazione").select("id, nome, prezzo, tipo, gruppo, id_categoria"),
         supabase.from("categoria_gruppo_variazione").select("id_categoria, gruppo, ordine").order("ordine"),
         supabase.from("pacchetto_componente").select("id_pacchetto, etichetta, id_categoria, quantita, ordine").order("ordine"),
@@ -53,7 +52,7 @@ function Menu() {
       if (primo) { setErrore(primo.message); return; }
       setGruppi((g.data ?? []) as Gruppo[]);
       setCategorie((c.data ?? []) as Categoria[]);
-      setProdotti((p.data ?? []) as Prodotto[]);
+      setProdotti(((p.data ?? []) as Prodotto[]).map((x) => ({ ...x, prezzo: Number(x.prezzo), prezzo_tavolo: x.prezzo_tavolo == null ? null : Number(x.prezzo_tavolo), prezzo_piattaforme: x.prezzo_piattaforme == null ? null : Number(x.prezzo_piattaforme), aliquota_iva: Number(x.aliquota_iva ?? 10) })));
       setVariazioni((v.data ?? []) as Variazione[]);
       setComponenti((k.data ?? []) as Componente[]);
     })();
@@ -69,12 +68,32 @@ function Menu() {
   }
 
   const nomeCategoria = (id: string) => categorie.find((c) => c.id === id)?.nome ?? "?";
+  const [scheda, setScheda] = useState<ProdottoScheda | null>(null);
+  const [salvato, setSalvato] = useState<string | null>(null);
+  function dopoSalvataggio(x: ProdottoScheda & { id: string }) {
+    setProdotti((ps) => {
+      const vecchio = ps.find((y) => y.id === x.id);
+      const nuovo: Prodotto = { ...(vecchio ?? { esaurito_fino: null }), ...x } as Prodotto;
+      return vecchio ? ps.map((y) => (y.id === x.id ? nuovo : y)) : [...ps, nuovo];
+    });
+    setScheda(null);
+    setSalvato(`«${x.nome}» salvato: è già in cassa${x.attivo && x.visibile_app ? ", nell'app e sul sito" : ""}${x.attivo && x.visibile_totem ? " e sul totem" : ""}.`);
+    setTimeout(() => setSalvato(null), 6000);
+    setTimeout(() => document.getElementById(`prod-${x.id}`)?.scrollIntoView({ block: "center", behavior: "smooth" }), 100);
+  }
 
   return (
     <main className="menu-lettura">
-      <h1>Menù</h1>
-      <p className="muto">Prezzi e prodotti si cambiano dal database. Qui si segna un prodotto «esaurito stasera»: sparisce dal sito e dal totem, in cassa diventa grigio, e torna da solo alle 6 di mattina.</p>
+      <div className="me-testa">
+        <h1>Menù</h1>
+        <button className="primario" onClick={() => setScheda(prodottoVuoto(null))}>+ Nuovo prodotto</button>
+      </div>
+      <p className="muto">Tocca un prodotto per cambiarlo, o «Copia» per farne uno simile in un attimo. Quello che salvi è subito in cassa, nell&apos;app, sul sito e sul totem. «Esaurito stasera» lo toglie fino alle 6 di mattina.</p>
       {errore && <p className="m-errore">{errore}</p>}
+      {salvato && <p className="me-salvato" role="status">{salvato}</p>}
+      {scheda && (
+        <SchedaProdotto iniziale={scheda} categorie={categorie} gruppi={gruppi} onChiudi={() => setScheda(null)} onSalvato={dopoSalvataggio} />
+      )}
 
       {/* grafico giro 24: l'indice, come la striscia delle categorie di /ordina. Un tocco porta alla
           categoria; solo quelle con qualcosa in vendita (i burger spenti non ci sono). */}
@@ -99,14 +118,18 @@ function Menu() {
           <div className="m-categorie">
           {categorie.filter((c) => c.id_gruppo === g.id).map((c) => (
             <div key={c.id} id={`cat-${c.id}`} className="carta">
-              <strong className="cat">{c.nome}</strong>
+              <div className="me-cat-testa">
+                <strong className="cat">{c.nome}</strong>
+                <button type="button" className="me-aggiungi" onClick={() => setScheda(prodottoVuoto(c.id))}>+ prodotto</button>
+              </div>
               {(() => {
                 const della = prodotti.filter((p) => p.id_categoria === c.id);
                 const riga = (p: Prodotto) => {
                   const pacchetto = componenti.filter((k) => k.id_pacchetto === p.id);
                   return (
-                    <li key={p.id} className={!p.attivo ? "spento" : esaurito(p) ? "esaurito" : undefined}>
-                      <span className="nome">{p.nome}</span><span className="prezzo">{Number(p.prezzo).toFixed(2).replace(".", ",")} €</span>
+                    <li key={p.id} id={`prod-${p.id}`} className={!p.attivo ? "spento" : esaurito(p) ? "esaurito" : undefined}>
+                      <button type="button" className="nome me-nome" onClick={() => setScheda(p)} title="Cambia il prodotto">{p.nome}</button><span className="prezzo">{Number(p.prezzo).toFixed(2).replace(".", ",")} €</span>
+                      <button type="button" className="me-copia" onClick={() => setScheda({ ...p, id: undefined, ordine: undefined, codice: null, nome: p.nome + " (copia)", attivo: true })}>Copia</button>
                       {p.attivo && (
                         <button className={"esaurito-tasto" + (esaurito(p) ? " primario" : "")} onClick={() => segnaEsaurito(p, !esaurito(p))}>
                           {esaurito(p) ? "Rimetti in vendita" : "Esaurito stasera"}
