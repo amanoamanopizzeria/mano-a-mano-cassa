@@ -289,8 +289,8 @@ function Rider() {
       {borsello && (
         <p className="muto r-borsello">
           Hai in mano <b>{euro(borsello.in_mano)}</b>
-          {borsello.da_saldare > 0 && <> · da versare in cassa {euro(borsello.da_saldare)}</>}
-          . A fine serata si fa il dare-avere in cassa e queste spariscono.
+          {borsello.da_saldare > 0 && <> · <b>da versare in cassa {euro(borsello.da_saldare)}</b> (incassi di consegne non ancora saldate, anche di una serata precedente)</>}
+          . Si salda al banco: queste spariscono dall'elenco appena il dare-avere è fatto.
         </p>
       )}
       {daSaldare.length === 0 && <p className="muto">Niente da saldare.</p>}
