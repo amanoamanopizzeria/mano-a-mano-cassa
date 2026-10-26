@@ -71,6 +71,11 @@ function Rider() {
   const [scelte, setScelte] = useState<Set<string>>(new Set());
   const [vicine, setVicine] = useState<Map<string, { con: string; min: number }>>(new Map());
   const [giro, setGiro] = useState<string | null>(null);
+  // la serata del rider in numeri (Edoardo 26/10: «ci hanno il riepilogo dei conti»)
+  const [serata, setSerata] = useState<{ n: number; contanti: number; pagate: number; totale: number } | null>(null);
+  // l'app si installa sul telefono (PWA): Android dà il suo invito, che si tiene per il tasto
+  const [invito, setInvito] = useState<{ prompt: () => Promise<void> } | null>(null);
+  const [installata, setInstallata] = useState(false);
 
   const carica = useCallback(async () => {
     const supabase = supabaseRef.current!;
@@ -85,6 +90,17 @@ function Rider() {
       visti.current = new Set(nuove.map(id));
       setConsegne(nuove);
     }
+    // le mie consegne fatte da inizio serata (le 6 di mattina, ora di Roma)
+    const ora = new Date(new Date().toLocaleString("en-US", { timeZone: "Europe/Rome" }));
+    const da = new Date(Date.now() - ((ora.getHours() < 6 ? ora.getHours() + 18 : ora.getHours() - 6) * 3_600_000 + ora.getMinutes() * 60_000 + ora.getSeconds() * 1000));
+    const { data: fatte } = await supabase.from("consegna").select("contanti_da_incassare, ordine(totale)").eq("stato", "consegnata").gte("consegnata_il", da.toISOString());
+    const righe = (fatte ?? []) as unknown as { contanti_da_incassare: number | null; ordine: { totale: number } | null }[];
+    setSerata({
+      n: righe.length,
+      contanti: righe.reduce((t, r) => t + Number(r.contanti_da_incassare ?? 0), 0),
+      pagate: righe.filter((r) => Number(r.contanti_da_incassare ?? 0) === 0).length,
+      totale: righe.reduce((t, r) => t + Number(r.ordine?.totale ?? 0), 0),
+    });
     const mio = ((b.data ?? []) as RiderBorsello[])[0];
     if (mio) setBorsello({ ...mio, in_mano: Number(mio.in_mano), da_saldare: Number(mio.da_saldare) });
   }, []);
@@ -96,6 +112,10 @@ function Rider() {
     }
     supabaseRef.current = supabaseBrowser();
     carica();
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw-rider.js", { scope: "/rider" }).catch(() => {});
+    setInstallata(window.matchMedia("(display-mode: standalone)").matches);
+    const suInvito = (e: Event) => { e.preventDefault(); setInvito(e as unknown as { prompt: () => Promise<void> }); };
+    window.addEventListener("beforeinstallprompt", suInvito);
 
     // ogni cambio sulle consegne ricarica la lista (libere + mie)
     const canale = supabaseRef.current
@@ -125,6 +145,7 @@ function Rider() {
     return () => {
       supabaseRef.current?.removeChannel(canale);
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      window.removeEventListener("beforeinstallprompt", suInvito);
     };
   }, [carica]);
 
@@ -235,6 +256,13 @@ function Rider() {
     <main className="rider" onPointerDown={sbloccaSuono}>
       <h1>Rider — consegne</h1>
       <p className={"muto r-gps" + (gps.startsWith("GPS attivo") ? " on" : "")}>{gps}</p>
+      {!installata && (
+        <div className="carta r-installa">
+          {invito
+            ? <button className="primario" onClick={() => invito.prompt().then(() => setInvito(null))}>Installa l&apos;app Rider sul telefono</button>
+            : <span>Mettila sulla schermata Home: su iPhone Condividi → «Aggiungi alla schermata Home», su Android menu ⋮ → «Installa app».</span>}
+        </div>
+      )}
       {inCorso && <p className="muto r-gps">Tieni aperta questa pagina mentre consegni: lo schermo resta acceso e il cliente ti vede sulla mappa.</p>}
       {errore && <p className="r-errore">{errore}</p>}
 
@@ -281,6 +309,18 @@ function Rider() {
           <button className="primario" onClick={() => prendi(libere.filter((c) => scelte.has(c.id)).map((c) => c.id))}>Le prendo io</button>
           <button onClick={() => setScelte(new Set())}>Annulla</button>
         </div>
+      )}
+
+      {serata && (
+        <section className="carta r-serata" aria-label="La tua serata">
+          <h2 className="r-sez">La tua serata</h2>
+          <div className="r-serata-numeri">
+            <span><b>{serata.n}</b>{serata.n === 1 ? "consegna" : "consegne"}</span>
+            <span><b>{euro(serata.totale)}</b>consegnato</span>
+            <span><b>{euro(serata.contanti)}</b>incassati in contanti</span>
+            <span><b>{serata.pagate}</b>già pagate (online o POS)</span>
+          </div>
+        </section>
       )}
 
       <h2 className="r-sez">Da saldare alla cassa ({daSaldare.length})</h2>

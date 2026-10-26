@@ -1,0 +1,16 @@
+{
+  "name": "A Mano A Mano · Rider",
+  "short_name": "Rider",
+  "description": "Le consegne della serata, il GPS e i conti dei rider di A Mano A Mano Pugliese",
+  "start_url": "/rider",
+  "scope": "/rider",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6efe3",
+  "theme_color": "#8a1538",
+  "lang": "it",
+  "icons": [
+    { "src": "/brand/rider-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/brand/rider-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

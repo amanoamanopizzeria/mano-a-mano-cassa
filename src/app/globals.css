@@ -1042,3 +1042,12 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .lo-p-tot { margin-top: auto; font-variant-numeric: tabular-nums; }
 .lo-quarto-carta { grid-column: 1 / -1; }
 @media (max-width: 700px) { .lo-quarto { grid-template-columns: 1fr; } .lo-quarto-ora { flex-direction: row; gap: 10px; align-items: baseline; border-right: 0; border-bottom: 1px solid var(--oro-chiaro, #e8d5b0); } }
+
+/* Rider: la serata in numeri e l'invito a installare l'app (26/10/2026) */
+.r-serata { padding: 10px 12px; }
+.r-serata .r-sez { margin-top: 0; }
+.r-serata-numeri { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.r-serata-numeri span { display: flex; flex-direction: column; font-size: 14px; color: var(--muto, #6b6259); }
+.r-serata-numeri b { font-size: 22px; color: #1a1715; font-variant-numeric: tabular-nums; }
+.r-installa { padding: 10px 12px; font-size: 15px; }
+.r-installa button { width: 100%; min-height: 48px; }
