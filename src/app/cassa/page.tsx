@@ -8,6 +8,7 @@ import { CANALE_COMANDA } from "@/lib/comanda";
 import AuthGate from "@/components/AuthGate";
 import ColonnaCassa from "./ColonnaCassa";
 import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine, type CapacitaFascia } from "@/lib/types";
+import { coloreZona } from "@/lib/zone-colori";
 import MiniMappa from "@/components/MiniMappa";
 
 // La comanda si stampa da sola a ogni ordine nuovo, se la cassa lo vuole (resta nel browser della
@@ -419,6 +420,40 @@ function Cassa() {
   };
   const [apertoQ, setApertoQ] = useState<string | null>(null);
 
+  // Le doppie (Edoardo 26/10): per ogni consegna in uscita, la più vicina per strada (Google Maps) fra
+  // quelle dello stesso quarto d'ora o di quello accanto. Una volta al minuto, al massimo 10 consegne.
+  const daAbbinare = inUscita.filter((o) => o.tipo === "domicilio" && o.canale !== "glovo" && o.canale !== "deliveroo"
+    && o.indirizzo?.lat != null && o.indirizzo?.lng != null).slice(0, 10);
+  const chiaveAbbina = daAbbinare.map((o) => o.id).join(",");
+  const [vicine, setVicine] = useState<Map<string, { con: string; min: number; google: boolean }>>(new Map());
+  useEffect(() => {
+    if (daAbbinare.length < 2) { setVicine(new Map()); return; }
+    let vivo = true;
+    const punti = daAbbinare.map((o) => ({ lat: o.indirizzo!.lat!, lng: o.indirizzo!.lng! }));
+    const leggi = async () => {
+      const r = await fetch("/api/indirizzi/tempi", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origini: punti, destinazioni: punti }) }).catch(() => null);
+      const t = r?.ok ? (await r.json()) as { fonte: string; minuti: (number | null)[][] } : null;
+      if (!vivo || !t) return;
+      const m = new Map<string, { con: string; min: number; google: boolean }>();
+      daAbbinare.forEach((o, i) => {
+        let meglio: { j: number; min: number } | null = null;
+        daAbbinare.forEach((x, j) => {
+          const min = t.minuti[i]?.[j];
+          // stesso quarto o quello accanto, e al massimo 8 minuti di strada fra le due case
+          if (j === i || min == null || min > 8 || Math.abs(quartoDi(x) - quartoDi(o)) > 15 * 60_000) return;
+          if (!meglio || min < meglio.min) meglio = { j, min };
+        });
+        if (meglio) m.set(o.id, { con: daAbbinare[(meglio as { j: number }).j].numero_visibile ?? `#${daAbbinare[(meglio as { j: number }).j].numero}`, min: (meglio as { min: number }).min, google: t.fonte === "google" });
+      });
+      setVicine(m);
+    };
+    leggi();
+    const giro = setInterval(leggi, 60_000);
+    return () => { vivo = false; clearInterval(giro); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chiaveAbbina]);
+
   return (
     <div className="cassa-casa">
     <ColonnaCassa />
@@ -528,12 +563,17 @@ function Cassa() {
                   <div className="lo-quarto-fila">
                     {os.map((o) => {
                       const ritardo = Math.round((adesso - entroLe(o)) / 60_000);
+                      const z = o.tipo === "domicilio" ? coloreZona(o.zona?.nome) : null;
+                      const v = vicine.get(o.id);
                       return (
-                        <button key={o.id} className={"lo-pillola " + o.stato + coloreTipo(o) + (ritardo > 0 ? " ritardo" : "") + (apertoQ === o.id ? " scelta" : "")} onClick={() => setApertoQ((x) => (x === o.id ? null : o.id))}>
+                        <button key={o.id} className={"lo-pillola " + o.stato + coloreTipo(o) + (ritardo > 0 ? " ritardo" : "") + (apertoQ === o.id ? " scelta" : "")} onClick={() => setApertoQ((x) => (x === o.id ? null : o.id))}
+                          style={z ? { borderLeftColor: z.colore, ["--zona" as string]: z.colore } : undefined}>
+                          {z && <span className="lo-p-zona"><i aria-hidden style={{ background: z.colore }} />{z.corto}</span>}
                           <span className="lo-p-testa"><b>{o.numero_visibile ?? `#${o.numero}`}</b><em className={`badge ${o.stato}`}>{ETICHETTE[o.stato]}</em></span>
                           <span className="lo-p-chi">{o.cliente?.nome ?? o.nome_cliente ?? (o.tipo === "banco" ? "Banco" : "—")}</span>
                           <span className="lo-p-via">{o.tipo === "domicilio" ? (o.indirizzo ? `${o.indirizzo.via} ${o.indirizzo.civico ?? ""}` : "domicilio") : o.canale === "glovo" || o.canale === "deliveroo" ? CANALE_COMANDA[o.canale] ?? o.canale : o.tipo}</span>
                           {o.consegna?.[0]?.rider?.nome && <span className="lo-p-rider">rider {o.consegna[0].rider.nome}</span>}
+                          {v && <span className="lo-p-doppia" title={v.google ? "Google Maps, col traffico" : "stima in linea d'aria"}>con <b>{v.con}</b> · {v.min} min{v.google ? "" : " (stima)"}</span>}
                           <span className="lo-p-tot">{euro(o.totale)} · {ritardo > 0 ? <b>in ritardo di {ritardo} min</b> : o.ora_consegna ? `entro le ${oraDi(new Date(entroLe(o)).toISOString())}` : "subito"}</span>
                         </button>
                       );
