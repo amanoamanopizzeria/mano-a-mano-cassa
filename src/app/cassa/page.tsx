@@ -11,6 +11,18 @@ import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine, type CapacitaFascia 
 import { coloreZona } from "@/lib/zone-colori";
 import MiniMappa from "@/components/MiniMappa";
 
+// Via Novara 5/7 (la stessa di src/lib/indirizzi.ts, che è solo del server)
+const PIZZERIA = { lat: 41.9138, lng: 12.50734 };
+interface Punto { lat: number; lng: number }
+// i minuti per strada fra due punti, chiesti una volta per pagina aperta (critico giro 38, G-1). Una stima in
+// linea d'aria (Google che non risponde) vale 10 minuti, poi si richiede.
+const TEMPI = new Map<string, { min: number; google: boolean; il: number }>();
+const chiaveP = (p: Punto) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
+function tempoFra(a: Punto, b: Punto) {
+  const t = TEMPI.get(chiaveP(a) + ">" + chiaveP(b)) ?? TEMPI.get(chiaveP(b) + ">" + chiaveP(a));
+  return t && (t.google || Date.now() - t.il < 10 * 60_000) ? t : null;
+}
+
 // La comanda si stampa da sola a ogni ordine nuovo, se la cassa lo vuole (resta nel browser della
 // cassa): si apre la pagina /cassa/comanda/<id>?stampa=1 in un riquadro nascosto e quella chiama
 // window.print(). Col Chrome della cassa avviato con --kiosk-printing esce senza chiedere.
@@ -394,7 +406,7 @@ function Cassa() {
       if (coppie.length === 0) return;
       ultimaStrada.current = Date.now();
       const r = await fetch("/api/indirizzi/tempi", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origini: coppie.map((c) => c.da), destinazioni: coppie.map((c) => c.a) }) }).catch(() => null);
+        body: JSON.stringify({ origini: coppie.map((c) => c.da), destinazioni: coppie.map((c) => c.a), coppie: true }) }).catch(() => null);
       const t = r?.ok ? (await r.json()) as { fonte: string; minuti: (number | null)[][] } : null;
       if (!vivo || !t) return;
       setStrada(new Map(coppie.flatMap((c, i) => (t.minuti[i]?.[i] != null ? [[c.id, { min: t.minuti[i][i]!, google: t.fonte === "google", il: Date.now() }]] : []))));
@@ -420,39 +432,64 @@ function Cassa() {
   };
   const [apertoQ, setApertoQ] = useState<string | null>(null);
 
-  // Le doppie (Edoardo 26/10): per ogni consegna in uscita, la più vicina per strada (Google Maps) fra
-  // quelle dello stesso quarto d'ora o di quello accanto. Una volta al minuto, al massimo 10 consegne.
+  // Le doppie (Edoardo 26/10): due consegne dello stesso quarto d'ora (o di quello accanto) che un rider
+  // porta in un giro solo. Si guarda il giro dalla pizzeria, non solo la distanza fra le due case (critico
+  // giro 38, M-1: Piazza Fiume e Spallanzani stanno a 8 minuti ma da noi vanno da parti opposte): la doppia
+  // c'è se il secondo cliente aspetta al massimo 5 minuti in più che se andasse da solo. Ogni consegna è in
+  // una coppia sola e le due si nominano a vicenda.
+  // Google si paga a coppia di punti (G-1): i minuti fra due case non cambiano, quindi si chiedono una volta
+  // sola, senza traffico, solo per le case nuove, e solo con la vista a quarti aperta e lo schermo acceso.
   const daAbbinare = inUscita.filter((o) => o.tipo === "domicilio" && o.canale !== "glovo" && o.canale !== "deliveroo"
-    && o.indirizzo?.lat != null && o.indirizzo?.lng != null).slice(0, 10);
-  const chiaveAbbina = daAbbinare.map((o) => o.id).join(",");
-  const [vicine, setVicine] = useState<Map<string, { con: string; min: number; google: boolean }>>(new Map());
+    && o.indirizzo?.lat != null && o.indirizzo?.lng != null)
+    // le più vicine nel tempo prima: oltre 9 restano fuori le ultime, non quelle del quarto di adesso (G-2)
+    .sort((a, b) => quartoDi(a) - quartoDi(b)).slice(0, 9);
+  const puntoDi = (o: OrdineCassa): Punto => ({ lat: o.indirizzo!.lat!, lng: o.indirizzo!.lng! });
+  const chiaveAbbina = daAbbinare.map((o) => chiaveP(puntoDi(o))).join(";");
+  const [, setTempiNuovi] = useState(0);
+  const [riprova, setRiprova] = useState(0);
   useEffect(() => {
-    if (daAbbinare.length < 2) { setVicine(new Map()); return; }
+    if (filtro !== "quarti" || daAbbinare.length < 2) return;
+    const punti = [PIZZERIA, ...daAbbinare.map(puntoDi)];
+    const nuovi = punti.filter((x) => punti.some((y) => y !== x && chiaveP(y) !== chiaveP(x) && !tempoFra(x, y)));
+    if (!nuovi.length) return;
     let vivo = true;
-    const punti = daAbbinare.map((o) => ({ lat: o.indirizzo!.lat!, lng: o.indirizzo!.lng! }));
-    const leggi = async () => {
+    const vai = async () => {
+      if (document.visibilityState !== "visible") return;
       const r = await fetch("/api/indirizzi/tempi", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origini: punti, destinazioni: punti }) }).catch(() => null);
+        body: JSON.stringify({ origini: nuovi, destinazioni: punti, traffico: false }) }).catch(() => null);
       const t = r?.ok ? (await r.json()) as { fonte: string; minuti: (number | null)[][] } : null;
-      if (!vivo || !t) return;
-      const m = new Map<string, { con: string; min: number; google: boolean }>();
-      daAbbinare.forEach((o, i) => {
-        let meglio: { j: number; min: number } | null = null;
-        daAbbinare.forEach((x, j) => {
-          const min = t.minuti[i]?.[j];
-          // stesso quarto o quello accanto, e al massimo 8 minuti di strada fra le due case
-          if (j === i || min == null || min > 8 || Math.abs(quartoDi(x) - quartoDi(o)) > 15 * 60_000) return;
-          if (!meglio || min < meglio.min) meglio = { j, min };
-        });
-        if (meglio) m.set(o.id, { con: daAbbinare[(meglio as { j: number }).j].numero_visibile ?? `#${daAbbinare[(meglio as { j: number }).j].numero}`, min: (meglio as { min: number }).min, google: t.fonte === "google" });
-      });
-      setVicine(m);
+      if (!vivo) return;
+      if (!t) { setTimeout(() => vivo && setRiprova((x) => x + 1), 60_000); return; }
+      nuovi.forEach((x, i) => punti.forEach((y, j) => {
+        const min = t.minuti[i]?.[j];
+        if (min != null) TEMPI.set(chiaveP(x) + ">" + chiaveP(y), { min, google: t.fonte === "google", il: Date.now() });
+      }));
+      setTempiNuovi((x) => x + 1);
+      // senza Google la stima vale 10 minuti, poi si riprova
+      if (t.fonte !== "google") setTimeout(() => vivo && setRiprova((x) => x + 1), 10 * 60_000 + 1000);
     };
-    leggi();
-    const giro = setInterval(leggi, 60_000);
-    return () => { vivo = false; clearInterval(giro); };
+    vai();
+    document.addEventListener("visibilitychange", vai);
+    return () => { vivo = false; document.removeEventListener("visibilitychange", vai); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chiaveAbbina]);
+  }, [chiaveAbbina, filtro, riprova]);
+  const vicine = new Map<string, { con: string; min: number; google: boolean }>();
+  {
+    const coppie: { a: OrdineCassa; b: OrdineCassa; inPiu: number; google: boolean }[] = [];
+    daAbbinare.forEach((a, i) => daAbbinare.forEach((b, j) => {
+      if (j <= i || Math.abs(quartoDi(a) - quartoDi(b)) > 15 * 60_000) return;
+      const pa = tempoFra(PIZZERIA, puntoDi(a)), pb = tempoFra(PIZZERIA, puntoDi(b)), ab = tempoFra(puntoDi(a), puntoDi(b));
+      if (!pa || !pb || !ab) return;
+      // prima la casa più vicina, poi l'altra: quanto aspetta in più il secondo cliente
+      const inPiu = Math.max(0, Math.min(pa.min, pb.min) + ab.min - Math.max(pa.min, pb.min));
+      if (inPiu <= 5) coppie.push({ a, b, inPiu, google: pa.google && pb.google && ab.google });
+    }));
+    for (const c of coppie.sort((x, y) => x.inPiu - y.inPiu)) {
+      if (vicine.has(c.a.id) || vicine.has(c.b.id)) continue;
+      vicine.set(c.a.id, { con: c.b.numero_visibile ?? `#${c.b.numero}`, min: c.inPiu, google: c.google });
+      vicine.set(c.b.id, { con: c.a.numero_visibile ?? `#${c.a.numero}`, min: c.inPiu, google: c.google });
+    }
+  }
 
   return (
     <div className="cassa-casa">
@@ -573,7 +610,7 @@ function Cassa() {
                           <span className="lo-p-chi">{o.cliente?.nome ?? o.nome_cliente ?? (o.tipo === "banco" ? "Banco" : "—")}</span>
                           <span className="lo-p-via">{o.tipo === "domicilio" ? (o.indirizzo ? `${o.indirizzo.via} ${o.indirizzo.civico ?? ""}` : "domicilio") : o.canale === "glovo" || o.canale === "deliveroo" ? CANALE_COMANDA[o.canale] ?? o.canale : o.tipo}</span>
                           {o.consegna?.[0]?.rider?.nome && <span className="lo-p-rider">rider {o.consegna[0].rider.nome}</span>}
-                          {v && <span className="lo-p-doppia" title={v.google ? "Google Maps, col traffico" : "stima in linea d'aria"}>con <b>{v.con}</b> · {v.min} min{v.google ? "" : " (stima)"}</span>}
+                          {v && <span className="lo-p-doppia" title={`In un giro solo dalla pizzeria il secondo cliente aspetta ${v.min} min in più · ${v.google ? "Google Maps" : "stima in linea d'aria"}`}>doppia con <b>{v.con}</b> · +{v.min} min{v.google ? "" : " (stima)"}</span>}
                           <span className="lo-p-tot">{euro(o.totale)} · {ritardo > 0 ? <b>in ritardo di {ritardo} min</b> : o.ora_consegna ? `entro le ${oraDi(new Date(entroLe(o)).toISOString())}` : "subito"}</span>
                         </button>
                       );

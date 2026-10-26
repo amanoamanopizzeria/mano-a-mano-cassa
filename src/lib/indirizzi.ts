@@ -151,7 +151,9 @@ function inLinea(o: Punto[], d: Punto[], motivo?: string): Tempi {
   return { fonte: "linea", metri, minuti: metri.map((r) => r.map((m) => Math.max(1, Math.round(m! / (22000 / 60))))), motivo };
 }
 
-export async function tempiFra(origini: Punto[], destinazioni: Punto[]): Promise<Tempi> {
+// traffico: false costa la metà (Routes «Essentials» invece di «Pro», critico giro 38): per le distanze fra
+// due case basta, il traffico serve solo per «arriva fra 6 min» del rider in viaggio.
+export async function tempiFra(origini: Punto[], destinazioni: Punto[], traffico = true): Promise<Tempi> {
   const chiave = chiaveGoogle();
   if (!chiave) return inLinea(origini, destinazioni, "manca la chiave");
   const wp = (p: Punto) => ({ waypoint: { location: { latLng: { latitude: p.lat, longitude: p.lng } } } });
@@ -160,7 +162,7 @@ export async function tempiFra(origini: Punto[], destinazioni: Punto[]): Promise
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Goog-Api-Key": chiave, "X-Goog-FieldMask": "originIndex,destinationIndex,duration,distanceMeters,condition" },
       // DRIVE e non TWO_WHEELER: il motorino Google lo dà solo in alcuni paesi; a Roma l'auto è la stima più vicina
-      body: JSON.stringify({ origins: origini.map(wp), destinations: destinazioni.map(wp), travelMode: "DRIVE", routingPreference: "TRAFFIC_AWARE" }),
+      body: JSON.stringify({ origins: origini.map(wp), destinations: destinazioni.map(wp), travelMode: "DRIVE", routingPreference: traffico ? "TRAFFIC_AWARE" : "TRAFFIC_UNAWARE" }),
       cache: "no-store",
     });
     if (!r.ok) return inLinea(origini, destinazioni, `Google ${r.status}: ${(await r.text()).slice(0, 160)}`);

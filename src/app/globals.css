@@ -1208,6 +1208,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .me-cerca { width: 100%; box-sizing: border-box; font: inherit; padding: 12px 14px; min-height: 44px; border: 1px solid var(--bordo); border-radius: 999px; background: #fff; scroll-margin-top: 64px; } /* non sticky: copriva l'indice (critico giro 37) */
 /* il colore della zona sulle consegne a quarto d'ora (Edoardo 26/10): stesso colore = si possono abbinare */
 .lo-p-zona { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; }
-.lo-p-zona i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex: none; }
-.lo-pillola[style*="--zona"] { background: color-mix(in srgb, var(--zona) 12%, #faf7f2); border-left-width: 8px; }
+.lo-p-zona i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex: none; box-shadow: 0 0 0 1.5px rgba(26,23,21,.55); } /* il giallo sul crema non si vedeva (critico giro 38) */
+/* il colore della zona sta sul bordo e sul pallino: il fondo resta quello dello stato (verde = pronto) e il rosso
+   del ritardo vince sul bordo (critico giro 38, M-2) */
+.lo-pillola[style*="--zona"] { border-left-width: 8px; }
+.lo-pillola.ritardo[style*="--zona"] { border-left-color: #c62828 !important; }
 .lo-p-doppia { font-size: 13px; background: #fff; border: 1px dashed var(--vino, #8a1538); border-radius: 999px; padding: 1px 8px; }
