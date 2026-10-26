@@ -28,7 +28,7 @@ Stato: **coperto** = c'è e i numeri tornano · **parziale** = c'è il posto, ma
 | Regola dei punti | Edoardo, 25/10 | 1 punto ogni 5 € con IVA, coperti sì, consegna no, non scadono | nessun calcolo automatico | **mancante** |
 | Porta un amico (codice referral) | Velocissimo `/customer` + coupon | non contati | — | **mancante** |
 | Tag sul cliente | Velocissimo `/tag` | 12 (11 «coupon usato», 1 «Black List») | `cliente.tag`, `cliente.black_list` | **parziale**: il tag automatico all'uso del coupon non c'è |
-| Consensi (dati, marketing) | Velocissimo `/customer` | non contati | `cliente.consenso_marketing` | **parziale**: solo il marketing |
+| Consensi (dati, marketing) | export clienti di Velocissimo del 26/10 («export 28», 19.028 righe) | **561 sì alle comunicazioni** (tutti clienti veri), 1.720 sì ai dati personali, 296 sì al trasferimento | `cliente.consenso_marketing` | **parziale**: c'è solo il consenso alle comunicazioni, e va caricato dall'export |
 | Compleanno | Velocissimo `/customer` | non contati | `cliente.nato_il` | **parziale**: da importare |
 
 ## 2. Menu e prezzi
