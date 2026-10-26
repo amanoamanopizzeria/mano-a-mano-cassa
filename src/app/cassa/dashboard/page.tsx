@@ -26,7 +26,7 @@ type Confronto = "prima" | "anno";
 interface Voce { k: string; n: number; euro: number }
 interface Conti {
   totali: { venduto: number; ordini: number; annullati: number; annullati_euro: number; medio: number; coperti: number; sconti: number; consegna: number;
-    clienti: number; puntuali: number; misurate: number; ritardo_medio: number | null; viaggio_medio: number | null };
+    clienti: number; puntuali: number; misurate: number; in_anticipo?: number; venduto_coperti?: number; ritardo_medio: number | null; viaggio_medio: number | null };
   per_canale: Voce[]; per_tipo: Voce[]; per_pagamento: Voce[]; per_stato: { k: string; n: number }[];
   per_ora: { h: number; n: number; euro: number }[];
   per_giorno_settimana: { d: number; n: number; euro: number; sere: number }[];
@@ -54,10 +54,12 @@ function inizio(g: string) {
 }
 const piu = (g: string, giorni: number) => new Date(new Date(g + "T12:00:00Z").getTime() + giorni * GIORNO).toISOString().slice(0, 10);
 const giorniFra = (a: string, b: string) => Math.round((new Date(b + "T12:00:00Z").getTime() - new Date(a + "T12:00:00Z").getTime()) / GIORNO);
-const unAnnoPrima = (g: string) => {
-  const d = new Date(g + "T12:00:00Z"); d.setUTCFullYear(d.getUTCFullYear() - 1);
-  return d.toISOString().slice(0, 10);
+// il 29 febbraio di un anno prima è il 28 (critico giro 40: prima diventava il 1° marzo)
+const annoSpostato = (g: string, n: number) => {
+  const a = String(Number(g.slice(0, 4)) + n);
+  return g.slice(5) === "02-29" && !(Number(a) % 4 === 0 && (Number(a) % 100 !== 0 || Number(a) % 400 === 0)) ? `${a}-02-28` : a + g.slice(4);
 };
+const unAnnoPrima = (g: string) => annoSpostato(g, -1);
 const fineMese = (g: string) => piu(piu(g.slice(0, 8) + "01", 32).slice(0, 8) + "01", -1);
 
 /** Il periodo scelto e quello del confronto. La serata si confronta con lo stesso giorno della settimana prima. */
@@ -70,17 +72,22 @@ function intervallo(p: Periodo, g: string, liberoDal: string, liberoAl: string, 
   else if (p === "30") { al = g; dal = piu(g, -29); }
   else if (p === "12m") { al = g; dal = piu(unAnnoPrima(g), 1); }
   else if (p === "libero") { dal = liberoDal <= liberoAl ? liberoDal : liberoAl; al = liberoDal <= liberoAl ? liberoAl : liberoDal; }
-  if (confronto === "anno") { primaDal = unAnnoPrima(dal); primaAl = unAnnoPrima(al); }
+  // il mese o l'anno in corso si confronta coi giorni passati, non col periodo intero prima (critico giro 40)
+  const oggi = giornataDi(Date.now());
+  const fino = (p === "mese" || p === "anno") && al > oggi && dal <= oggi ? oggi : al;
+  if (confronto === "anno") { primaDal = unAnnoPrima(dal); primaAl = unAnnoPrima(fino); }
   else if (p === "serata") { primaDal = piu(dal, -7); primaAl = piu(al, -7); }
-  else if (p === "mese") { primaDal = piu(dal, -1).slice(0, 8) + "01"; primaAl = piu(dal, -1); }
-  else if (p === "anno") { primaDal = unAnnoPrima(dal); primaAl = unAnnoPrima(al); }
+  else if (p === "mese") { primaDal = piu(dal, -1).slice(0, 8) + "01"; primaAl = fino === al ? piu(dal, -1) : [piu(primaDal, giorniFra(dal, fino)), piu(dal, -1)].sort()[0]; }
+  else if (p === "anno") { primaDal = unAnnoPrima(dal); primaAl = unAnnoPrima(fino); }
   else { const n = giorniFra(dal, al) + 1; primaDal = piu(dal, -n); primaAl = piu(dal, -1); }
-  const nomePrima = confronto === "anno" ? "l'anno prima" : p === "serata" ? "lo stesso giorno della settimana scorsa"
-    : p === "settimana" ? "la settimana prima" : p === "mese" ? "il mese prima" : p === "anno" ? "l'anno prima" : "i giorni subito prima";
+  const parziale = fino !== al ? " negli stessi giorni" : "";
+  const nomePrima = (confronto === "anno" ? "l'anno prima" : p === "serata" ? "lo stesso giorno della settimana scorsa"
+    : p === "settimana" ? "la settimana prima" : p === "mese" ? "il mese prima" : p === "anno" ? "l'anno prima" : "i giorni subito prima") + parziale;
   return { dal, al, primaDal, primaAl, nomePrima };
 }
 
 const euro = (n: number) => Number(n ?? 0).toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+const minuti = (n: number) => Number(n).toLocaleString("it-IT", { maximumFractionDigits: 1 });
 const euroTondo = (n: number) => Math.round(Number(n ?? 0)).toLocaleString("it-IT") + " €";
 const dataBreve = (g: string) => new Date(g + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "short" });
 const TIPO: Record<string, string> = { domicilio: "Consegna", ritiro: "Ritiro", tavolo: "Tavolo", banco: "Banco" };
@@ -125,7 +132,7 @@ function Dashboard() {
   const scorre = periodo === "serata" || periodo === "settimana" || periodo === "mese" || periodo === "anno" || periodo === "7" || periodo === "30" || periodo === "12m";
   function sposta(verso: 1 | -1) {
     if (periodo === "mese") setGiorno(verso < 0 ? piu(iv.dal, -1) : piu(iv.al, 1));
-    else if (periodo === "anno") setGiorno(`${Number(giorno.slice(0, 4)) + verso}${giorno.slice(4)}`);
+    else if (periodo === "anno") setGiorno(annoSpostato(giorno, verso));
     else if (periodo === "12m") setGiorno(verso < 0 ? unAnnoPrima(giorno) : piu(giorno, 365));
     else setGiorno(piu(giorno, verso * (periodo === "serata" ? 1 : periodo === "30" ? 30 : 7)));
   }
@@ -133,7 +140,7 @@ function Dashboard() {
     ? new Date(iv.dal + "T12:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
     : periodo === "mese" ? new Date(iv.dal + "T12:00:00").toLocaleDateString("it-IT", { month: "long", year: "numeric" })
     : periodo === "anno" ? iv.dal.slice(0, 4)
-    : `dal ${dataBreve(iv.dal)} al ${new Date(iv.al + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}`;
+    : `dal ${new Date(iv.dal + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "short", year: iv.dal.slice(0, 4) !== iv.al.slice(0, 4) ? "numeric" : undefined })} al ${new Date(iv.al + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" })}`;
   const giorni = giorniFra(iv.dal, iv.al) + 1;
   const t = c?.totali;
   const tp = p?.totali;
@@ -191,7 +198,7 @@ function Dashboard() {
           <p className="db-frase">
             {t.ordini === 0 ? "Nessun ordine in questo periodo." : <>
               Hai venduto <b>{euroTondo(venduto)}</b> in <b>{t.ordini}</b> ordini{giorni > 1 ? <>, <b>{euroTondo(venduto / Math.max(1, c.per_giorno.length))}</b> a sera aperta</> : null}
-              {tp && tp.venduto > 0 ? <>: {venduto >= tp.venduto ? "più" : "meno"} di {iv.nomePrima} ({venduto >= tp.venduto ? "+" : "−"}{euroTondo(Math.abs(venduto - tp.venduto))}).</> : "."}
+              {tp && tp.venduto > 0 ? <>: {venduto >= tp.venduto ? "+" : "−"}{euroTondo(Math.abs(venduto - tp.venduto))} rispetto a {iv.nomePrima}.</> : "."}
             </>}
           </p>
           <div className="db-kpi">
@@ -204,14 +211,14 @@ function Dashboard() {
             <Ramo titolo="Gli altri numeri" riassunto={`${t.coperti} persone · ${t.annullati} annullati`} aperto>
               <div className="db-kpi db-kpi-piccoli">
                 <div className="carta"><span>Persone servite (coperti)</span><b>{t.coperti}</b>{diff(t.coperti, tp?.coperti)}</div>
-                <div className="carta"><span>Spesa a persona</span><b>{t.coperti ? euro(venduto / t.coperti) : "—"}</b><small className="muto">solo dove i coperti ci sono</small></div>
+                <div className="carta"><span>Spesa a persona</span><b>{t.coperti && t.venduto_coperti ? euro(Number(t.venduto_coperti) / t.coperti) : "—"}</b><small className="muto">{t.coperti ? "sugli ordini coi coperti" : "nessun ordine coi coperti"}</small></div>
                 <div className="carta"><span>Sconti fatti</span><b>{euro(t.sconti)}</b>{diff(Number(t.sconti), tp ? Number(tp.sconti) : undefined)}</div>
                 <div className="carta"><span>Consegne pagate dai clienti</span><b>{euro(t.consegna)}</b></div>
                 <div className="carta"><span>Annullati</span><b>{t.annullati}</b><small className="muto">{euro(t.annullati_euro)}, fuori dai conti</small></div>
                 <div className="carta"><span>Clienti con la scheda</span><b>{t.clienti}</b></div>
-                <div className="carta"><span>Consegne puntuali</span><b>{t.misurate ? `${Math.round((t.puntuali / t.misurate) * 100)}%` : "—"}</b><small className="muto">{t.misurate} consegne con l&apos;ora · entro la mezz&apos;ora scelta</small></div>
-                <div className="carta"><span>Ritardo medio</span><b>{t.ritardo_medio == null ? "—" : `${t.ritardo_medio} min`}</b><small className="muto">dopo la mezz&apos;ora scelta</small></div>
-                <div className="carta"><span>Viaggio medio del rider</span><b>{t.viaggio_medio == null ? "—" : `${t.viaggio_medio} min`}</b><small className="muto">dalla partenza alla consegna</small></div>
+                <div className="carta"><span>Consegne puntuali</span><b>{t.misurate ? `${Math.round((t.puntuali / t.misurate) * 100)}%` : "—"}</b><small className="muto">{t.misurate} consegne con l&apos;ora · entro la mezz&apos;ora scelta{t.in_anticipo ? ` · ${t.in_anticipo} consegnate molto prima, da guardare` : ""}</small></div>
+                <div className="carta"><span>Ritardo medio</span><b>{t.ritardo_medio == null ? "—" : `${minuti(t.ritardo_medio)} min`}</b><small className="muto">dopo la mezz&apos;ora scelta</small></div>
+                <div className="carta"><span>Viaggio medio del rider</span><b>{t.viaggio_medio == null ? "—" : `${minuti(t.viaggio_medio)} min`}</b><small className="muto">dalla partenza alla consegna</small></div>
               </div>
             </Ramo>
 
@@ -229,7 +236,7 @@ function Dashboard() {
             </Ramo>
 
             <Ramo titolo="Per ora" riassunto={c.per_ora.length ? `il picco alle ${String([...c.per_ora].sort((a, b) => b.n - a.n)[0].h).padStart(2, "0")}:00` : "—"}>
-              <Colonne voci={c.per_ora.map((x) => ({ k: `${String(x.h).padStart(2, "0")}`, n: x.n, euro: x.euro }))} />
+              <Colonne voci={oreConZeri(c.per_ora).map((x) => ({ k: `${String(x.h).padStart(2, "0")}`, n: x.n, euro: x.euro }))} />
             </Ramo>
             <Ramo titolo="Giorni della settimana" riassunto={c.per_giorno_settimana.length ? `il più forte: ${GIORNI[[...c.per_giorno_settimana].sort((a, b) => b.euro / b.sere - a.euro / a.sere)[0].d].toLowerCase()}` : "—"}>
               <p className="muto">La media a sera, per giorno della settimana.</p>
@@ -239,13 +246,13 @@ function Dashboard() {
               <Ramo titolo="Andamento" riassunto={giorni > 62 ? `${c.per_mese.length} mesi` : `${c.per_giorno.length} sere aperte`}>
                 {giorni > 62
                   ? <Colonne voci={c.per_mese.map((x) => ({ k: new Date(x.m + "-15T12:00:00").toLocaleDateString("it-IT", { month: "short", year: "2-digit" }), n: x.n, euro: x.euro }))} euroSopra />
-                  : <Colonne voci={c.per_giorno.map((x) => ({ k: x.g.slice(8), n: x.n, euro: x.euro }))} euroSopra />}
+                  : <Colonne voci={c.per_giorno.map((x) => ({ k: giorni > 31 ? `${Number(x.g.slice(8))}/${Number(x.g.slice(5, 7))}` : x.g.slice(8), n: x.n, euro: x.euro }))} euroSopra />}
                 <Progressivo righe={giorni > 62 ? c.per_mese.map((x) => x.euro) : c.per_giorno.map((x) => x.euro)} />
               </Ramo>
             )}
 
             <Ramo titolo="Prodotti più venduti" riassunto={c.prodotti[0] ? `${c.prodotti[0].nome}, ${euroTondo(c.prodotti[0].euro)}` : "—"}>
-              <p className="muto">I pezzi contano anche quelli dentro i menu; gli euro sono il prezzo della riga (dentro un menu il prezzo sta sul menu).</p>
+              <p className="muto">I pezzi contano anche quelli dentro i menu; gli euro sono il prezzo della riga (dentro un menu il prezzo sta sul menu).{c.prodotti.length >= 60 ? " Qui i primi 60." : ""}</p>
               <div className="db-tabella"><table>
                 <thead><tr><th>Prodotto</th><th>Categoria</th><th className="num">Pezzi</th><th className="num">nei menu</th><th className="num">Euro</th></tr></thead>
                 <tbody>{c.prodotti.map((x) => <tr key={x.nome}><td>{x.nome}</td><td className="muto">{x.categoria ?? ""}</td><td className="num">{x.pezzi}</td><td className="num">{x.nei_menu ?? ""}</td><td className="num">{euro(x.euro)}</td></tr>)}</tbody>
@@ -263,7 +270,7 @@ function Dashboard() {
               {c.rider.length === 0 ? <p className="muto">Nessuna consegna.</p> : (
                 <div className="db-tabella"><table>
                   <thead><tr><th>Rider</th><th className="num">Consegne</th><th className="num">Euro</th><th className="num">Contanti</th><th className="num">In ritardo</th><th className="num">Ritardo medio</th><th className="num">Viaggio medio</th><th className="num">Annullate</th></tr></thead>
-                  <tbody>{c.rider.map((x) => <tr key={x.nome}><td>{x.nome}</td><td className="num">{x.consegne}</td><td className="num">{euro(x.euro)}</td><td className="num">{euro(x.contanti)}</td><td className="num">{x.in_ritardo}</td><td className="num">{x.ritardo_medio == null ? "" : `${x.ritardo_medio} min`}</td><td className="num">{x.viaggio_medio == null ? "" : `${x.viaggio_medio} min`}</td><td className="num">{x.annullate}</td></tr>)}</tbody>
+                  <tbody>{c.rider.map((x) => <tr key={x.nome}><td>{x.nome}</td><td className="num">{x.consegne}</td><td className="num">{euro(x.euro)}</td><td className="num">{euro(x.contanti)}</td><td className="num">{x.in_ritardo}</td><td className="num">{x.ritardo_medio == null ? "" : `${minuti(x.ritardo_medio)} min`}</td><td className="num">{x.viaggio_medio == null ? "" : `${minuti(x.viaggio_medio)} min`}</td><td className="num">{x.annullate}</td></tr>)}</tbody>
                 </table></div>
               )}
               {periodo === "serata" && <p className="muto">Il dare-avere della serata coi rider è in <a href="/cassa/riepilogo">Riepilogo</a>.</p>}
@@ -272,7 +279,7 @@ function Dashboard() {
               {c.zone.length === 0 ? <p className="muto">Nessuna consegna.</p> : (
                 <div className="db-tabella"><table>
                   <thead><tr><th>Zona</th><th className="num">Ordini</th><th className="num">Euro</th><th className="num">Scontrino medio</th><th className="num">Consegne pagate</th><th className="num">Ritardo medio</th></tr></thead>
-                  <tbody>{c.zone.map((x) => <tr key={x.nome}><td>{x.nome}</td><td className="num">{x.n}</td><td className="num">{euro(x.euro)}</td><td className="num">{euro(x.medio)}</td><td className="num">{euro(x.consegna)}</td><td className="num">{x.ritardo_medio == null ? "" : `${x.ritardo_medio} min`}</td></tr>)}</tbody>
+                  <tbody>{c.zone.map((x) => <tr key={x.nome}><td>{x.nome}</td><td className="num">{x.n}</td><td className="num">{euro(x.euro)}</td><td className="num">{euro(x.medio)}</td><td className="num">{euro(x.consegna)}</td><td className="num">{x.ritardo_medio == null ? "" : `${minuti(x.ritardo_medio)} min`}</td></tr>)}</tbody>
                 </table></div>
               )}
             </Ramo>
@@ -308,16 +315,26 @@ function Dashboard() {
   );
 }
 
+/** Le ore dalla prima all'ultima con ordini, anche quelle vuote (a zero): il grafico non deve sembrare continuo. */
+function oreConZeri(xs: { h: number; n: number; euro: number }[]) {
+  if (xs.length === 0) return xs;
+  const pos = (h: number) => (h + 18) % 24;   // dalle 6 alle 6
+  const da = Math.min(...xs.map((x) => pos(x.h))), a = Math.max(...xs.map((x) => pos(x.h)));
+  return Array.from({ length: a - da + 1 }, (_, i) => { const h = (da + i + 6) % 24; return xs.find((x) => x.h === h) ?? { h, n: 0, euro: 0 }; });
+}
+
 function primo(xs: Voce[], nome: (k: string) => string) {
   const tot = xs.reduce((s, x) => s + Number(x.euro), 0);
   return xs[0] && tot > 0 ? `${nome(xs[0].k)} ${Math.round((Number(xs[0].euro) / tot) * 100)}%` : "—";
 }
 
+// il contenuto si monta solo a ramo aperto: l'elenco degli ordini non si scarica se nessuno lo guarda (critico giro 40)
 function Ramo({ titolo, riassunto, aperto, children }: { titolo: string; riassunto: string; aperto?: boolean; children: React.ReactNode }) {
+  const [su, setSu] = useState(!!aperto);
   return (
-    <details className="carta db-ramo" open={aperto}>
+    <details className="carta db-ramo" open={aperto} onToggle={(e) => setSu((e.target as HTMLDetailsElement).open)}>
       <summary><span>{titolo}</span><span className="muto">{riassunto}</span></summary>
-      <div className="db-ramo-dentro">{children}</div>
+      {su && <div className="db-ramo-dentro">{children}</div>}
     </details>
   );
 }
@@ -440,7 +457,8 @@ function Ordini({ dal, al, canali, tipi, serata }: { dal: string; al: string; ca
 
   function scarica() {
     const intesta = ["Numero", "Data", "Ora", "Per le", "Tipo", "Origine", "Stato", "Cliente", "Telefono", "Indirizzo", "Zona", "Pagamento", "Coperti", "Sconto", "Consegna", "Totale", "Rider", "Note"];
-    const q = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    // una nota che comincia con = + - @ in Excel diventerebbe una formula (critico giro 40): si mette un apostrofo
+    const q = (v: unknown) => { const t = String(v ?? ""); return `"${(/^[=+\-@\t\r]/.test(t) ? "'" + t : t).replace(/"/g, '""')}"`; };
     const n2 = (x: number | null) => Number(x ?? 0).toFixed(2).replace(".", ",");
     const righeCsv = filtrate.map((r) => [
       r.numero_visibile ?? r.numero, new Date(r.creato_il).toLocaleDateString("it-IT", { timeZone: "Europe/Rome" }), ora(r.creato_il), ora(r.ora_consegna),
@@ -512,13 +530,15 @@ function FilaOrdine({ r, aperto, onApri }: { r: RigaOrd; aperto: boolean; onApri
 function SchedaOrdine({ r }: { r: RigaOrd }) {
   const [d, setD] = useState<{ righe: { id: string; descrizione: string; quantita: number; prezzo_unit: number; variazioni: { nome: string; prezzo: number; tipo: string }[] | null; note: string | null; id_riga_padre: string | null }[];
     storia: { da: string | null; a: string; quando: string }[] } | null>(null);
+  const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     const s = supabaseBrowser();
     Promise.all([
       s.from("ordine_riga").select("id, descrizione, quantita, prezzo_unit, variazioni, note, id_riga_padre").eq("id_ordine", r.id),
       s.from("ordine_stato_log").select("da, a, quando").eq("id_ordine", r.id).order("quando"),
-    ]).then(([a, b]) => setD({ righe: (a.data ?? []) as never, storia: (b.data ?? []) as never }));
+    ]).then(([a, b]) => (a.error || b.error ? setErr((a.error ?? b.error)!.message) : setD({ righe: (a.data ?? []) as never, storia: (b.data ?? []) as never })));
   }, [r.id]);
+  if (err) return <p className="lo-errore">{err}</p>;
   if (!d) return <p className="muto">Leggo l&apos;ordine…</p>;
   const madri = d.righe.filter((x) => !x.id_riga_padre);
   return (
@@ -526,7 +546,7 @@ function SchedaOrdine({ r }: { r: RigaOrd }) {
       <div>
         {madri.map((x) => (
           <div key={x.id} className="db-scheda-voce">
-            <b>{Number(x.quantita)} × {x.descrizione}</b> <span className="db-num">{euro(Number(x.quantita) * Number(x.prezzo_unit))}</span>
+            <b>{Number(x.quantita)} × {x.descrizione}</b> <span className="db-num">{euro(Number(x.quantita) * (Number(x.prezzo_unit) + (x.variazioni ?? []).reduce((t, v) => t + Number(v.prezzo || 0), 0)))}</span>
             {(x.variazioni ?? []).length > 0 && <div className="muto">{(x.variazioni ?? []).map((v) => `${v.tipo === "rimozione" ? "senza " : "+ "}${v.nome}${Number(v.prezzo) ? ` ${euro(v.prezzo)}` : ""}`).join(", ")}</div>}
             {d.righe.filter((f) => f.id_riga_padre === x.id).map((f) => <div key={f.id} className="muto">· {Number(f.quantita)} × {f.descrizione}</div>)}
             {x.note && <div className="muto">nota: {x.note}</div>}
@@ -539,7 +559,8 @@ function SchedaOrdine({ r }: { r: RigaOrd }) {
         {Number(r.sconto) > 0 && <div>sconto −{euro(Number(r.sconto))}</div>}
         {Number(r.costo_consegna) > 0 && <div>consegna {euro(Number(r.costo_consegna))}</div>}
         {r.note && <div>note: {r.note}</div>}
-        <div className="db-storia">{d.storia.map((x, i) => <span key={i}>{ora(x.quando)} {STATO[x.a] ?? x.a}</span>)}</div>
+        <div><b>Totale {euro(r.totale)}</b> · {pagamentoDi(r)}</div>
+        <div className="db-storia">{d.storia.map((x, i) => <span key={i}>{new Date(x.quando).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" })} {STATO[x.a] ?? x.a}</span>)}</div>
       </div>
     </div>
   );

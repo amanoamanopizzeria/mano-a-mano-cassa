@@ -1066,7 +1066,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .db-periodi button.on { background: var(--accento); color: #fff; }
 .db-giorno { display: flex; gap: 6px; align-items: center; }
 .db-giorno button { min-width: 44px; font-size: 20px; }
-.db-titolo { font-weight: 600; text-transform: capitalize; margin: 10px 0; }
+.db-titolo { font-weight: 600; margin: 10px 0; }
 .db-titolo .muto { text-transform: none; font-weight: 400; }
 .db-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
 .db-kpi .carta { display: flex; flex-direction: column; gap: 4px; }
@@ -1230,7 +1230,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .db-filtri .muto { margin-left: 6px; }
 .db-frase { font-size: 18px; margin: 8px 0 12px; }
 .db-kpi-piccoli b { font-size: 20px; }
-.db-rami { display: grid; gap: 8px; margin-top: 12px; }
+.db-rami { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 12px; }
+.db-ramo, .db-ramo-dentro { min-width: 0; } /* a 390 px le tabelle scorrono dentro il ramo, non allargano la pagina (critico giro 40) */
 .db-ramo > summary { display: flex; justify-content: space-between; gap: 12px; align-items: center; min-height: 44px; cursor: pointer; font-weight: 700; list-style: none; }
 .db-ramo > summary::-webkit-details-marker { display: none; }
 .db-ramo > summary::before { content: "›"; margin-right: 8px; transition: transform .15s; display: inline-block; }
@@ -1244,7 +1245,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .db-col { flex: 1 0 28px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 2px; font-size: 12px; }
 .db-col span { width: 70%; background: var(--vino, #8a1538); border-radius: 4px 4px 0 0; }
 .db-col b { font-weight: 600; }
-.db-col small { color: var(--muto); white-space: nowrap; font-size: 11px; }
+.db-col small { color: var(--muto); white-space: nowrap; font-size: 12px; }
 .db-cerca { flex: 1; min-width: 200px; min-height: 44px; padding: 0 12px; border: 1px solid var(--bordo, #ddd); border-radius: 999px; font: inherit; }
 .db-ordini-testa select { min-height: 44px; }
 .db-fila { cursor: pointer; }
@@ -1255,3 +1256,6 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .db-storia { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; }
 .db-riconquista { margin-top: 12px; }
 @media (max-width: 600px) { .db-scheda { grid-template-columns: 1fr; } .db-barra { grid-template-columns: 90px 1fr auto; } }
+.db-filtri .muto { flex-basis: auto; }
+@media (max-width: 600px) { .db-filtri .muto:not(:first-child) { flex-basis: 100%; margin-left: 0; } }
+.db-titolo::first-letter { text-transform: uppercase; }
