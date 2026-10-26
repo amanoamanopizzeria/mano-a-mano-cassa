@@ -15,6 +15,7 @@ import {
   esaurito,
 } from "@/lib/menu";
 import type { Variazione } from "@/lib/types";
+import MiniMappa from "@/components/MiniMappa";
 
 interface Tavolo { id: string; numero: string; stato: string }
 type Tipo = "banco" | "tavolo" | "ritiro" | "domicilio";
@@ -608,6 +609,7 @@ function Cassa() {
                 <button style={{ width: "100%", color: "var(--accento)", fontWeight: 600 }}>Serve l&apos;indirizzo: apri Dati cliente</button>
               </Link>
             )}
+            {indirizzoSel?.lat != null && indirizzoSel.lng != null && <MiniMappa lat={indirizzoSel.lat} lng={indirizzoSel.lng} titolo={`${indirizzoSel.via} ${indirizzoSel.civico ?? ""}`} />}
             {fuoriZona && <div style={{ color: "var(--accento)", fontWeight: 700, fontSize: 13, marginTop: 4 }}>Fuori dalle zone di consegna.</div>}
             {sottoMinimo && zonaSel && <div style={{ color: "var(--accento)", fontWeight: 700, fontSize: 13, marginTop: 4 }}>Minimo d&apos;ordine {euro(zonaSel.minimo_ordine)}: mancano {euro(zonaSel.minimo_ordine - totale)}.</div>}
           </div>

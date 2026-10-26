@@ -8,6 +8,7 @@ import { CANALE_COMANDA } from "@/lib/comanda";
 import AuthGate from "@/components/AuthGate";
 import ColonnaCassa from "./ColonnaCassa";
 import { TRANSIZIONI_ORDINE, type Ordine, type StatoOrdine, type CapacitaFascia } from "@/lib/types";
+import MiniMappa from "@/components/MiniMappa";
 
 // La comanda si stampa da sola a ogni ordine nuovo, se la cassa lo vuole (resta nel browser della
 // cassa): si apre la pagina /cassa/comanda/<id>?stampa=1 in un riquadro nascosto e quella chiama
@@ -114,6 +115,8 @@ function Cassa() {
   const [stampaAuto, setStampaAuto] = useState(false);
   const [inStampa, setInStampa] = useState<string[]>([]);
   const [vecchiAperti, setVecchiAperti] = useState(false);
+  // la mappa piccola di un ordine (Edoardo 26/10: «per ogni ordine può aprire un Google Maps per capire dove si trova»)
+  const [mappaDi, setMappaDi] = useState<string | null>(null);
   // gli ordini divisi per stato, come le colonne di 2Bit (Edoardo, 25/10/2026)
   const [filtro, setFiltro] = useState<keyof typeof FILTRI>("quarti");
 
@@ -295,7 +298,11 @@ function Cassa() {
                 {o.cliente?.nome ?? o.nome_cliente}{o.cliente?.telefono && <span className="tel"> · {o.cliente.telefono}</span>}{o.pagamento && <span className="paga">{(o.cliente?.nome || o.nome_cliente || o.cliente?.telefono) ? " · " : ""}{o.pagamento === "pos" ? "POS" : "contanti"}</span>}{o.pagamento === "contanti" && o.paga_con && Number(o.paga_con) > Number(o.totale) && <span className="resto"> · paga con {euro(Number(o.paga_con))}, resto {euro(Number(o.paga_con) - Number(o.totale))}</span>}
               </div>
             )}
-            {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}{o.indirizzo.note && <b className="vino"> · {o.indirizzo.note}</b>}</div>}
+            {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}{o.indirizzo.note && <b className="vino"> · {o.indirizzo.note}</b>}
+              {o.indirizzo.lat != null && o.indirizzo.lng != null && (
+                <button type="button" className="lo-mappa" onClick={(e) => { e.stopPropagation(); setMappaDi((x) => (x === o.id ? null : o.id)); }}>{mappaDi === o.id ? "Chiudi mappa" : "Mappa"}</button>
+              )}</div>}
+            {mappaDi === o.id && o.indirizzo?.lat != null && o.indirizzo.lng != null && <MiniMappa lat={o.indirizzo.lat} lng={o.indirizzo.lng} titolo={`${o.indirizzo.via} ${o.indirizzo.civico ?? ""}`} />}
             {o.consegna?.[0]?.rider?.nome && <div className="riga">rider <b>{o.consegna[0].rider.nome}</b></div>}
             {o.cliente?.note && <div className="avviso-cliente">⚠ {o.cliente.note}</div>}
             <div className="tot">{euro(o.totale)}{Number(o.sconto) > 0 && <small className="muto"> (sconto −{euro(Number(o.sconto))})</small>}</div>
@@ -443,7 +450,11 @@ function Cassa() {
                 {pannelloSposta(o)}
                 <div className="riga">{o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>}{o.modificato_il && <b className="vino"> · modificata {oraDi(o.modificato_il)}</b>} · {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"}{o.zona?.nome && <> · {o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""}</>}</div>
                 <div className="chi">{o.cliente?.nome ?? o.nome_cliente ?? ""}</div>
-                {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}{o.indirizzo.note && <b className="vino"> · {o.indirizzo.note}</b>}</div>}
+                {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}{o.indirizzo.note && <b className="vino"> · {o.indirizzo.note}</b>}
+              {o.indirizzo.lat != null && o.indirizzo.lng != null && (
+                <button type="button" className="lo-mappa" onClick={(e) => { e.stopPropagation(); setMappaDi((x) => (x === o.id ? null : o.id)); }}>{mappaDi === o.id ? "Chiudi mappa" : "Mappa"}</button>
+              )}</div>}
+            {mappaDi === o.id && o.indirizzo?.lat != null && o.indirizzo.lng != null && <MiniMappa lat={o.indirizzo.lat} lng={o.indirizzo.lng} titolo={`${o.indirizzo.via} ${o.indirizzo.civico ?? ""}`} />}
             {o.consegna?.[0]?.rider?.nome && <div className="riga">rider <b>{o.consegna[0].rider.nome}</b></div>}
                 {o.note && <div className="nota">Note: {o.note}</div>}
                 <div className="tot">{euro(o.totale)}</div>

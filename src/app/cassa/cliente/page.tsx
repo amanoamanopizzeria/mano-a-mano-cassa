@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
+import MiniMappa from "@/components/MiniMappa";
 
 interface Scheda {
   esito: "trovato" | "nuovo" | "numero_corto";
@@ -286,6 +287,7 @@ function Cliente() {
             {(scheda.cliente.tag ?? []).length > 0 && <span className="cl-tags">{(scheda.cliente.tag ?? []).map((t) => <span key={t} className="cl-tag">{t}</span>)}</span>}
           </p>
           <h3>Indirizzi</h3>
+          {(() => { const i = (scheda.indirizzi ?? []).find((x) => x.lat != null && x.lng != null); return i && !scelto ? <MiniMappa lat={i.lat!} lng={i.lng!} titolo={`${i.via} ${i.civico ?? ""}`} /> : null; })()}
           <ul className="c-lista">
             {(scheda.indirizzi ?? []).map((i) => (
               <li key={i.id}>
@@ -339,6 +341,7 @@ function Cliente() {
           </div>
           {scelto && scelto.lat != null && (
             <div className="muto">
+              <MiniMappa lat={scelto.lat} lng={scelto.lng!} titolo={scelto.via ?? scelto.testo} />
               {scelto.via ?? scelto.testo}{scelto.cap ? ", " + scelto.cap : ""}{scelto.citta ? " " + scelto.citta : ""} · {scelto.km != null ? `${scelto.km.toFixed(1).replace(".", ",")} km dalla pizzeria` : ""}
               {scelto.zona !== undefined && (
                 scelto.zona
