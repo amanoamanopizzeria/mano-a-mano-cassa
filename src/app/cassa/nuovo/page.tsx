@@ -219,6 +219,24 @@ function Cassa() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [riletto]);
 
+  // l'avviso «Tolto dalla comanda» non resta sopra una comanda già vuota (critico giro 34)
+  useEffect(() => {
+    if (righe.length === 0) setErrore((e) => (e?.startsWith("Tolto dalla comanda") ? null : e));
+  }, [righe.length]);
+  // la bozza ripresa all'apertura si controlla subito, non dopo due minuti (critico giro 34)
+  // (solo i prodotti spenti: i prezzi no, un ordine riaperto deve ancora sapere se è al tavolo)
+  const controllataBozza = useRef(false);
+  useEffect(() => {
+    if (!prodotti.length || controllataBozza.current) return;
+    controllataBozza.current = true;
+    const vivi = new Set(prodotti.map((p) => p.id));
+    setRighe((prev) => {
+      const tolte = prev.filter((r) => !!r.id_prodotto && !vivi.has(r.id_prodotto));
+      if (tolte.length) setErrore(`Tolto dalla comanda perché spento nel menù: ${tolte.map((r) => r.descrizione).join(", ")}.`);
+      return tolte.length ? prev.filter((r) => !tolte.includes(r)) : prev;
+    });
+  }, [prodotti]);
+
   // Gli orari del giorno scelto (o di oggi), per i quarti d'ora offerti.
   useEffect(() => {
     if (!idNegozio) return;
