@@ -70,7 +70,9 @@ const FILTRI = {
   chiusi: { t: "Chiusi", s: ["consegnato", "ritirato", "annullato"] },
 } as const;
 const passiOrdine = (o: OrdineCassa): StatoOrdine[] =>
-  TRANSIZIONI_ORDINE[o.stato].filter((s) => (o.tipo === "domicilio" ? s !== "ritirato" : s !== "in_consegna"));
+  TRANSIZIONI_ORDINE[o.stato].filter((s) => (o.tipo === "domicilio" ? s !== "ritirato" : s !== "in_consegna"))
+    // un ordine al tavolo si chiude dal conto della sala, con coperto e pagamento (critico giro 29)
+    .filter((s) => !(o.tipo === "tavolo" && s === "ritirato"));
 /** La serata parte alle 6 di mattina: quello che c'è prima va sotto «Ieri e prima». */
 const inizioSerata = (adesso: number) => { const d = new Date(adesso); if (d.getHours() < 6) d.setDate(d.getDate() - 1); d.setHours(6, 0, 0, 0); return d.getTime(); };
 const diStasera = (o: OrdineCassa, adesso: number) => new Date(o.creato_il).getTime() >= inizioSerata(adesso) || (!!o.ora_consegna && new Date(o.ora_consegna).getTime() >= inizioSerata(adesso));

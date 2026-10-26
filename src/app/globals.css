@@ -986,3 +986,12 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .sala .conto header, .sala .conto .totale, .sala .conto .azioni-conto { flex: none; }
 .sala .conto .righe { overflow: auto; flex: 1 1 auto; min-height: 0; }
 @media print { .sala .conto .righe { overflow: visible; } .sala .conto .righe li.coperto .q, .sala .conto .righe li.coperto .d { color: #000; } }
+
+/* Critico giro 29 (26/10/2026): i coperti si scelgono sulla pagina, non con la finestrella del browser */
+.sala .tastierino-coperti { width: min(420px, 100%); }
+.sala .tastierino-coperti header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.sala .tastierino-coperti .numeri { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sala .tastierino-coperti .numeri button { min-height: 60px; font-size: 22px; font-weight: 800; }
+.sala .coperti-velo { z-index: 60; }
+.sala .link-coperti { background: none; border: none; padding: 0; min-height: 0; font: inherit; color: inherit; text-decoration: underline dotted; cursor: pointer; }
+.sala .conto .mancano-coperti { width: 100%; min-height: 48px; margin-top: 10px; border: 2px solid var(--vino, #8a1538); color: var(--vino, #8a1538); background: #fff; font-weight: 700; }

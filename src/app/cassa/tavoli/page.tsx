@@ -44,6 +44,9 @@ function Tavoli() {
   const [, setOra] = useState(0);
   const [conto, setConto] = useState<{ tavolo: Tavolo; ordini: OrdineConto[]; prezzoCoperto: number } | null>(null);
   const [chiudo, setChiudo] = useState(false);
+  // Il tastierino dei coperti sulla pagina (critico giro 29: la finestrella del browser bloccava la pagina).
+  // «apri» un tavolo libero, «correggi» uno già occupato (anche aperto da /cassa/nuovo, che non li chiede).
+  const [coperti, setCoperti] = useState<{ tavolo: Tavolo; scopo: "apri" | "correggi" } | null>(null);
 
   const carica = useCallback(async () => {
     const { data, error } = await supabaseBrowser()
@@ -64,20 +67,26 @@ function Tavoli() {
     return () => { clearInterval(timer); supabase.removeChannel(canale); };
   }, [carica]);
 
-  async function apri(t: Tavolo) {
-    const coperti = Number(window.prompt(`Coperti al tavolo ${t.numero}?`, "2"));
-    if (!coperti || coperti < 1) return;
-    const { error } = await supabaseBrowser().from("tavolo").update({
-      stato: "occupato", aperto_il: new Date().toISOString(), coperti,
-    }).eq("id", t.id);
-    if (error) setErrore(error.message);
+  // I coperti si scrivono con tavolo_coperti (mig. 0068): apre il tavolo se è libero, li corregge se è occupato.
+  async function scegliCoperti(n: number) {
+    if (!coperti) return;
+    const t = coperti.tavolo;
+    setCoperti(null);
+    const { data, error } = await supabaseBrowser().rpc("tavolo_coperti", { p_id_tavolo: t.id, p_coperti: n });
+    if (error) { setErrore(error.message); return; }
+    if ((data as { esito: string }).esito !== "ok") { setErrore("Coperti non validi."); return; }
+    setErrore(null);
+    setConto((c) => (c && c.tavolo.id === t.id ? { ...c, tavolo: { ...c.tavolo, coperti: n } } : c));
+    carica();
   }
 
+  // «Libera» non lascia ordini aperti al gruppo dopo (critico giro 29): se ce ne sono, prima si incassano o si annullano.
   async function chiudi(t: Tavolo) {
-    const { error } = await supabaseBrowser().from("tavolo").update({
-      stato: "libero", aperto_il: null, coperti: 0,
-    }).eq("id", t.id);
-    if (error) setErrore(error.message);
+    const { data, error } = await supabaseBrowser().rpc("tavolo_libera", { p_id_tavolo: t.id });
+    if (error) { setErrore(error.message); return; }
+    const r = data as { esito: string; ordini?: number };
+    if (r.esito === "ordini_aperti") setErrore(`Il tavolo ${t.numero} ha ${r.ordini} ${r.ordini === 1 ? "ordine aperto" : "ordini aperti"}: incassa il conto o annulla prima di liberarlo.`);
+    else { setErrore(null); carica(); }
   }
 
   // «Conto»: si segna il tavolo «al conto» e si apre il conto vero (critico giro 10: «Conto senza conto»).
@@ -131,11 +140,11 @@ function Tavoli() {
                   </div>
                   {t.stato !== "libero" && (
                     <div className="muto riga-min">
-                      {t.coperti} cop. · <b className={allarme ? "da-troppo" : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
+                      <button className="link-coperti" onClick={() => setCoperti({ tavolo: t, scopo: "correggi" })} aria-label="Correggi i coperti">{t.coperti} cop.</button> · <b className={allarme ? "da-troppo" : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
                     </div>
                   )}
                   <div className="azioni">
-                    {t.stato === "libero" && <button className="primario" onClick={() => apri(t)}>Apri</button>}
+                    {t.stato === "libero" && <button className="primario" onClick={() => setCoperti({ tavolo: t, scopo: "apri" })}>Apri</button>}
                     {t.stato !== "libero" && <button className={t.stato === "conto" ? "primario" : ""} onClick={() => passaAlConto(t)}>Conto</button>}
                     {t.stato !== "libero" && <button onClick={() => chiudi(t)}>Libera</button>}
                   </div>
@@ -188,16 +197,34 @@ function Tavoli() {
                 </ul>
               )}
               {conto.ordini.some((o) => Number(o.sconto) > 0) && <div className="muto sconti">sconti −{euro(conto.ordini.reduce((a, o) => a + Number(o.sconto ?? 0), 0))}</div>}
+              {padri.length > 0 && conto.tavolo.coperti === 0 && !giaCoperto && (
+                <button className="mancano-coperti" onClick={() => setCoperti({ tavolo: conto.tavolo, scopo: "correggi" })}>Quanti coperti? Il coperto entra nel conto</button>
+              )}
               <div className="totale"><span>Totale</span><strong>{euro(totale)}</strong></div>
               <div className="azioni-conto">
                 <button onClick={() => window.print()}>Stampa</button>
-                <button className="primario" disabled={chiudo || padri.length === 0} onClick={() => incassa("contanti")}>Contanti</button>
-                <button className="primario" disabled={chiudo || padri.length === 0} onClick={() => incassa("pos")}>POS</button>
+                <button className="primario" disabled={chiudo || padri.length === 0 || (conto.tavolo.coperti === 0 && !giaCoperto)} onClick={() => incassa("contanti")}>Contanti</button>
+                <button className="primario" disabled={chiudo || padri.length === 0 || (conto.tavolo.coperti === 0 && !giaCoperto)} onClick={() => incassa("pos")}>POS</button>
               </div>
             </section>
           </div>
         );
       })()}
+      {coperti && (
+        <div className="conto-velo coperti-velo" onClick={() => setCoperti(null)}>
+          <section className="carta tastierino-coperti" role="dialog" aria-label="Coperti" onClick={(e) => e.stopPropagation()}>
+            <header>
+              <strong>Tavolo {coperti.tavolo.numero}: quanti coperti?</strong>
+              <button className="chiudi-conto" onClick={() => setCoperti(null)}>✕</button>
+            </header>
+            <div className="numeri">
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                <button key={n} className={n === coperti.tavolo.coperti ? "primario" : ""} onClick={() => scegliCoperti(n)}>{n}</button>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
