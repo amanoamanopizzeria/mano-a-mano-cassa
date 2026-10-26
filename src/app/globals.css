@@ -1220,3 +1220,38 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .c-prima { flex: none; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 2px solid var(--vino, #8a1538); background: #fff; color: var(--vino, #8a1538); font-size: 14px; white-space: nowrap; }
 .c-prima.scelta { background: var(--vino, #8a1538); color: #fff; }
 .c-prima-niente { margin: 0 6px 6px; padding: 8px 12px; border-radius: 12px; background: var(--oro-velo, #faf3e3); border-left: 4px solid var(--oro, #c9973f); font-size: 14px; font-weight: 600; }
+/* cruscotto dal database (Edoardo 26/10, REA 24): periodi, confronto, filtri, rami, colonne, scheda ordine */
+.db-scelte { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.db-scelte select, .db-scelte input, .db-scelte button { min-height: 44px; }
+.db-oggi { padding: 0 12px; }
+.db-filtri { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; font-size: 14px; }
+.db-filtri button { min-height: 36px; padding: 0 10px; border-radius: 999px; }
+.db-filtri button.on { background: var(--vino, #8a1538); color: #fff; border-color: var(--vino, #8a1538); }
+.db-filtri .muto { margin-left: 6px; }
+.db-frase { font-size: 18px; margin: 8px 0 12px; }
+.db-kpi-piccoli b { font-size: 20px; }
+.db-rami { display: grid; gap: 8px; margin-top: 12px; }
+.db-ramo > summary { display: flex; justify-content: space-between; gap: 12px; align-items: center; min-height: 44px; cursor: pointer; font-weight: 700; list-style: none; }
+.db-ramo > summary::-webkit-details-marker { display: none; }
+.db-ramo > summary::before { content: "›"; margin-right: 8px; transition: transform .15s; display: inline-block; }
+.db-ramo[open] > summary::before { transform: rotate(90deg); }
+.db-ramo > summary > span:first-child { flex: 1; }
+.db-ramo > summary .muto { font-weight: 400; text-align: right; }
+.db-ramo-dentro { padding-top: 8px; }
+.db-ramo h3 { font-size: 15px; margin: 12px 0 6px; }
+.db-riga2 { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,.06); font-size: 14px; }
+.db-colonne { display: flex; align-items: flex-end; gap: 4px; height: 180px; overflow-x: auto; padding-bottom: 2px; }
+.db-col { flex: 1 0 28px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 2px; font-size: 12px; }
+.db-col span { width: 70%; background: var(--vino, #8a1538); border-radius: 4px 4px 0 0; }
+.db-col b { font-weight: 600; }
+.db-col small { color: var(--muto); white-space: nowrap; font-size: 11px; }
+.db-cerca { flex: 1; min-width: 200px; min-height: 44px; padding: 0 12px; border: 1px solid var(--bordo, #ddd); border-radius: 999px; font: inherit; }
+.db-ordini-testa select { min-height: 44px; }
+.db-fila { cursor: pointer; }
+.db-fila:hover td { background: rgba(138,21,56,.04); }
+.db-scheda-riga td { background: #fbf8f3; white-space: normal; }
+.db-scheda { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; padding: 6px 0; }
+.db-scheda-voce { padding: 3px 0; }
+.db-storia { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; }
+.db-riconquista { margin-top: 12px; }
+@media (max-width: 600px) { .db-scheda { grid-template-columns: 1fr; } .db-barra { grid-template-columns: 90px 1fr auto; } }
