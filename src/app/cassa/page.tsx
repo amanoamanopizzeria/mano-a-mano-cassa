@@ -218,11 +218,23 @@ function Cassa() {
     const dal = giorno > oggi ? "00:00" : ora.slice(0, 3) + String(Math.floor(Number(ora.slice(3)) / 15) * 15).padStart(2, "0");
     setFasceSposta(((data ?? []) as CapacitaFascia[]).filter((f) => f.ora.slice(0, 5) >= dal));
   }
+  // Un quarto d'ora pieno non si prende per sbaglio (controllo ECC 26/10, punto 7): il database
+  // risponde «pieno» e la cassa sposta lo stesso solo al secondo tocco sullo stesso quarto.
+  const [forzaOra, setForzaOra] = useState<string | null>(null);
   async function sposta(id: string, ora: string) {
     const giorno = giornoDi(id);
-    const { error } = await supabaseBrowser().rpc("ordine_sposta", { p_id: id, p_ora: new Date(`${giorno}T${ora.slice(0, 5)}:00`).toISOString() });
-    if (error) setErrore(error.message);
-    else { setSpostaId(null); setOrdini((os) => os.map((o) => (o.id === id ? { ...o, ora_consegna: new Date(`${giorno}T${ora.slice(0, 5)}:00`).toISOString() } : o))); }
+    const quando = new Date(`${giorno}T${ora.slice(0, 5)}:00`).toISOString();
+    const forza = forzaOra === id + ora;
+    const { data, error } = await supabaseBrowser().rpc(forza ? "ordine_sposta_forzato" : "ordine_sposta", { p_id: id, p_ora: quando });
+    if (error) { setErrore(error.message); return; }
+    const r = data as { esito: string; motivo?: string; occupate?: number; massimo?: number };
+    if (r.esito === "pieno") {
+      setForzaOra(id + ora);
+      setErrore(`Alle ${ora.slice(0, 5)} è pieno (${r.motivo === "consegne" ? "consegne" : "pizze"} ${r.occupate}/${r.massimo}): tocca di nuovo per spostarlo lo stesso.`);
+      return;
+    }
+    setForzaOra(null); setErrore(null);
+    setSpostaId(null); setOrdini((os) => os.map((o) => (o.id === id ? { ...o, ora_consegna: quando } : o)));
   }
   const pannelloSposta = (o: OrdineCassa) => spostaId === o.id && (
     <div className="lo-sposta" role="dialog" aria-label="Sposta in un altro quarto d'ora">

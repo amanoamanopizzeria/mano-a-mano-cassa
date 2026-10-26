@@ -28,12 +28,16 @@ export async function PATCH(
     );
   }
 
+  // Si aggiorna solo se lo stato è ancora quello letto (controllo ECC 26/10, punto 8): un annullo
+  // e una consegna nello stesso momento non devono passare tutti e due.
   const { data, error } = await supabase
     .from("ordine")
     .update({ stato, aggiornato_il: new Date().toISOString() })
     .eq("id", id)
+    .eq("stato", attuale.stato)
     .select()
-    .single();
+    .maybeSingle();
   if (error) return NextResponse.json({ errore: error.message }, { status: 400 });
+  if (!data) return NextResponse.json({ errore: "L'ordine è appena cambiato: ricarica e riprova" }, { status: 409 });
   return NextResponse.json(data);
 }
