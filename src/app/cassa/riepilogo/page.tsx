@@ -135,6 +135,8 @@ function Riepilogo() {
         </div>
       ) : <p className="muto">Leggo la cassa…</p>}
 
+      <Conteggio giornata={giornata} attesoContanti={incassato ? Number(incassato.contantiInCassa) : null} attesoPos={incassato ? Number(incassato.posInCassa) : null} />
+
       <h2>Per canale</h2>
       <div className="griglia r-canali">
         {[...perCanale.entries()].map(([canale, n]) => (
@@ -164,5 +166,94 @@ function Riepilogo() {
         </div>
       </details>
     </main>
+  );
+}
+
+// Fondo e conteggio di cassa (mig. 0077, REA 21 D7). A inizio sera il fondo, a fine sera i contanti
+// contati e il totale del POS letto sul terminale; accanto quanto doveva esserci e la differenza.
+// Append-only: un conteggio sbagliato non si corregge, se ne scrive un altro e vale l'ultimo.
+type RigaConteggio = { id: number; momento: "fondo" | "chiusura"; contanti: number; pos: number | null; nota: string | null; creato_il: string };
+const leggiEuro = (t: string) => { const n = Number(t.replace(/\s|€/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".")); return t.trim() !== "" && Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null; };
+const euro = (n: number) => n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+const ora = (iso: string) => new Date(iso).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
+
+function Conteggio({ giornata, attesoContanti, attesoPos }: { giornata: string; attesoContanti: number | null; attesoPos: number | null }) {
+  const [righe, setRighe] = useState<RigaConteggio[] | null>(null);
+  const [errore, setErrore] = useState<string | null>(null);
+  const [fondo, setFondo] = useState("");
+  const [contanti, setContanti] = useState("");
+  const [pos, setPos] = useState("");
+  const [nota, setNota] = useState("");
+  const [invio, setInvio] = useState(false);
+
+  async function carica() {
+    const { data, error } = await supabaseBrowser().from("cassa_conteggio").select("id, momento, contanti, pos, nota, creato_il").eq("giornata", giornata).order("creato_il", { ascending: false });
+    if (error) setErrore(error.message);
+    else setRighe(((data ?? []) as RigaConteggio[]).map((r) => ({ ...r, contanti: Number(r.contanti), pos: r.pos == null ? null : Number(r.pos) })));
+  }
+  useEffect(() => { setRighe(null); setErrore(null); carica(); }, [giornata]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function scrivi(momento: "fondo" | "chiusura") {
+    const c = leggiEuro(momento === "fondo" ? fondo : contanti);
+    const p = momento === "chiusura" && pos.trim() !== "" ? leggiEuro(pos) : null;
+    if (c === null || (momento === "chiusura" && pos.trim() !== "" && p === null)) { setErrore("Scrivi una cifra, per esempio 150 o 150,50."); return; }
+    setInvio(true); setErrore(null);
+    const { error } = await supabaseBrowser().from("cassa_conteggio").insert({ giornata, momento, contanti: c, pos: p, nota: nota.trim() || null });
+    setInvio(false);
+    if (error) { setErrore(error.message); return; }
+    setFondo(""); setContanti(""); setPos(""); setNota("");
+    carica();
+  }
+
+  if (righe === null) return <><h2>Fondo e conteggio</h2><p className="muto">{errore ?? "Leggo il conteggio…"}</p></>;
+  const ultimoFondo = righe.find((r) => r.momento === "fondo");
+  const ultimaChiusura = righe.find((r) => r.momento === "chiusura");
+  const deveContanti = attesoContanti === null ? null : (ultimoFondo?.contanti ?? 0) + attesoContanti;
+  const diffContanti = ultimaChiusura && deveContanti !== null ? Math.round((ultimaChiusura.contanti - deveContanti) * 100) / 100 : null;
+  const diffPos = ultimaChiusura?.pos != null && attesoPos !== null ? Math.round((ultimaChiusura.pos - attesoPos) * 100) / 100 : null;
+  const segno = (d: number) => (d === 0 ? "torna" : (d > 0 ? "+" : "−") + euro(Math.abs(d)) + (d > 0 ? " in più" : " in meno"));
+
+  return (
+    <section className="r-conteggio">
+      <h2>Fondo e conteggio</h2>
+      {errore && <p className="r-errore">{errore}</p>}
+      <div className="griglia r-cont-griglia">
+        <div className="carta r-cont">
+          <div className="eti">Fondo di inizio sera</div>
+          {ultimoFondo ? <strong>{euro(ultimoFondo.contanti)}</strong> : <p className="muto">Non scritto.</p>}
+          {ultimoFondo && <small className="muto">alle {ora(ultimoFondo.creato_il)}{ultimoFondo.nota ? " · " + ultimoFondo.nota : ""}</small>}
+          <form onSubmit={(e) => { e.preventDefault(); scrivi("fondo"); }}>
+            <input inputMode="decimal" placeholder={ultimoFondo ? "Correggi il fondo" : "Fondo, es. 150"} value={fondo} onChange={(e) => setFondo(e.target.value)} aria-label="Fondo in euro" />
+            <button type="submit" disabled={invio || fondo.trim() === ""}>{ultimoFondo ? "Riscrivi" : "Scrivi il fondo"}</button>
+          </form>
+        </div>
+        <div className="carta r-cont">
+          <div className="eti">Conteggio di fine sera</div>
+          {ultimaChiusura ? (
+            <>
+              <div className="riga"><span>Contanti contati</span><strong>{euro(ultimaChiusura.contanti)}</strong></div>
+              {deveContanti !== null && <div className="riga muto"><span>Dovevano esserci</span><span>{euro(deveContanti)}</span></div>}
+              {diffContanti !== null && <div className={"riga diff" + (diffContanti === 0 ? " pari" : "")}><span>Differenza</span><strong>{segno(diffContanti)}</strong></div>}
+              {ultimaChiusura.pos != null && <div className="riga"><span>POS dal terminale</span><strong>{euro(ultimaChiusura.pos)}</strong></div>}
+              {ultimaChiusura.pos != null && attesoPos !== null && <div className="riga muto"><span>POS in cassa</span><span>{euro(attesoPos)}</span></div>}
+              {diffPos !== null && <div className={"riga diff" + (diffPos === 0 ? " pari" : "")}><span>Differenza POS</span><strong>{segno(diffPos)}</strong></div>}
+              <small className="muto">alle {ora(ultimaChiusura.creato_il)}{ultimaChiusura.nota ? " · " + ultimaChiusura.nota : ""}</small>
+            </>
+          ) : <p className="muto">Non ancora contato.{!ultimoFondo && " Senza fondo, la differenza parte da zero."}</p>}
+          <form onSubmit={(e) => { e.preventDefault(); scrivi("chiusura"); }}>
+            <input inputMode="decimal" placeholder="Contanti contati" value={contanti} onChange={(e) => setContanti(e.target.value)} aria-label="Contanti contati in euro" />
+            <input inputMode="decimal" placeholder="Totale POS (facoltativo)" value={pos} onChange={(e) => setPos(e.target.value)} aria-label="Totale POS in euro" />
+            <input placeholder="Nota (facoltativa)" value={nota} onChange={(e) => setNota(e.target.value)} aria-label="Nota" />
+            <button type="submit" disabled={invio || contanti.trim() === ""}>{ultimaChiusura ? "Riconta" : "Scrivi il conteggio"}</button>
+          </form>
+        </div>
+      </div>
+      {righe.length > 1 && (
+        <details className="r-ramo">
+          <summary><h2>Tutti i conteggi <small>{righe.length}</small></h2></summary>
+          {righe.map((r) => <div key={r.id} className="riga r-cont-storia"><span>{ora(r.creato_il)} · {r.momento === "fondo" ? "fondo" : "conteggio"}</span><span>{euro(r.contanti)}{r.pos != null ? " · POS " + euro(r.pos) : ""}{r.nota ? " · " + r.nota : ""}</span></div>)}
+        </details>
+      )}
+    </section>
   );
 }

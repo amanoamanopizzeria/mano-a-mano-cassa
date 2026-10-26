@@ -1,5 +1,4 @@
--- DA DECIDERE (Edoardo): fondo e conteggio di cassa, REA 21 D7.
--- Non applicata. Tabella nuova, append-only: non tocca ordini, punti, export.
+-- Fondo e conteggio di cassa, REA 21 D7. Applicata il 26/10/2026 col sì di Edoardo (22:58Z).
 -- A inizio sera chi apre scrive il fondo; a fine sera i contanti contati (e il totale POS letto sul
 -- terminale). Il riepilogo mette accanto quanto doveva esserci (fondo + contanti in cassa di
 -- vendite_giornata_totali) e la differenza. Un conteggio sbagliato non si corregge: se ne scrive un

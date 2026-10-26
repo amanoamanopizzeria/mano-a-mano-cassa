@@ -1268,3 +1268,14 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .riepilogo .r-giorno { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 12px; }
 .riepilogo .r-giorno button, .riepilogo .r-giorno input { min-height: 44px; padding: 0 14px; border: 1px solid var(--bordo); border-radius: 10px; background: #fff; font: inherit; font-size: 15px; }
 .riepilogo .r-giorno button:disabled { opacity: .4; }
+.riepilogo .r-cont-griglia { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.riepilogo .r-cont { padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
+.riepilogo .r-cont .eti { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 13px; color: var(--muto); }
+.riepilogo .r-cont > strong { font-family: "Oswald", sans-serif; font-size: 34px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.riepilogo .r-cont .riga, .riepilogo .r-cont-storia { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--bordo); font-size: 16px; font-variant-numeric: tabular-nums; }
+.riepilogo .r-cont .riga.diff strong { color: var(--vino); }
+.riepilogo .r-cont .riga.diff.pari strong { color: inherit; }
+.riepilogo .r-cont form { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.riepilogo .r-cont input { flex: 1 1 140px; min-height: 44px; padding: 0 12px; border: 1px solid var(--bordo); border-radius: 10px; font: inherit; font-size: 16px; }
+.riepilogo .r-cont button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--vino); color: #fff; font: inherit; font-size: 15px; }
+.riepilogo .r-cont button:disabled { opacity: .4; }
