@@ -1,6 +1,7 @@
 // Generato da docs/rea/dati/codici_prodotti_velocissimo.csv (back-office Velocissimo, letto il 26/10/2026):
 // codice del prodotto (minuscolo) → id dei prodotti Velocissimo che lo portano. Serve finché su Deliverect
-// c'è il menù di Velocissimo: i PLU che arrivano negli ordini sono questi codici.
+// c'è il menù di Velocissimo: i PLU che arrivano negli ordini sono questi codici. Un codice con due id
+// è un doppione di Velocissimo non ancora risolto: si sceglie col nome che manda Deliverect.
 export const CODICI_VELOCISSIMO: Record<string, number[]> = {
   "sped": [8],
   "c001": [11],
@@ -148,7 +149,7 @@ export const CODICI_VELOCISSIMO: Record<string, number[]> = {
   "137": [257],
   "135": [258],
   "138": [259],
-  "142": [260, 264],
+  "142": [264], // Edoardo 26/10: «142 è l'Arrabbiata, la Finocchiona non la facciamo più» (in Velocissimo era anche della 260)
   "143": [261],
   "144": [262],
   "145": [263],

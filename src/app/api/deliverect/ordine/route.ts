@@ -36,7 +36,7 @@ interface OrdineDeliverect {
   status?: number;
   testOrder?: boolean;
   payment?: { amount?: number };       // centesimi, quello che ha pagato il cliente
-  deliveryCost?: number; serviceCharge?: number; tip?: number; discountTotal?: number;
+  deliveryCost?: number; serviceCharge?: number; tip?: number; bagFee?: number; discountTotal?: number;
 }
 
 function firmaValida(corpo: string, ricevuta: string | null): boolean {
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
   const cent = (x?: number) => (Number.isFinite(x) ? (x as number) : 0);
   const pagato = ordine.payment?.amount;
   const atteso = pagato == null ? null
-    : (pagato - cent(ordine.deliveryCost) - cent(ordine.serviceCharge) - cent(ordine.tip) + Math.abs(cent(ordine.discountTotal))) / 100;
+    : (pagato - cent(ordine.deliveryCost) - cent(ordine.serviceCharge) - cent(ordine.tip) - cent(ordine.bagFee) + Math.abs(cent(ordine.discountTotal))) / 100;
   const scarto = atteso == null ? 0 : Math.round((atteso - totale) * 100) / 100;
   const note = [
     sconosciuti.length && `NON IN MENÙ: ${sconosciuti.join(", ")}`,

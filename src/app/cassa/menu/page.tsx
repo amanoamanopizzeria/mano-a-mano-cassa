@@ -4,6 +4,7 @@
 // si copia e si cambia un prodotto da qui (SchedaProdotto): lo stesso prodotto è il tasto in cassa e la
 // riga su app, sito e totem.
 import { useEffect, useState } from "react";
+import { CODICI_VELOCISSIMO } from "@/lib/deliverect/codici-velocissimo";
 import SchedaProdotto, { prodottoVuoto, type ProdottoScheda } from "./SchedaProdotto";
 import SchedaCategoria, { categoriaVuota, rinumeraCategorie, type CategoriaCompleta } from "./SchedaCategoria";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -12,6 +13,7 @@ import AuthGate from "@/components/AuthGate";
 interface Prodotto extends ProdottoScheda {
   id: string;
   esaurito_fino: string | null;
+  id_velocissimo?: number | null;
 }
 interface Categoria extends CategoriaCompleta { id: string }
 interface Gruppo { id: string; nome: string; ordine: number }
@@ -43,7 +45,7 @@ function Menu() {
       const [g, c, p, v, gv, k] = await Promise.all([
         supabase.from("gruppo_categoria").select("id, nome, ordine").order("ordine"),
         supabase.from("categoria").select("id, nome, id_gruppo, ordine, colore, destinazione, impegna_forno, visibile_app, visibile_web, visibile_totem").order("ordine"),
-        supabase.from("prodotto").select("id, id_categoria, nome, descrizione, codice, prezzo, prezzo_tavolo, prezzo_piattaforme, aliquota_iva, foto_url, attivo, visibile_app, visibile_web, visibile_totem, ordine, esaurito_fino").order("ordine"),
+        supabase.from("prodotto").select("id, id_categoria, nome, descrizione, codice, id_velocissimo, prezzo, prezzo_tavolo, prezzo_piattaforme, aliquota_iva, foto_url, attivo, visibile_app, visibile_web, visibile_totem, ordine, esaurito_fino").order("ordine"),
         supabase.from("variazione").select("id, nome, prezzo, tipo, gruppo, id_categoria"),
         supabase.from("categoria_gruppo_variazione").select("id_categoria, gruppo, ordine").order("ordine"),
         supabase.from("pacchetto_componente").select("id_pacchetto, etichetta, id_categoria, quantita, ordine").order("ordine"),
@@ -124,9 +126,16 @@ function Menu() {
 
   // critico giro 36: a 390 px la pagina è 19 schermate; si cerca per nome o codice
   const [cerca, setCerca] = useState("");
-  const parole = cerca.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  // senza accenti («suppli» trova «Supplì»), e il codice vale anche quello di Velocissimo (C050, 142) e V264
+  const semplice = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const parole = semplice(cerca.trim()).split(/\s+/).filter(Boolean);
+  const codiciDi = (p: Prodotto) => [
+    (p.codice ?? "").toLowerCase(),
+    p.id_velocissimo != null ? `v${p.id_velocissimo}` : "",
+    ...Object.entries(CODICI_VELOCISSIMO).filter(([, ids]) => p.id_velocissimo != null && ids.includes(p.id_velocissimo)).map(([c]) => c),
+  ].filter(Boolean);
   const trovati = parole.length
-    ? prodotti.filter((p) => parole.every((w) => p.nome.toLowerCase().includes(w) || (p.codice ?? "").toLowerCase() === w)).sort((a, b) => Number(b.attivo) - Number(a.attivo))
+    ? prodotti.filter((p) => parole.every((w) => semplice(p.nome).includes(w) || codiciDi(p).includes(w))).sort((a, b) => Number(b.attivo) - Number(a.attivo))
     : [];
   const rigaProdotto = (p: Prodotto) => {
     const pacchetto = componenti.filter((k) => k.id_pacchetto === p.id);
@@ -166,10 +175,10 @@ function Menu() {
         <SchedaProdotto iniziale={scheda} categorie={categorie} gruppi={gruppi} onChiudi={() => setScheda(null)} onSalvato={dopoSalvataggio} />
       )}
 
-      <input className="me-cerca" type="search" value={cerca} onChange={(e) => setCerca(e.target.value)} placeholder="Cerca un prodotto (nome o codice)" aria-label="Cerca un prodotto" />
+      <input className="me-cerca" type="search" value={cerca} onChange={(e) => { setCerca(e.target.value); requestAnimationFrame(() => document.getElementById("me-cerca")?.scrollIntoView({ block: "start" })); }} id="me-cerca" placeholder="Cerca un prodotto (nome o codice)" aria-label="Cerca un prodotto" />
       {parole.length > 0 && (
         <section className="carta">
-          <strong className="cat">{trovati.length ? `Trovati: ${trovati.length}` : "Nessun prodotto con questo nome"}</strong>
+          <strong className="cat">{trovati.length ? (trovati.length > 40 ? `Trovati: ${trovati.length}, ecco i primi 40: scrivi di più` : `Trovati: ${trovati.length}`) : "Nessun prodotto con questo nome o codice"}</strong>
           <ul className="prodotti">{trovati.slice(0, 40).map(rigaProdotto)}</ul>
         </section>
       )}

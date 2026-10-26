@@ -74,6 +74,9 @@ function Cassa() {
   const [scontoPct, setScontoPct] = useState(false);
   const [esito, setEsito] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
+  // l'avviso dei prodotti spenti sta per conto suo: come errore copriva «Serve l'indirizzo» (critico giro 37)
+  const [tolto, setTolto] = useState<string | null>(null);
+  useEffect(() => { if (!tolto) return; const t = setTimeout(() => setTolto(null), 20_000); return () => clearTimeout(t); }, [tolto]);
   const [invio, setInvio] = useState(false);
   // Quando: «adesso» oppure giorno + quarto d'ora, dentro l'orario del tipo (mig. 0022: domicilio 19:00–22:30,
   // ritiro 19:00–22:45, 7 giorni avanti come online). Un ordine telefonico «per domani alle 20» si prende qui.
@@ -213,7 +216,7 @@ function Cassa() {
       // «Modifica» di APP-4 si svuotava dicendo «spento nel menù»)
       const spenta = (r: RigaOrdine) => !!r.id_prodotto && !vivi.has(r.id_prodotto);
       const tolte = prev.filter(spenta);
-      if (tolte.length) { toltiDaSolo.current = true; setErrore(`Tolto dalla comanda perché spento nel menù: ${tolte.map((r) => r.descrizione).join(", ")}.`); }
+      if (tolte.length) { toltiDaSolo.current = true; setTolto(`Tolto dalla comanda perché spento nel menù: ${tolte.map((r) => r.descrizione).join(", ")}.`); }
       return riprezzaRighe(prev.filter((r) => !spenta(r)), prodotti, tipo === "tavolo" ? "tavolo" : "asporto");
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -224,7 +227,7 @@ function Cassa() {
   const toltiDaSolo = useRef(false);
   useEffect(() => {
     if (toltiDaSolo.current) { toltiDaSolo.current = false; return; }
-    if (righe.length === 0) setErrore((e) => (e?.startsWith("Tolto dalla comanda") ? null : e));
+    if (righe.length === 0) setTolto(null);
   }, [righe.length]);
   // la bozza ripresa all'apertura si controlla subito, non dopo due minuti (critico giro 34)
   // (solo i prodotti spenti: i prezzi no, un ordine riaperto deve ancora sapere se è al tavolo)
@@ -235,7 +238,7 @@ function Cassa() {
     const vivi = new Set(prodotti.map((p) => p.id));
     setRighe((prev) => {
       const tolte = prev.filter((r) => !!r.id_prodotto && !vivi.has(r.id_prodotto));
-      if (tolte.length) { toltiDaSolo.current = true; setErrore(`Tolto dalla comanda perché spento nel menù: ${tolte.map((r) => r.descrizione).join(", ")}.`); }
+      if (tolte.length) { toltiDaSolo.current = true; setTolto(`Tolto dalla comanda perché spento nel menù: ${tolte.map((r) => r.descrizione).join(", ")}.`); }
       return tolte.length ? prev.filter((r) => !tolte.includes(r)) : prev;
     });
   }, [prodotti]);
@@ -462,7 +465,7 @@ function Cassa() {
     else setErroreCoupon(msg[r.esito] ?? `Coupon non applicabile (${r.esito}).`);
   }
 
-  function svuota() { setRighe([]); setSelezionata(null); setModoVarianti(false); setDigitato(""); setNote(""); setNomeCliente(""); setEsito(null); setErrore(null); setMenuAperto(null); setFigliaSel(null); setCoupon(null); setCodiceCoupon(""); setErroreCoupon(null); setScontoTesto(""); setScontoPct(false); }
+  function svuota() { setTolto(null); setRighe([]); setSelezionata(null); setModoVarianti(false); setDigitato(""); setNote(""); setNomeCliente(""); setEsito(null); setErrore(null); setMenuAperto(null); setFigliaSel(null); setCoupon(null); setCodiceCoupon(""); setErroreCoupon(null); setScontoTesto(""); setScontoPct(false); }
 
   async function salvaModifica() {
     if (!modifica) return;
@@ -812,6 +815,9 @@ function Cassa() {
           <div role="status" className="esito-invio" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 12, background: "#eef7ea", border: "2px solid var(--ok)", color: "var(--ok)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>
             {esito}
           </div>
+        )}
+        {tolto && (
+          <div role="status" style={{ margin: "0 6px 6px", padding: "8px 12px", borderRadius: 12, background: "var(--oro-velo)", borderLeft: "4px solid var(--oro)", fontSize: 14, fontWeight: 600 }}>{tolto}</div>
         )}
         {/* n. 10 del giro 3: gli errori stanno in UN posto, vicino al bottone */}
         {/* critico giro 17: il banco partiva senza contanti/POS, e in chiusura non si sa come ha pagato */}

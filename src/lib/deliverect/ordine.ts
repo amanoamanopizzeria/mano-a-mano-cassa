@@ -28,10 +28,13 @@ export interface RigaDx {
   figlie?: Omit<RigaDx, "figlie">[];
 }
 
-const piccolo = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+const piccolo = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, " ");
+// quante parole del nome di Deliverect stanno nel nome nostro: sceglie fra i doppioni di un codice (C072)
+const somiglia = (a: string, b: string) => piccolo(a).split(" ").filter((w) => w.length > 2 && piccolo(b).includes(w)).length;
 const euro = (centesimi: number | undefined) => (Number.isFinite(centesimi) ? (centesimi as number) / 100 : 0);
 const eGruppo = (a: ArticoloDx) => a.productType === 3 || /^[PG]-/i.test(a.plu ?? "");
-const eRimozione = (a: ArticoloDx) => /^(no|remove|removed)$/i.test(a.modifierAction ?? "") || /^(senza|no)\s/i.test(a.name);
+// modifierAction vince sul nome: «No lattosio» con ADD è un'aggiunta (critico giro 37)
+const eRimozione = (a: ArticoloDx) => (a.modifierAction ? /^(no|remove|removed)$/i.test(a.modifierAction) : /^(senza|no)\s/i.test(a.name));
 
 export function traduciArticoli(
   articoli: ArticoloDx[], prodotti: ProdottoCatalogo[], variazioni: VariazioneCatalogo[],
@@ -51,7 +54,7 @@ export function traduciArticoli(
   const varPerNome = new Map(variazioni.map((v) => [piccolo(v.nome), v]));
   const sconosciuti: string[] = [];
 
-  const perPlu = (pluGrezzo: string | undefined): ProdottoCatalogo | null => {
+  const perPlu = (pluGrezzo: string | undefined, nome = ""): ProdottoCatalogo | null => {
     const plu = (pluGrezzo ?? "").trim().replace(/^M-/i, "");
     if (!plu) return null;
     const c = perCodice.get(piccolo(plu));
@@ -61,9 +64,13 @@ export function traduciArticoli(
     // il codice di Velocissimo: se due prodotti lo portano (142, C072), vince quello acceso
     const ids = CODICI_VELOCISSIMO[plu.toLowerCase()] ?? [];
     const trovati = ids.map((id) => perIdV.get(id)).filter((x): x is ProdottoCatalogo => !!x);
-    return trovati.find((x) => x.attivo !== false) ?? trovati[0] ?? null;
+    if (trovati.length < 2) return trovati[0] ?? null;
+    const accesi = trovati.filter((x) => x.attivo !== false);
+    const fra = accesi.length ? accesi : trovati;
+    return [...fra].sort((a, b) => somiglia(nome, b.nome) - somiglia(nome, a.nome))[0];
   };
-  const prodottoDi = (a: ArticoloDx) => perPlu(a.plu) ?? perNome.get(piccolo(a.name)) ?? null;
+  const prodottoDi = (a: ArticoloDx) => perPlu(a.plu, a.name) ?? perNome.get(piccolo(a.name)) ?? null;
+  const varPerPlu = (a: ArticoloDx) => /^VAR\d+$/i.test((a.plu ?? "").trim());
   const variazioneDi = (a: ArticoloDx): VariazioneCatalogo | null => {
     const v = /^VAR(\d+)$/i.exec((a.plu ?? "").trim());
     if (v) return varPerIdV.get(Number(v[1])) ?? null;
@@ -80,7 +87,9 @@ export function traduciArticoli(
     const tipo: Variazione["tipo"] = eRimozione(s) ? "rimozione" : v?.tipo ?? "aggiunta";
     const nome = v?.nome ?? s.name.replace(/^(senza|no)\s+/i, "");
     const una: Variazione = { nome, prezzo: euro(s.price), tipo };
-    return [...Array.from({ length: Math.max(1, s.quantity || 1) }, () => una), ...variantiDi(s.subItems ?? [])];
+    const volte = Math.max(1, s.quantity || 1);
+    const dentro = variantiDi(s.subItems ?? []);
+    return [...Array.from({ length: volte }, () => una), ...Array.from({ length: volte }, () => dentro).flat()];
   });
 
   const riga = (a: ArticoloDx): RigaDx => {
@@ -90,7 +99,9 @@ export function traduciArticoli(
     // righe figlie solo dentro un menu (o col PLU «M-»): un extra che si chiama come un prodotto
     // («Chips di patate») resta un extra (critico giro 36, M4 e M5)
     const combo = !!p && menuCombo.has(p.id);
-    const eFiglia = (s: ArticoloDx) => !variazioneDi(s) && (/^M-/i.test(s.plu ?? "") || (combo && !!prodottoDi(s)));
+    // dentro un menu vince il prodotto anche se una variante ha lo stesso nome (Chips, Ciauscolo:
+    // critico giro 37); solo un PLU «VAR…» esplicito resta variante
+    const eFiglia = (s: ArticoloDx) => !varPerPlu(s) && (/^M-/i.test(s.plu ?? "") || (combo ? !!prodottoDi(s) : false));
     const figlie = sotto.filter(eFiglia).map((s) => {
       const f = riga({ ...s, subItems: s.subItems });
       return { ...f, quantita: s.quantity || 1 };
