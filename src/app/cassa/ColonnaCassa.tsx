@@ -13,7 +13,10 @@ import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { CapacitaFascia } from "@/lib/types";
 
-const oggi = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+// la serata, non il giorno del calendario: dopo mezzanotte è ancora la sera prima (taglio alle 06:00, come
+// giornata_lavorativa). Critico giro 30: alle 00:30 i −/+ cambiavano i quarti della sera dopo.
+const oggi = () => new Date(Date.now() - 6 * 3_600_000).toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+const calendario = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
 const adessoRoma = () => new Date().toLocaleTimeString("sv-SE", { timeZone: "Europe/Rome" }).slice(0, 5);
 const oraDi = (iso: string) => new Date(iso).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
 
@@ -26,7 +29,9 @@ export default function ColonnaCassa() {
   const [adesso, setAdesso] = useState(adessoRoma());
   const [negozio, setNegozio] = useState<string | null>(null);
   const [salvo, setSalvo] = useState(false);
-  const [ultimo, setUltimo] = useState<{ tipo: Reparto; delta: number; quanti: number } | null>(null);
+  // «Annulla» rimette i numeri di prima quarto per quarto (critico giro 30: rifare il passo al contrario
+  // riapriva un quarto chiuso a 0, perché il − si ferma a 0 e il + dopo no)
+  const [ultimo, setUltimo] = useState<{ tipo: Reparto; prima: { ora: string; massimo: number }[]; quanti: number } | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
 
   const carica = useCallback(async () => {
@@ -59,27 +64,30 @@ export default function ColonnaCassa() {
   }, [carica]);
 
   // dal quarto d'ora in corso in poi: quelli passati non servono a chi prende un ordine
+  // dopo mezzanotte la serata è finita: i quarti di stasera sono tutti passati
+  const dopoMezzanotte = oggi() !== calendario();
   const corrente = fasce.filter((f) => f.ora.slice(0, 5) <= adesso).at(-1)?.ora;
-  const vista = fasce.filter((f) => !corrente || f.ora >= corrente);
+  const vista = dopoMezzanotte ? [] : fasce.filter((f) => !corrente || f.ora >= corrente);
 
   // il quarto d'ora in corso decide il numero che si vede: è quello che conta adesso
   const primo = vista[0];
 
-  async function cambia(tipo: Reparto, delta: number, annulla = false) {
+  async function cambia(tipo: Reparto, delta: number, annulla?: { ora: string; massimo: number }[]) {
     if (!negozio || salvo || vista.length === 0) return;
     setSalvo(true); setErrore(null);
     const supabase = supabaseBrowser();
-    const risultati = await Promise.all(vista.map((f) => {
-      const attuale = tipo === "produzione" ? f.pizze_max : f.consegne_max;
-      return supabase.rpc("imposta_fascia", {
-        p_negozio: negozio, p_giorno: oggi(), p_ora: f.ora, p_tipo: tipo, p_massimo: Math.max(0, attuale + delta),
-      });
-    }));
+    const prima = vista.map((f) => ({ ora: f.ora, massimo: tipo === "produzione" ? f.pizze_max : f.consegne_max }));
+    const nuovi = annulla ?? prima.map((p) => ({ ora: p.ora, massimo: Math.max(0, p.massimo + delta) }));
+    // solo i quarti che cambiano davvero
+    const daSalvare = nuovi.filter((n) => prima.find((p) => p.ora === n.ora)?.massimo !== n.massimo);
+    const risultati = await Promise.all(daSalvare.map((n) => supabase.rpc("imposta_fascia", {
+      p_negozio: negozio, p_giorno: oggi(), p_ora: n.ora, p_tipo: tipo, p_massimo: n.massimo,
+    })));
     const sbagliato = risultati.find((r) => r.error);
     if (sbagliato?.error) setErrore("Non salvato: " + sbagliato.error.message);
     else if (!annulla) {
       // per 6 secondi resta «Annulla»: con le dita del servizio il + si tocca per sbaglio (come in /cassa/fasce)
-      const u = { tipo, delta, quanti: Date.now() };
+      const u = { tipo, prima, quanti: Date.now() };
       setUltimo(u);
       setTimeout(() => setUltimo((x) => (x?.quanti === u.quanti ? null : x)), 6000);
     } else setUltimo(null);
@@ -109,14 +117,14 @@ export default function ColonnaCassa() {
             return (
               <div className="cc-passo" key={tipo}>
                 <span className="cc-passo-nome">{tipo === "produzione" ? "Pizze" : "Consegne"}<small>{tipo === "consegne" ? (n === 1 ? "1 rider" : `${n} rider`) : "in base alla cucina"}</small></span>
-                <button type="button" onClick={() => cambia(tipo, -1)} disabled={salvo || n <= 0} aria-label={tipo === "produzione" ? "Una pizza in meno" : "Una consegna in meno"}>−</button>
+                <button type="button" onClick={() => cambia(tipo, -1)} disabled={salvo || vista.every((f) => (tipo === "produzione" ? f.pizze_max : f.consegne_max) <= 0)} aria-label={tipo === "produzione" ? "Una pizza in meno" : "Una consegna in meno"}>−</button>
                 <b>{n}</b>
                 <button type="button" onClick={() => cambia(tipo, 1)} disabled={salvo} aria-label={tipo === "produzione" ? "Una pizza in più" : "Una consegna in più"}>+</button>
               </div>
             );
           })}
           {ultimo && (
-            <button type="button" className="cc-annulla" disabled={salvo} onClick={() => cambia(ultimo.tipo, -ultimo.delta, true)}>
+            <button type="button" className="cc-annulla" disabled={salvo} onClick={() => cambia(ultimo.tipo, 0, ultimo.prima)}>
               Salvato · Annulla
             </button>
           )}

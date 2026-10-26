@@ -340,7 +340,8 @@ function Cassa() {
   const inUscita = ordini.filter((o) =>
     o.tipo !== "tavolo" && ["ricevuto", "in_preparazione", "pronto"].includes(o.stato)
     && !["assegnata", "ritirata"].includes(o.consegna?.[0]?.stato ?? "")
-    && (diStasera(o, adesso) || quartoDi(o) >= inizioSerata(adesso)));
+    // quelli rimasti aperti da ieri si vedono col tasto «Ieri e prima» (critico giro 30: sparivano)
+    && (diStasera(o, adesso) || quartoDi(o) >= inizioSerata(adesso) || vecchiAperti));
   const quartoAdesso = Math.floor(adesso / 900_000) * 900_000;
   // In consegna (Edoardo 26/10): appena un rider la prende esce dalle righe e sta qui, con chi la porta, dov'è e
   // fra quanto arriva, così se il cliente chiama si sa rispondere. Consegnata, va fra i Chiusi.
