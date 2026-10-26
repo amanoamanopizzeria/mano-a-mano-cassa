@@ -150,6 +150,7 @@ function Cassa() {
   useEffect(() => {
     const tel = new URLSearchParams(window.location.search).get("telefono");
     if (!tel) return;
+    const ritiro = new URLSearchParams(window.location.search).get("tipo") === "ritiro";
     supabaseBrowser().rpc("cerca_cliente", { p_telefono: tel }).then(({ data }) => {
       const s = data as { esito: string; cliente?: { id: string; nome: string | null; telefono: string }; indirizzi?: Indirizzo[] } | null;
       if (s?.esito === "trovato" && s.cliente) {
@@ -159,9 +160,12 @@ function Cassa() {
         setCliente({ ...s.cliente, indirizzo: i ? `${i.via} ${i.civico ?? ""}`.trim() : null });
         setIndirizzi(s.indirizzi ?? []);
         setIdIndirizzo(i?.id ?? null);
-        setTipo("domicilio");
+        // «passo io» (Edoardo, 26/10/2026): dalla scheda col tasto Ritiro il cliente resta suo, punti
+        // compresi, ma l'ordine è da ritirare e non si porta
+        setTipo(ritiro ? "ritiro" : "domicilio");
       } else {
         setCliente({ id: "", nome: null, telefono: tel, indirizzo: null });
+        if (ritiro) setTipo("ritiro");
       }
     });
   }, []);
@@ -267,6 +271,13 @@ function Cassa() {
   const [fasceVicine, setFasceVicine] = useState<FasciaVicina[]>([]);
   useEffect(() => {
     const ind = indirizzi.find((i) => i.id === idIndirizzo);
+    // per il ritiro gli stessi quarti d'ora, senza vicine: conta solo il forno (Edoardo 26/10, «qual è la
+    // prima fascia disponibile»)
+    if (tipo === "ritiro" && idNegozio) {
+      supabaseBrowser().rpc("fasce_con_vicine", { p_negozio: idNegozio, p_giorno: giorno || oggiISO(), p_lat: null, p_lng: null })
+        .then(({ data }) => setFasceVicine(((data ?? []) as FasciaVicina[]).map((f) => ({ ...f, ora: String(f.ora).slice(0, 5) }))));
+      return;
+    }
     if (tipo !== "domicilio" || !idNegozio || ind?.lat == null || ind?.lng == null) { setFasceVicine([]); return; }
     supabaseBrowser().rpc("fasce_con_vicine", { p_negozio: idNegozio, p_giorno: giorno || oggiISO(), p_lat: ind.lat, p_lng: ind.lng })
       .then(async ({ data }) => {
@@ -749,6 +760,26 @@ function Cassa() {
             </select>
           </div>
         )}
+        {tipo === "ritiro" && fasceVicine.length > 0 && (() => {
+          const libere = fasceVicine.filter((f) => quartiScelta.includes(f.ora) && !f.bloccata_produzione && f.pizze_occupate < f.pizze_max);
+          const prima = libere[0]?.ora;
+          return (
+            <div className="c-vicine" aria-label="Quarti d'ora per il ritiro">
+              {prima && <span className="c-prima">Prima libera: <b>{prima}</b></span>}
+              {fasceVicine.filter((f) => quartiScelta.includes(f.ora)).slice(0, 16).map((f) => {
+                const pieno = f.bloccata_produzione || f.pizze_occupate >= f.pizze_max;
+                const scelto = !!giorno && ora === f.ora;
+                return (
+                  <button key={f.ora} className={"c-fascia" + (f.ora === prima ? " vicina" : "") + (pieno ? " piena" : "") + (scelto ? " scelta" : "")}
+                    onClick={() => { setGiorno(giorno || oggiISO()); setOra(f.ora); setErrore(null); }}>
+                    <b>{f.ora}</b>
+                    <span>{pieno ? "pieno" : `${f.pizze_occupate}/${f.pizze_max} pizze`}</span>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
         {tipo === "domicilio" && fasceVicine.length > 0 && (
           <div className="c-vicine" aria-label="Quarti d'ora per la consegna">
             {fasceVicine.filter((f) => quartiScelta.includes(f.ora)).slice(0, 16).map((f, i, tutte) => {

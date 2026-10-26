@@ -229,6 +229,7 @@ function Cliente() {
             <div className="muto">{new Date(chiamata.ricevuta_il).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}{chiamata.origine === "prova" ? " · prova" : ""}</div>
           </div>
           <a href={"/cassa/nuovo?telefono=" + encodeURIComponent(chiamata.numero)} className="primario cl-prendi">Prendi l&apos;ordine</a>
+          <a href={"/cassa/nuovo?tipo=ritiro&telefono=" + encodeURIComponent(chiamata.numero)} className="cl-prendi cl-ritiro">Ritiro: passa lui</a>
           <button onClick={() => setChiamata(null)} aria-label="Chiudi" className="cl-chiudi">✕</button>
         </div>
       )}
@@ -279,7 +280,10 @@ function Cliente() {
             </p>
           )}
           {!chiamata && (
-            <a href={"/cassa/nuovo?telefono=" + encodeURIComponent(scheda.cliente.telefono)} className="primario cl-prendi">Prendi l&apos;ordine</a>
+            <div>
+              <a href={"/cassa/nuovo?telefono=" + encodeURIComponent(scheda.cliente.telefono)} className="primario cl-prendi">Prendi l&apos;ordine</a>
+              <a href={"/cassa/nuovo?tipo=ritiro&telefono=" + encodeURIComponent(scheda.cliente.telefono)} className="cl-prendi cl-ritiro">Ritiro: passa lui</a>
+            </div>
           )}
           {scheda.cliente.black_list && (
             <p className="cl-black">BLACK LIST: non si prende l&apos;ordine senza Edoardo.</p>
