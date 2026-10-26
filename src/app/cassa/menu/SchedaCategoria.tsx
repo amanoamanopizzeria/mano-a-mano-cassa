@@ -20,6 +20,17 @@ export const categoriaVuota = (idGruppo: string | null, sorelle: CategoriaComple
   };
 };
 
+/** Rinumera la fila delle categorie 1…n nell'ordine dato, scrivendo solo quelle che cambiano. */
+export async function rinumeraCategorie(fila: { id?: string; ordine: number }[]): Promise<string | null> {
+  const supabase = supabaseBrowser();
+  for (const [i, x] of fila.entries()) {
+    if (!x.id || x.ordine === i + 1) continue;
+    const u = await supabase.from("categoria").update({ ordine: i + 1 }).eq("id", x.id);
+    if (u.error) return u.error.message;
+  }
+  return null;
+}
+
 // i colori dei tasti della cassa 2Bit, più la terracotta del marchio
 const COLORI = ["#A3452F", "#C0392B", "#E67E22", "#D4A017", "#27AE60", "#16A085", "#2980B9", "#8E44AD", "#7F8C8D", "#5D4037"];
 
@@ -32,7 +43,7 @@ export default function SchedaCategoria({ iniziale, gruppi, tutte, onChiudi, onS
 }) {
   const nuova = !iniziale.id;
   // i colori di oggi (quelli di Velocissimo) vengono prima: toccarne un altro non deve perdere il vecchio
-  const colori = [...new Set([iniziale.colore, ...tutte.map((x) => x.colore), ...COLORI].filter((x): x is string => !!x).map((x) => x.toLowerCase()))];
+  const colori = [...new Set([iniziale.colore, ...tutte.filter((x) => !/^prova/i.test(x.nome)).map((x) => x.colore), ...COLORI].filter((x): x is string => !!x).map((x) => x.toLowerCase()))];
   const [c, setC] = useState<CategoriaCompleta>(iniziale);
   const [salvo, setSalvo] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
@@ -45,17 +56,7 @@ export default function SchedaCategoria({ iniziale, gruppi, tutte, onChiudi, onS
     setSalvo(true);
     const supabase = supabaseBrowser();
     let ordine = c.ordine;
-    if (nuova || c.id_gruppo !== iniziale.id_gruppo) {
-      // subito dopo l'ultima del suo gruppo, e chi viene dopo scala di uno (prima finiva dopo «Menù»)
-      const delGruppo = tutte.filter((x) => x.id_gruppo === c.id_gruppo && x.id !== c.id);
-      const dopo = delGruppo.length ? Math.max(...delGruppo.map((x) => x.ordine)) : Math.max(0, ...tutte.map((x) => x.ordine));
-      ordine = dopo + 1;
-      const daScalare = tutte.filter((x) => x.id && x.id !== c.id && x.ordine >= ordine);
-      for (const x of daScalare.sort((a, b) => b.ordine - a.ordine)) {
-        const u = await supabase.from("categoria").update({ ordine: x.ordine + 1 }).eq("id", x.id!);
-        if (u.error) { setSalvo(false); setErrore("Non salvata: " + u.error.message); return; }
-      }
-    }
+    const cambiaPosto = nuova || c.id_gruppo !== iniziale.id_gruppo;
     const riga = {
       nome, id_gruppo: c.id_gruppo, ordine, colore: c.colore, destinazione: c.destinazione, impegna_forno: c.impegna_forno,
       visibile_app: c.visibile_app, visibile_web: c.visibile_web, visibile_totem: c.visibile_totem,
@@ -63,9 +64,21 @@ export default function SchedaCategoria({ iniziale, gruppi, tutte, onChiudi, onS
     const r = nuova
       ? await supabase.from("categoria").insert(riga).select("id").single()
       : await supabase.from("categoria").update(riga).eq("id", c.id!).select("id").single();
+    if (r.error || !r.data) { setSalvo(false); setErrore("Non salvata: " + (r.error?.message ?? "nessuna risposta")); return; }
+    const id = (r.data as { id: string }).id;
+    if (cambiaPosto) {
+      // subito dopo la prima fila di sorelle del gruppo (critico giro 33: dopo «Menù» finiva dopo i vini),
+      // poi tutta la fila si rinumera 1…n
+      const fila = tutte.filter((x) => x.id !== id).sort((a, b) => a.ordine - b.ordine);
+      let k = fila.findIndex((x) => x.id_gruppo === c.id_gruppo);
+      if (k < 0) k = fila.length; else { while (k < fila.length && fila[k].id_gruppo === c.id_gruppo) k++; }
+      fila.splice(k, 0, { ...riga, id });
+      const e = await rinumeraCategorie(fila);
+      if (e) { setSalvo(false); setErrore("Salvata, ma non spostata: " + e); return; }
+      ordine = k + 1;
+    }
     setSalvo(false);
-    if (r.error || !r.data) { setErrore("Non salvata: " + (r.error?.message ?? "nessuna risposta")); return; }
-    onSalvata({ ...c, ...riga, id: (r.data as { id: string }).id });
+    onSalvata({ ...c, ...riga, ordine, id });
   }
 
   return (
@@ -76,7 +89,12 @@ export default function SchedaCategoria({ iniziale, gruppi, tutte, onChiudi, onS
           <input autoFocus value={c.nome} onChange={(e) => cambia("nome", e.target.value)} placeholder="es. Pizze d'autunno" />
         </label>
         <label className="me-campo">Gruppo
-          <select value={c.id_gruppo ?? ""} onChange={(e) => cambia("id_gruppo", e.target.value || null)}>
+          <select value={c.id_gruppo ?? ""} onChange={(e) => {
+            const g = e.target.value || null;
+            // una categoria nuova prende stampa e forno dal gruppo scelto
+            if (nuova) { const m = categoriaVuota(g, tutte); setErrore(null); setC((x) => ({ ...x, id_gruppo: g, destinazione: m.destinazione, impegna_forno: m.impegna_forno })); }
+            else cambia("id_gruppo", g);
+          }}>
             <option value="">Scegli…</option>
             {gruppi.map((g) => <option key={g.id} value={g.id}>{g.nome}</option>)}
           </select>

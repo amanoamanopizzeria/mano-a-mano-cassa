@@ -206,7 +206,13 @@ function Cassa() {
   const [riletto, setRiletto] = useState(0);
   useEffect(() => {
     if (riletto === 0) return;
-    setRighe((prev) => riprezzaRighe(prev, prodotti, tipo === "tavolo" ? "tavolo" : "asporto"));
+    // un prodotto spento nel frattempo esce dalla comanda, e lo si dice (critico giro 33: si poteva ancora inviare)
+    const vivi = new Set(prodotti.map((p) => p.id));
+    setRighe((prev) => {
+      const tolte = prev.filter((r) => !vivi.has(r.id_prodotto));
+      if (tolte.length) setErrore(`Tolto dalla comanda perché spento nel menù: ${tolte.map((r) => r.descrizione).join(", ")}.`);
+      return riprezzaRighe(prev.filter((r) => vivi.has(r.id_prodotto)), prodotti, tipo === "tavolo" ? "tavolo" : "asporto");
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [riletto]);
 

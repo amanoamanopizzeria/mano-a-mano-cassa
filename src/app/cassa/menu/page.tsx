@@ -5,7 +5,7 @@
 // riga su app, sito e totem.
 import { useEffect, useState } from "react";
 import SchedaProdotto, { prodottoVuoto, type ProdottoScheda } from "./SchedaProdotto";
-import SchedaCategoria, { categoriaVuota, type CategoriaCompleta } from "./SchedaCategoria";
+import SchedaCategoria, { categoriaVuota, rinumeraCategorie, type CategoriaCompleta } from "./SchedaCategoria";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 
@@ -76,17 +76,22 @@ function Menu() {
     const { data } = await supabaseBrowser().from("categoria").select("id, nome, id_gruppo, ordine, colore, destinazione, impegna_forno, visibile_app, visibile_web, visibile_totem").order("ordine");
     if (data) setCategorie(data as Categoria[]);
   }
-  // ↑ ↓: scambia il posto con la categoria accanto dello stesso gruppo (è l'ordine dei tasti in cassa e del menù online)
+  // ↑ ↓ (critico giro 33): la categoria salta la sorella accanto dello stesso gruppo nella fila GLOBALE dei
+  // tasti in cassa, e la fila si rinumera 1…n. Scambiare solo i due numeri mandava Pizze speciali dopo i vini,
+  // perché il gruppo Pizze non è di seguito («Menù» sta dopo il Bar).
+  const sorelleDi = (c: Categoria) => categorie.filter((x) => x.id_gruppo === c.id_gruppo).sort((a, b) => a.ordine - b.ordine);
+  const primaDelGruppo = (c: Categoria) => sorelleDi(c)[0]?.id === c.id;
+  const ultimaDelGruppo = (c: Categoria) => sorelleDi(c).at(-1)?.id === c.id;
   async function sposta(c: Categoria, verso: -1 | 1) {
-    const fila = categorie.filter((x) => x.id_gruppo === c.id_gruppo).sort((a, b) => a.ordine - b.ordine);
-    const i = fila.findIndex((x) => x.id === c.id);
-    const altra = fila[i + verso];
+    const fila = [...categorie].sort((a, b) => a.ordine - b.ordine);
+    const sorelle = fila.filter((x) => x.id_gruppo === c.id_gruppo);
+    const altra = sorelle[sorelle.findIndex((x) => x.id === c.id) + verso];
     if (!altra) return;
-    const supabase = supabaseBrowser();
-    const a = c.ordine === altra.ordine ? altra.ordine + verso : altra.ordine;
-    const r1 = await supabase.from("categoria").update({ ordine: a }).eq("id", c.id);
-    const r2 = await supabase.from("categoria").update({ ordine: c.ordine }).eq("id", altra.id);
-    if (r1.error || r2.error) setErrore((r1.error ?? r2.error)!.message);
+    const senza = fila.filter((x) => x.id !== c.id);
+    const j = senza.findIndex((x) => x.id === altra.id) + (verso === 1 ? 1 : 0);
+    senza.splice(j, 0, c);
+    const errore = await rinumeraCategorie(senza);
+    if (errore) setErrore(errore);
     rileggiCategorie();
   }
   function dopoCategoria(x: CategoriaCompleta & { id: string }) {
@@ -157,8 +162,8 @@ function Menu() {
                   {c.colore && <span className="me-pallino" style={{ background: c.colore }} aria-hidden />}{c.nome}
                 </button>
                 <span className="me-cat-tasti">
-                  <button type="button" className="me-sposta" onClick={() => sposta(c, -1)} aria-label={`Sposta ${c.nome} prima`} title="Prima">↑</button>
-                  <button type="button" className="me-sposta" onClick={() => sposta(c, 1)} aria-label={`Sposta ${c.nome} dopo`} title="Dopo">↓</button>
+                  <button type="button" className="me-sposta" disabled={primaDelGruppo(c)} onClick={() => sposta(c, -1)} aria-label={`Sposta ${c.nome} prima`} title="Prima">↑</button>
+                  <button type="button" className="me-sposta" disabled={ultimaDelGruppo(c)} onClick={() => sposta(c, 1)} aria-label={`Sposta ${c.nome} dopo`} title="Dopo">↓</button>
                   <button type="button" className="me-aggiungi" onClick={() => setScheda(prodottoVuoto(c.id))}>+ prodotto</button>
                 </span>
               </div>
