@@ -119,3 +119,10 @@ punto e alla card.
 - Coperto 1,50 € a persona nel conto del tavolo (mig. 0065).
 - Zone di prova «Centro» e «Periferia»: già spente (`attiva = false`), non si offrono ai clienti.
 - Blocco dei ruoli (mig. 0063): nessuno può darsi un ruolo da solo. Provato.
+- **Variazioni: coperte.** Le 141 di Velocissimo sono 71 extra veri (Impasto 2, Latticini 13, Salumi
+  e pesce 17, Spezie 8, Verdure 22, Salse 7, Gestionale 2) più 70 scelte dei menu combo. Nella cassa:
+  i 69 extra ci sono tutti, con gli stessi prezzi (più «Basilico» a 0), e le scelte dei menu stanno in
+  `pacchetto_scelta` (243 righe). Manca solo il gruppo GESTIONALE («No, grazie», «Nota libera»): la
+  nota c'è già sulla riga.
+- **Prodotti: coperti.** 204 righe = 147 da Velocissimo (138 attivi, 9 spenti tra cui i burger) + 57
+  vecchie prove senza `id_velocissimo`, tutte spente e mai mostrate.
