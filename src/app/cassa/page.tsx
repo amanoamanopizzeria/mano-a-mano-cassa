@@ -63,6 +63,7 @@ const coloreTipo = (o: OrdineCassa) =>
   o.canale === "glovo" || o.canale === "deliveroo" ? " col-piattaforma" : o.tipo === "domicilio" ? " col-consegna" : "";
 
 const FILTRI = {
+  quarti: { t: "In uscita a quarto d'ora", s: ["ricevuto", "in_preparazione", "pronto"] },
   aperti: { t: "Da fare", s: ["ricevuto", "in_preparazione", "pronto", "in_consegna"] },
   preparare: { t: "Da preparare", s: ["ricevuto", "in_preparazione"] },
   pronti: { t: "Pronti", s: ["pronto"] },
@@ -114,7 +115,7 @@ function Cassa() {
   const [inStampa, setInStampa] = useState<string[]>([]);
   const [vecchiAperti, setVecchiAperti] = useState(false);
   // gli ordini divisi per stato, come le colonne di 2Bit (Edoardo, 25/10/2026)
-  const [filtro, setFiltro] = useState<keyof typeof FILTRI>("aperti");
+  const [filtro, setFiltro] = useState<keyof typeof FILTRI>("quarti");
 
   useEffect(() => { try { setStampaAuto(localStorage.getItem(STAMPA_LS) === "1"); } catch {} }, []);
   function cambiaStampaAuto(v: boolean) { setStampaAuto(v); try { localStorage.setItem(STAMPA_LS, v ? "1" : "0"); } catch {} }
@@ -276,75 +277,7 @@ function Cassa() {
     }
   }
 
-  return (
-    <div className="cassa-casa">
-    <ColonnaCassa />
-    <main className="lista-ordini">
-      <div className="lo-testa">
-        <h1>Cassa — ordini</h1>
-        <label className={"lo-auto" + (stampaAuto ? " on" : "")}>
-          <input type="checkbox" checked={stampaAuto} onChange={(e) => cambiaStampaAuto(e.target.checked)} />
-          <span className="spunta" aria-hidden>{stampaAuto ? "✓" : ""}</span>
-          Stampa da sola ogni comanda nuova
-        </label>
-      </div>
-      {inStampa.map((id) => <iframe key={id} src={`/cassa/comanda/${id}?stampa=1`} title="comanda" className="lo-stampa" />)}
-      {errore && <p className="lo-errore">{errore}</p>}
-      {ordini.length === 0 && !errore && (
-        <p className="muto">Nessun ordine. Quando arriva, compare qui da solo.</p>
-      )}
-      {ordini.some((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o)) && (
-        <details className="preordini" open>
-          <summary>Preordini <small>{ordini.filter((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o)).length} · si stampano da soli {ATTESA_MIN} minuti prima</small></summary>
-          <div className="griglia">
-            {ordini.filter((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o)).sort((a, b) => (a.ora_consegna ?? "").localeCompare(b.ora_consegna ?? "")).map((o) => (
-              <article className={"carta ordine-c preordine" + coloreTipo(o)} key={o.id}>
-                <header>
-                  <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
-                  <b className="tempo attesa">{quando(o.ora_consegna!)}</b>
-                  <button className="lo-orologio" aria-label="Sposta in un altro quarto d'ora" title="Sposta orario" onClick={() => apriSposta(o.id)}>🕒</button>
-                </header>
-                {pannelloSposta(o)}
-                <div className="riga">{o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>}{o.modificato_il && <b className="vino"> · modificata {oraDi(o.modificato_il)}</b>} · {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"}{o.zona?.nome && <> · {o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""}</>}</div>
-                <div className="chi">{o.cliente?.nome ?? o.nome_cliente ?? ""}</div>
-                {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}{o.indirizzo.note && <b className="vino"> · {o.indirizzo.note}</b>}</div>}
-            {o.consegna?.[0]?.rider?.nome && <div className="riga">rider <b>{o.consegna[0].rider.nome}</b></div>}
-                {o.note && <div className="nota">Note: {o.note}</div>}
-                <div className="tot">{euro(o.totale)}</div>
-                <div className="riga">{stampaAlle(o) ? <>stampa alle {oraDi(stampaAlle(o)!.toISOString())}</> : "si stampa subito"}{o.stampato_il ? " · già stampata" : ""}</div>
-                <div className="azioni">
-                  <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
-                  <button onClick={() => stampa(o.id)}>Stampa ora</button>
-                  {!["ritirata", "consegnata"].includes(o.consegna?.[0]?.stato ?? "") && <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>}
-                  {o.tipo === "domicilio" && <button onClick={() => copiaLink(o.id)}>{linkCopiato === o.id ? "Link copiato" : "Link per il cliente"}</button>}
-                  {/* critico giro 15: un preordine ritirato in anticipo non si poteva chiudere: gli stessi passi delle carte sotto */}
-                  {passiOrdine(o).map((s) => (
-                    <button key={s} className={s === "annullato" ? (daConfermare === o.id ? "primario annulla" : "annulla") : "azione"} onClick={() => cambiaStato(o.id, s)}>
-                      {s === "annullato" && daConfermare === o.id ? "Sicuro? Tocca ancora" : ETICHETTE[s]}
-                    </button>
-                  ))}
-                </div>
-              </article>
-            ))}
-          </div>
-        </details>
-      )}
-      {/* un preordine già consegnato, ritirato o annullato esce dall'area Preordini e sta qui (critico giro 15).
-          Critico giro 16: a 390 la pagina era 19,6 schermate con gli ordini di ieri «in ritardo di 930 min»: in griglia solo stasera. */}
-      <div className="lo-filtri" role="tablist">
-        {(Object.keys(FILTRI) as (keyof typeof FILTRI)[]).map((k) => {
-          const n = ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && diStasera(o, adesso) && (FILTRI[k].s as readonly string[]).includes(o.stato)).length;
-          return <button key={k} role="tab" aria-selected={filtro === k} className={"lo-filtro" + (filtro === k ? " attivo" : "")} onClick={() => setFiltro(k)}>{FILTRI[k].t} <b>{n}</b></button>;
-        })}
-      </div>
-      {ordini.some((o) => !diStasera(o, adesso) && !ePreordine(o, adesso)) && (
-        <button className="vecchi" onClick={() => setVecchiAperti((v) => !v)}>{vecchiAperti ? "Nascondi ieri e prima" : `Ieri e prima (${ordini.filter((o) => !diStasera(o, adesso) && !ePreordine(o, adesso)).length})`}</button>
-      )}
-      <div className="griglia">
-        {ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && (diStasera(o, adesso) || vecchiAperti) && (FILTRI[filtro].s as readonly string[]).includes(o.stato))
-          // i più urgenti prima: chi ha l'ora più vicina (o è entrato prima) in cima
-          .sort((a, b) => (a.ora_consegna ?? a.creato_il).localeCompare(b.ora_consegna ?? b.creato_il) * (filtro === "chiusi" ? -1 : 1))
-          .map((o) => (
+  const carta = (o: OrdineCassa) => (
           <article className={"carta ordine-c " + o.stato + coloreTipo(o) + ((() => { const c = (o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto" || o.stato === "in_consegna") ? contoAllaRovescia(o, adesso) : null; return c?.ritardo ? " ritardo" : ""; })())} key={o.id}>
             <header>
               <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
@@ -392,8 +325,142 @@ function Cassa() {
               ))}
             </div>
           </article>
-        ))}
+  );
+
+  // Gli ordini in uscita, una riga per quarto d'ora e un blocco per giorno (Edoardo, 26/10/2026): «a destra gli
+  // ordini che vanno in uscita con le varie tempistiche per ogni quarto d'ora… orizzontalmente… divisi in fascia
+  // oraria di ogni giorno». Ci sono tutti gli stati fino all'uscita: ricevuto, pronto, in consegna col rider.
+  // Un ordine sparisce quando è consegnato, ritirato o annullato. La sala ha la sua pagina e qui non c'è.
+  // La fascia del cliente è di mezz'ora: chi sceglie le 19:00 aspetta la consegna entro le 19:30, quindi il
+  // ritardo si conta dalla fine della mezz'ora (il ritiro dall'ora scelta).
+  const quartoDi = (o: OrdineCassa) => Math.floor(new Date(o.ora_consegna ?? o.creato_il).getTime() / 900_000) * 900_000;
+  const entroLe = (o: OrdineCassa) => o.ora_consegna
+    ? quartoDi(o) + (o.tipo === "domicilio" ? 30 : 0) * 60_000
+    : new Date(o.creato_il).getTime() + ATTESA_MIN * 60_000;
+  const inUscita = ordini.filter((o) =>
+    o.tipo !== "tavolo" && ["ricevuto", "in_preparazione", "pronto", "in_consegna"].includes(o.stato)
+    && (diStasera(o, adesso) || quartoDi(o) >= inizioSerata(adesso)));
+  const quartoAdesso = Math.floor(adesso / 900_000) * 900_000;
+  const giornoRoma = (t: number) => new Date(t - 6 * 3_600_000).toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
+  const righeQuarti = [...new Set(inUscita.map(quartoDi))].sort((a, b) => a - b).map((q) => ({
+    q, giorno: giornoRoma(q),
+    ordini: inUscita.filter((o) => quartoDi(o) === q).sort((a, b) => (a.ora_consegna ?? a.creato_il).localeCompare(b.ora_consegna ?? b.creato_il)),
+  }));
+  const etichettaGiorno = (g: string) => {
+    if (g === giornoRoma(adesso)) return "Stasera";
+    if (g === giornoRoma(adesso + 86_400_000)) return "Domani";
+    return new Date(g + "T12:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+  };
+  const preordiniVisti = ordini.filter((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o) && filtro !== "quarti");
+  const [apertoQ, setApertoQ] = useState<string | null>(null);
+
+  return (
+    <div className="cassa-casa">
+    <ColonnaCassa />
+    <main className="lista-ordini">
+      <div className="lo-testa">
+        <h1>Cassa — ordini</h1>
+        <label className={"lo-auto" + (stampaAuto ? " on" : "")}>
+          <input type="checkbox" checked={stampaAuto} onChange={(e) => cambiaStampaAuto(e.target.checked)} />
+          <span className="spunta" aria-hidden>{stampaAuto ? "✓" : ""}</span>
+          Stampa da sola ogni comanda nuova
+        </label>
       </div>
+      {inStampa.map((id) => <iframe key={id} src={`/cassa/comanda/${id}?stampa=1`} title="comanda" className="lo-stampa" />)}
+      {errore && <p className="lo-errore">{errore}</p>}
+      {ordini.length === 0 && !errore && (
+        <p className="muto">Nessun ordine. Quando arriva, compare qui da solo.</p>
+      )}
+      {ordini.some((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o)) && (
+        <details className="preordini" open>
+          <summary>Preordini <small>{preordiniVisti.length} · si stampano da soli {ATTESA_MIN} minuti prima</small></summary>
+          <div className="griglia">
+            {preordiniVisti.sort((a, b) => (a.ora_consegna ?? "").localeCompare(b.ora_consegna ?? "")).map((o) => (
+              <article className={"carta ordine-c preordine" + coloreTipo(o)} key={o.id}>
+                <header>
+                  <strong className="num">{o.numero_visibile ?? `#${o.numero}`}</strong>
+                  <b className="tempo attesa">{quando(o.ora_consegna!)}</b>
+                  <button className="lo-orologio" aria-label="Sposta in un altro quarto d'ora" title="Sposta orario" onClick={() => apriSposta(o.id)}>🕒</button>
+                </header>
+                {pannelloSposta(o)}
+                <div className="riga">{o.tipo}{o.tavolo?.numero && <b> {o.tavolo.numero}</b>}{o.modificato_il && <b className="vino"> · modificata {oraDi(o.modificato_il)}</b>} · {o.pagamento ? (o.pagamento === "pos" ? "POS" : "contanti") : "pagamento ?"}{o.zona?.nome && <> · {o.zona.nome}{Number(o.costo_consegna) > 0 ? ` (consegna ${euro(Number(o.costo_consegna))})` : ""}</>}</div>
+                <div className="chi">{o.cliente?.nome ?? o.nome_cliente ?? ""}</div>
+                {o.indirizzo && <div className="via">{o.indirizzo.via} {o.indirizzo.civico ?? ""}{o.indirizzo.note && <b className="vino"> · {o.indirizzo.note}</b>}</div>}
+            {o.consegna?.[0]?.rider?.nome && <div className="riga">rider <b>{o.consegna[0].rider.nome}</b></div>}
+                {o.note && <div className="nota">Note: {o.note}</div>}
+                <div className="tot">{euro(o.totale)}</div>
+                <div className="riga">{stampaAlle(o) ? <>stampa alle {oraDi(stampaAlle(o)!.toISOString())}</> : "si stampa subito"}{o.stampato_il ? " · già stampata" : ""}</div>
+                <div className="azioni">
+                  <a href={`/cassa/comanda/${o.id}`} target="_blank" rel="noreferrer"><button>Comanda</button></a>
+                  <button onClick={() => stampa(o.id)}>Stampa ora</button>
+                  {!["ritirata", "consegnata"].includes(o.consegna?.[0]?.stato ?? "") && <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>}
+                  {o.tipo === "domicilio" && <button onClick={() => copiaLink(o.id)}>{linkCopiato === o.id ? "Link copiato" : "Link per il cliente"}</button>}
+                  {/* critico giro 15: un preordine ritirato in anticipo non si poteva chiudere: gli stessi passi delle carte sotto */}
+                  {passiOrdine(o).map((s) => (
+                    <button key={s} className={s === "annullato" ? (daConfermare === o.id ? "primario annulla" : "annulla") : "azione"} onClick={() => cambiaStato(o.id, s)}>
+                      {s === "annullato" && daConfermare === o.id ? "Sicuro? Tocca ancora" : ETICHETTE[s]}
+                    </button>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </details>
+      )}
+      {/* un preordine già consegnato, ritirato o annullato esce dall'area Preordini e sta qui (critico giro 15).
+          Critico giro 16: a 390 la pagina era 19,6 schermate con gli ordini di ieri «in ritardo di 930 min»: in griglia solo stasera. */}
+      <div className="lo-filtri" role="tablist">
+        {(Object.keys(FILTRI) as (keyof typeof FILTRI)[]).map((k) => {
+          const n = k === "quarti" ? inUscita.length : ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && diStasera(o, adesso) && (FILTRI[k].s as readonly string[]).includes(o.stato)).length;
+          return <button key={k} role="tab" aria-selected={filtro === k} className={"lo-filtro" + (filtro === k ? " attivo" : "")} onClick={() => setFiltro(k)}>{FILTRI[k].t} <b>{n}</b></button>;
+        })}
+      </div>
+      {ordini.some((o) => !diStasera(o, adesso) && !ePreordine(o, adesso)) && (
+        <button className="vecchi" onClick={() => setVecchiAperti((v) => !v)}>{vecchiAperti ? "Nascondi ieri e prima" : `Ieri e prima (${ordini.filter((o) => !diStasera(o, adesso) && !ePreordine(o, adesso)).length})`}</button>
+      )}
+      {filtro === "quarti" && (
+        <div className="lo-quarti">
+          {righeQuarti.length === 0 && <p className="muto">Niente da far uscire: gli ordini nuovi compaiono qui nel loro quarto d&apos;ora.</p>}
+          {righeQuarti.map(({ q, giorno, ordini: os }, i) => {
+            const consegne = os.filter((o) => o.tipo === "domicilio" && o.canale !== "glovo" && o.canale !== "deliveroo").length;
+            const aperto = os.find((o) => o.id === apertoQ);
+            const nuovoGiorno = i === 0 || righeQuarti[i - 1].giorno !== giorno;
+            return (
+              <div key={q}>
+                {nuovoGiorno && <h2 className="lo-giorno">{etichettaGiorno(giorno)}</h2>}
+                <section className={"lo-quarto" + (q < quartoAdesso ? " passato" : q === quartoAdesso ? " adesso" : "")}>
+                  <header className="lo-quarto-ora">
+                    <b>{oraDi(new Date(q).toISOString())}</b>
+                    <span>{consegne > 0 ? `consegna entro le ${oraDi(new Date(q + 30 * 60_000).toISOString())}` : q < quartoAdesso ? "passato" : `fra ${Math.round((q - adesso) / 60_000)} min`}</span>
+                    <span>{os.length === 1 ? "1 ordine" : `${os.length} ordini`}{consegne > 0 ? ` · ${consegne} ${consegne === 1 ? "consegna" : "consegne"}` : ""}</span>
+                  </header>
+                  <div className="lo-quarto-fila">
+                    {os.map((o) => {
+                      const ritardo = Math.round((adesso - entroLe(o)) / 60_000);
+                      return (
+                        <button key={o.id} className={"lo-pillola " + o.stato + coloreTipo(o) + (ritardo > 0 ? " ritardo" : "") + (apertoQ === o.id ? " scelta" : "")} onClick={() => setApertoQ((x) => (x === o.id ? null : o.id))}>
+                          <span className="lo-p-testa"><b>{o.numero_visibile ?? `#${o.numero}`}</b><em className={`badge ${o.stato}`}>{ETICHETTE[o.stato]}</em></span>
+                          <span className="lo-p-chi">{o.cliente?.nome ?? o.nome_cliente ?? (o.tipo === "banco" ? "Banco" : "—")}</span>
+                          <span className="lo-p-via">{o.tipo === "domicilio" ? (o.indirizzo ? `${o.indirizzo.via} ${o.indirizzo.civico ?? ""}` : "domicilio") : o.canale === "glovo" || o.canale === "deliveroo" ? CANALE_COMANDA[o.canale] ?? o.canale : o.tipo}</span>
+                          {o.consegna?.[0]?.rider?.nome && <span className="lo-p-rider">rider {o.consegna[0].rider.nome}</span>}
+                          <span className="lo-p-tot">{euro(o.totale)} · {ritardo > 0 ? <b>in ritardo di {ritardo} min</b> : o.ora_consegna ? `entro le ${oraDi(new Date(entroLe(o)).toISOString())}` : "subito"}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {aperto && <div className="lo-quarto-carta">{carta(aperto)}</div>}
+                </section>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {filtro !== "quarti" && <div className="griglia">
+        {ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && (diStasera(o, adesso) || vecchiAperti) && (FILTRI[filtro].s as readonly string[]).includes(o.stato))
+          // i più urgenti prima: chi ha l'ora più vicina (o è entrato prima) in cima
+          .sort((a, b) => (a.ora_consegna ?? a.creato_il).localeCompare(b.ora_consegna ?? b.creato_il) * (filtro === "chiusi" ? -1 : 1))
+          .map((o) => carta(o))}
+      </div>}
     </main>
     </div>
   );

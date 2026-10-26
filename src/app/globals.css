@@ -1016,3 +1016,29 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .tessera.esaurito { opacity: .45; filter: grayscale(1); cursor: not-allowed; }
 .menu-lettura .esaurito-tasto { margin-left: 8px; min-height: 36px; padding: 0 10px; font-size: 13px; }
 .menu-lettura li.esaurito .nome { text-decoration: line-through; color: var(--muto, #6f6a63); }
+
+/* Cassa: gli ordini in uscita, una riga per quarto d'ora (Edoardo 26/10/2026) */
+.lo-quarti { display: flex; flex-direction: column; gap: 8px; }
+.lo-giorno { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .05em; font-size: 18px; margin: 10px 0 2px; color: var(--vino, #8a1538); }
+.lo-quarto { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: stretch; padding: 6px; border-radius: 12px; background: #fff; border: 1px solid var(--oro-chiaro, #e8d5b0); }
+.lo-quarto.adesso { outline: 2px solid var(--vino, #8a1538); }
+.lo-quarto.passato { background: #fbf3f3; }
+.lo-quarto-ora { display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 4px 6px; border-right: 1px solid var(--oro-chiaro, #e8d5b0); font-size: 13px; color: var(--muto, #6b6259); }
+.lo-quarto-ora b { font-size: 24px; color: #1a1715; font-variant-numeric: tabular-nums; }
+.lo-quarto-fila { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.lo-pillola { flex: 0 0 200px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--bordo, #ddd); border-left-width: 6px; background: #faf7f2; font-size: 14px; min-height: 96px; }
+.lo-pillola.col-consegna { border-left-color: #f2c200; }
+.lo-pillola.col-piattaforma { border-left-color: #f08a5d; }
+.lo-pillola.pronto { background: #eef7ee; }
+.lo-pillola.in_consegna { background: #eef3fb; }
+.lo-pillola.ritardo { border-color: #c62828; }
+.lo-pillola.ritardo .lo-p-tot b { color: #c62828; }
+.lo-pillola.scelta { outline: 3px solid var(--vino, #8a1538); }
+.lo-p-testa { display: flex; gap: 6px; align-items: center; width: 100%; }
+.lo-p-testa b { font-size: 18px; }
+.lo-p-testa em { font-style: normal; font-size: 12px; }
+.lo-p-chi { font-weight: 700; }
+.lo-p-via, .lo-p-rider { color: var(--muto, #6b6259); }
+.lo-p-tot { margin-top: auto; font-variant-numeric: tabular-nums; }
+.lo-quarto-carta { grid-column: 1 / -1; }
+@media (max-width: 700px) { .lo-quarto { grid-template-columns: 1fr; } .lo-quarto-ora { flex-direction: row; gap: 10px; align-items: baseline; border-right: 0; border-bottom: 1px solid var(--oro-chiaro, #e8d5b0); } }
