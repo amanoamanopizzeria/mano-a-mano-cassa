@@ -30,9 +30,17 @@ function inizioGiornata(g: string): string {
   return new Date(`${g}T05:00:00Z`).toISOString();
 }
 
+// giorno di calendario più o meno uno (a mezzogiorno UTC: l'ora legale non sposta la data)
+const spostaGiorno = (g: string, n: number) => new Date(Date.parse(g + "T12:00:00Z") + n * 86_400_000).toISOString().slice(0, 10);
+const domani = (g: string) => spostaGiorno(g, 1);
+const ieri = (g: string) => spostaGiorno(g, -1);
+
 function Riepilogo() {
   const [ordini, setOrdini] = useState<OrdineConRighe[]>([]);
   const [errore, setErrore] = useState<string | null>(null);
+  // REA 21 D7: anche il riepilogo di una sera passata, per confrontarla col 2Bit. Di base la serata in corso.
+  const [giornata, setGiornata] = useState(giornataOggi);
+  const inCorso = giornata === giornataOggi();
 
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) { setErrore("Supabase non configurato."); return; }
@@ -41,12 +49,12 @@ function Riepilogo() {
       const { data, error } = await supabase
         .from("ordine")
         .select("*, ordine_riga(*)")
-        .or(`creato_il.gte.${inizioGiornata(giornataOggi())},ora_consegna.gte.${inizioGiornata(giornataOggi())}`)
+        .or(`and(creato_il.gte.${inizioGiornata(giornata)},creato_il.lt.${inizioGiornata(domani(giornata))}),and(ora_consegna.gte.${inizioGiornata(giornata)},ora_consegna.lt.${inizioGiornata(domani(giornata))})`)
         .order("creato_il", { ascending: false });
       if (error) setErrore(error.message);
       // «di stasera» = per la serata in corso: un preordine di domani non conta (critico giro 4b);
       // un ordine senza ora è della serata in cui è stato fatto.
-      else setOrdini(((data ?? []) as OrdineConRighe[]).filter((o) => giornataDi(o.ora_consegna ?? o.creato_il) === giornataOggi()));
+      else setOrdini(((data ?? []) as OrdineConRighe[]).filter((o) => giornataDi(o.ora_consegna ?? o.creato_il) === giornata));
     }
     carica();
     const canale = supabase
@@ -54,7 +62,7 @@ function Riepilogo() {
       .on("postgres_changes", { event: "*", schema: "public", table: "ordine" }, () => carica())
       .subscribe();
     return () => { supabase.removeChannel(canale); };
-  }, []);
+  }, [giornata]);
 
   const validi = ordini.filter((o) => o.stato !== "annullato");
   const pizze = validi.reduce(
@@ -72,15 +80,17 @@ function Riepilogo() {
   const [riderDaSaldare, setRiderDaSaldare] = useState<{ nome: string; da_saldare: number }[]>([]);
   useEffect(() => {
     // la giornata lavorativa: dopo mezzanotte è ancora la sera prima (taglio alle 06:00 di Roma)
-    const giornata = giornataOggi();
+    setIncassato(null);
     supabaseBrowser().rpc("vendite_giornata_totali", { p_giornata: giornata }).then(({ data }) => {
       const d = data as { incassato?: Incassato } | null;
       setIncassato(d?.incassato ?? null);
     });
+    // il borsello dei rider è quello di adesso: per una sera passata non vuol dire niente
+    if (!inCorso) { setRiderDaSaldare([]); return; }
     supabaseBrowser().rpc("rider_borsello").then(({ data }) => {
       setRiderDaSaldare(((data ?? []) as { nome: string; da_saldare: number }[]).filter((r) => Number(r.da_saldare) > 0).map((r) => ({ nome: r.nome, da_saldare: Number(r.da_saldare) })));
     });
-  }, [ordini]);
+  }, [ordini, giornata, inCorso]);
   const eur = (n: number) => n.toFixed(2).replace(".", ",") + " €";
 
   const perCanale = new Map<string, number>();
@@ -88,7 +98,13 @@ function Riepilogo() {
 
   return (
     <main className="riepilogo">
-      <h1>Riepilogo della serata</h1>
+      <h1>Riepilogo {inCorso ? "della serata" : "di " + new Date(giornata + "T12:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</h1>
+      <div className="r-giorno">
+        <button type="button" onClick={() => setGiornata(ieri(giornata))}>‹ Sera prima</button>
+        <input type="date" value={giornata} max={giornataOggi()} onChange={(e) => e.target.value && setGiornata(e.target.value)} aria-label="Serata" />
+        <button type="button" disabled={inCorso} onClick={() => setGiornata(domani(giornata))}>Sera dopo ›</button>
+        {!inCorso && <button type="button" onClick={() => setGiornata(giornataOggi())}>Stasera</button>}
+      </div>
       {errore && <p className="r-errore">{errore}</p>}
 
       <div className="griglia r-cima">
@@ -124,7 +140,7 @@ function Riepilogo() {
         {[...perCanale.entries()].map(([canale, n]) => (
           <div key={canale} className="carta numero"><div className="eti">{canale}</div><strong>{n}<small> {n === 1 ? "ordine" : "ordini"}</small></strong></div>
         ))}
-        {perCanale.size === 0 && <p className="muto">Nessun ordine oggi.</p>}
+        {perCanale.size === 0 && <p className="muto">{inCorso ? "Nessun ordine oggi." : "Nessun ordine quella sera."}</p>}
       </div>
 
       {/* Giro 17 del grafico: gli ordini uno per uno stanno in un ramo chiuso (sono la parte lunga: 47 carte

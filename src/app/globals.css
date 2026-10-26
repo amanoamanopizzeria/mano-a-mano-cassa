@@ -1263,3 +1263,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .db-titolo::first-letter { text-transform: uppercase; }
 .db-metriche { margin: 6px 0; font-size: 15px; }
 .db-ordini-testa select { max-width: 100%; }
+
+/* Riepilogo: la sera da guardare (REA 21 D7) */
+.riepilogo .r-giorno { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 12px; }
+.riepilogo .r-giorno button, .riepilogo .r-giorno input { min-height: 44px; padding: 0 14px; border: 1px solid var(--bordo); border-radius: 10px; background: #fff; font: inherit; font-size: 15px; }
+.riepilogo .r-giorno button:disabled { opacity: .4; }
