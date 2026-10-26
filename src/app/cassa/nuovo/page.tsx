@@ -162,10 +162,10 @@ function Cassa() {
         setIdIndirizzo(i?.id ?? null);
         // «passo io» (Edoardo, 26/10/2026): dalla scheda col tasto Ritiro il cliente resta suo, punti
         // compresi, ma l'ordine è da ritirare e non si porta
-        setTipo(ritiro ? "ritiro" : "domicilio");
+        cambiaTipo(ritiro ? "ritiro" : "domicilio");
       } else {
         setCliente({ id: "", nome: null, telefono: tel, indirizzo: null });
-        if (ritiro) setTipo("ritiro");
+        if (ritiro) cambiaTipo("ritiro");
       }
     });
   }, []);
@@ -503,8 +503,9 @@ function Cassa() {
     if (error) { setErrore("Non sono riuscito a inviare l'ordine: " + error.message); return; }
     const r = data as { esito: string; id?: string; numero?: number; libere?: number; motivo?: string; minimo?: number; zona?: string; costo_consegna?: number; dalle?: string; alle?: string; slot?: string; massimo?: number };
     const quando = pOra ? ` per ${giorniScelta.find((g) => g.v === giorno)?.t.toLowerCase() ?? giorno} alle ${ora}` : "";
-    if (r.esito === "accettato" && r.id && !cliente && nomeCliente.trim()) {
-      await supabaseBrowser().rpc("ordine_nome", { p_id: r.id, p_nome: nomeCliente.trim() });
+    // un numero senza scheda (critico giro 39, G1): il nome si scrive qui e il telefono resta accanto
+    if (r.esito === "accettato" && r.id && !cliente?.id && nomeCliente.trim()) {
+      await supabaseBrowser().rpc("ordine_nome", { p_id: r.id, p_nome: nomeCliente.trim() + (cliente?.telefono ? ` · ${cliente.telefono}` : "") });
     }
     if (r.esito === "accettato" && r.id && coupon) {
       const { data: ca } = await supabaseBrowser().rpc("coupon_applica", { p_id_ordine: r.id, p_codice: coupon.codice });
@@ -657,7 +658,7 @@ function Cassa() {
             <span>📞</span>
             <div style={{ flex: 1 }}>
               <b>{cliente.nome ?? "Nuovo cliente"}</b> · {cliente.telefono}
-              {cliente.indirizzo && <div className="muto">{cliente.indirizzo}</div>}
+              {cliente.indirizzo && tipo === "domicilio" && <div className="muto">{cliente.indirizzo}</div>}
             </div>
             <button onClick={() => setCliente(null)} style={{ padding: "2px 8px" }}>✕</button>
           </div>
@@ -760,17 +761,27 @@ function Cassa() {
             </select>
           </div>
         )}
-        {tipo === "ritiro" && fasceVicine.length > 0 && (() => {
-          const libere = fasceVicine.filter((f) => quartiScelta.includes(f.ora) && !f.bloccata_produzione && f.pizze_occupate < f.pizze_max);
-          const prima = libere[0]?.ora;
+        {tipo === "ritiro" && (() => {
+          // le pizze di questa comanda contano: un quarto con 1 posto non basta per 4 pizze (critico giro 39, M1)
+          const forno = new Set(categorie.filter((c) => c.impegna_forno !== false).map((c) => c.id));
+          const pizzaDi = (id: string) => forno.has(prodotti.find((p) => p.id === id)?.id_categoria ?? "");
+          const pizze = righe.reduce((t, r) => t + r.quantita * ((pizzaDi(r.id_prodotto) ? 1 : 0) + (r.figlie ?? []).filter((f) => pizzaDi(f.id_prodotto)).length), 0);
+          const quarti = fasceVicine.filter((f) => quartiScelta.includes(f.ora));
+          const ci = (f: FasciaVicina) => !f.bloccata_produzione && f.pizze_occupate + Math.max(1, pizze) <= f.pizze_max;
+          const prima = quarti.find(ci)?.ora;
+          // a fine serata o tutto pieno si dice (M2)
+          if (!prima) return <div className="c-prima-niente">{quarti.length ? "Tutti i quarti d'ora sono pieni" : "Ritiro chiuso"}{giorno ? "" : " per oggi"}: scegli un altro giorno.</div>;
           return (
             <div className="c-vicine" aria-label="Quarti d'ora per il ritiro">
-              {prima && <span className="c-prima">Prima libera: <b>{prima}</b></span>}
-              {fasceVicine.filter((f) => quartiScelta.includes(f.ora)).slice(0, 16).map((f) => {
-                const pieno = f.bloccata_produzione || f.pizze_occupate >= f.pizze_max;
+              {/* con «Adesso» l'ordine va nel quarto di adesso, non nella prima libera (M3): si sceglie col tocco */}
+              <button className={"c-prima" + (giorno && ora === prima ? " scelta" : "")} onClick={() => { setGiorno(giorno || oggiISO()); setOra(prima); setErrore(null); }}>
+                Prima libera <b>{prima}</b>
+              </button>
+              {quarti.slice(0, 16).map((f) => {
+                const pieno = !ci(f);
                 const scelto = !!giorno && ora === f.ora;
                 return (
-                  <button key={f.ora} className={"c-fascia" + (f.ora === prima ? " vicina" : "") + (pieno ? " piena" : "") + (scelto ? " scelta" : "")}
+                  <button key={f.ora} disabled={pieno} className={"c-fascia" + (pieno ? " piena" : "") + (scelto ? " scelta" : "")}
                     onClick={() => { setGiorno(giorno || oggiISO()); setOra(f.ora); setErrore(null); }}>
                     <b>{f.ora}</b>
                     <span>{pieno ? "pieno" : `${f.pizze_occupate}/${f.pizze_max} pizze`}</span>
@@ -833,7 +844,7 @@ function Cassa() {
           </div>
         )}
         {erroreCoupon && <div style={{ margin: "-2px 6px 6px", fontSize: 13, color: "var(--accento)", fontWeight: 700 }}>{erroreCoupon}</div>}
-        {!cliente && tipo !== "tavolo" && <input placeholder={tipo === "ritiro" ? "Nome di chi ritira" : "Nome (se serve)"} value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} style={{ margin: "0 6px 6px", padding: "8px 10px", fontSize: 15, minHeight: 40 }} />}
+        {!cliente?.id && tipo !== "tavolo" && <input placeholder={tipo === "ritiro" ? "Nome di chi ritira" : "Nome (se serve)"} value={nomeCliente} onChange={(e) => setNomeCliente(e.target.value)} style={{ margin: "0 6px 6px", padding: "8px 10px", fontSize: 15, minHeight: 40 }} />}
         <input placeholder="Note (es. ben cotta)" value={note} onChange={(e) => setNote(e.target.value)} style={{ margin: "0 6px 6px", padding: "8px 10px", fontSize: 15, minHeight: 40 }} />
         {errore && (
           <div role="alert" style={{ margin: "0 6px 6px", padding: "10px 12px", borderRadius: 12, background: "var(--errore-chiaro)", border: "2px solid var(--errore)", color: "var(--errore)", fontWeight: 700, fontSize: 15, lineHeight: 1.3 }}>

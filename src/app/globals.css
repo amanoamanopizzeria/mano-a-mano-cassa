@@ -1216,5 +1216,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .lo-p-doppia { font-size: 13px; background: #fff; border: 1px dashed var(--vino, #8a1538); border-radius: 999px; padding: 1px 8px; }
 .db-menu { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--vino, #8a1538); border-radius: 999px; color: var(--vino, #8a1538); font-weight: 700; text-decoration: none; }
 /* il ritiro dalla scheda del cliente (Edoardo 26/10): «passo io, qual è la prima fascia disponibile» */
-.cliente-pagina .cl-prendi.cl-ritiro { margin-left: 8px; background: #fff; border: 2px solid var(--vino, #8a1538); color: var(--vino, #8a1538); }
-.c-prima { display: inline-flex; align-items: center; padding: 0 10px; font-size: 14px; white-space: nowrap; }
+.cliente-pagina .cl-prendi.cl-ritiro { margin: 8px 0 0 8px; background: #fff; border: 2px solid var(--vino, #8a1538); color: var(--vino, #8a1538); }
+.c-prima { flex: none; min-height: 44px; padding: 0 12px; border-radius: 12px; border: 2px solid var(--vino, #8a1538); background: #fff; color: var(--vino, #8a1538); font-size: 14px; white-space: nowrap; }
+.c-prima.scelta { background: var(--vino, #8a1538); color: #fff; }
+.c-prima-niente { margin: 0 6px 6px; padding: 8px 12px; border-radius: 12px; background: var(--oro-velo, #faf3e3); border-left: 4px solid var(--oro, #c9973f); font-size: 14px; font-weight: 600; }

@@ -6,6 +6,7 @@ import type { Variazione } from "@/lib/types";
 export interface CategoriaMenu {
   id: string; nome: string; ordine: number; colore: string | null;
   destinazione: "cucina" | "cassa" | "nessuna"; visibile_totem: boolean;
+  impegna_forno?: boolean;   // conta come pizza nei quarti d'ora
 }
 export interface ProdottoMenu {
   id: string; id_categoria: string | null; nome: string; descrizione: string | null;
@@ -41,7 +42,7 @@ export interface RigaOrdine {
 
 export async function leggiMenu(soloTotem = false) {
   const supabase = supabaseBrowser();
-  let qc = supabase.from("categoria").select("id, nome, ordine, colore, destinazione, visibile_totem").order("ordine");
+  let qc = supabase.from("categoria").select("id, nome, ordine, colore, destinazione, visibile_totem, impegna_forno").order("ordine");
   let qp = supabase.from("prodotto").select("id, id_categoria, nome, descrizione, prezzo, prezzo_tavolo, foto_url, visibile_totem, incluso, esaurito_fino").eq("attivo", true).order("ordine").order("nome");
   if (soloTotem) { qc = qc.eq("visibile_totem", true); qp = qp.eq("visibile_totem", true); }
   const [c, p, v, g, pg] = await Promise.all([
