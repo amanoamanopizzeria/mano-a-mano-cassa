@@ -813,7 +813,14 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 /* /cassa/cliente */
 .cliente-pagina .cl-errore { color: var(--accento); }
 .cliente-pagina .cl-cerca { display: flex; gap: 8px; flex-wrap: wrap; }
-.cliente-pagina .cl-cerca input[type="tel"] { flex: 1; min-width: 180px; min-height: 48px; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cliente-pagina .cl-cerca .cl-cerca-campo { flex: 1; min-width: 180px; min-height: 48px; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cliente-pagina .cl-trovati { display: flex; flex-direction: column; gap: 4px; padding: 8px; }
+.cliente-pagina .cl-trovati button { display: grid; grid-template-columns: 1.2fr 1fr 1.6fr 1.2fr; gap: 8px; align-items: center; text-align: left; min-height: 52px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--bordo, #ddd); background: #fff; font-size: 16px; }
+.cliente-pagina .cl-trovati button.black { border-color: #c62828; background: #fdecea; }
+.cliente-pagina .cl-t-nome { font-weight: 700; }
+.cliente-pagina .cl-t-tel { font-variant-numeric: tabular-nums; }
+.cliente-pagina .cl-t-ordini { font-size: 14px; }
+@media (max-width: 700px) { .cliente-pagina .cl-trovati button { grid-template-columns: 1fr 1fr; } }
 .cliente-pagina .cl-cerca .cerca { min-height: 48px; font-size: 16px; padding: 0 20px; }
 .cliente-pagina .cl-cerca .prova { min-height: 48px; font-size: 15px; }
 .cliente-pagina .cl-tags { display: block; }

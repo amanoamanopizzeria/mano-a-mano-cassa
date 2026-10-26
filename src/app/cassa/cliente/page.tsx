@@ -31,6 +31,14 @@ export default function ClientePagina() {
   );
 }
 
+interface Trovato {
+  id: string; nome: string | null; telefono: string; black_list: boolean;
+  indirizzo: { via: string; civico: string | null; cap: string | null; citta: string | null } | null;
+  indirizzi: number; ordini: number; ultimo: string | null;
+}
+/** «347 1234567», «+39…»: un numero intero, non un pezzo di nome o di via. */
+const soloNumero = (q: string) => /^[+\d\s./-]+$/.test(q) && q.replace(/\D/g, "").length >= 6;
+
 function Cliente() {
   const [telefono, setTelefono] = useState("");
   const [scheda, setScheda] = useState<Scheda | null>(null);
@@ -47,6 +55,9 @@ function Cliente() {
   const [errore, setErrore] = useState<string | null>(null);
   const [salvato, setSalvato] = useState(false);
   const ultimaRicerca = useRef(0);
+  // la ricerca libera (Edoardo 26/10: «per nome, per numero di telefono, per via»)
+  const [trovati, setTrovati] = useState<Trovato[] | null>(null);
+  const ultimaLibera = useRef(0);
 
   const cerca = useCallback(async (numero: string) => {
     setErrore(null); setSalvato(false);
@@ -58,6 +69,33 @@ function Cliente() {
     setNote(s.cliente?.note ?? "");
     setNoteConsegna("");
   }, []);
+
+  // Si scrive qualsiasi cosa: nome, un pezzo di telefono, via, civico. Dopo 2 lettere la lista si
+  // aggiorna da sola; un numero intero (6+ cifre) apre subito la scheda come prima.
+  useEffect(() => {
+    const q = telefono.trim();
+    if (q.length < 2) { setTrovati(null); return; }
+    const mio = ++ultimaLibera.current;
+    const t = setTimeout(async () => {
+      const { data, error } = await supabaseBrowser().rpc("cerca_clienti", { p_testo: q });
+      if (mio !== ultimaLibera.current) return;
+      if (error) { setErrore(error.message); return; }
+      setTrovati((data ?? []) as Trovato[]);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [telefono]);
+
+  function invia() {
+    const q = telefono.trim();
+    if (soloNumero(q)) { setTrovati(null); cerca(q); return; }
+    // un nome o una via: se c'è un solo cliente si apre, se no si sceglie dalla lista
+    if (trovati?.length === 1) apri(trovati[0]);
+  }
+  function apri(t: Trovato) {
+    setTrovati(null);
+    setTelefono(t.telefono);
+    cerca(t.telefono);
+  }
 
   // Dalla cassa («Serve l'indirizzo») si arriva col numero già nell'indirizzo della pagina.
   useEffect(() => {
@@ -139,8 +177,13 @@ function Cliente() {
   // Edoardo, 25/10/2026: un cliente che non conosco lo devo poter compilare tutto, anche senza cercarlo prima.
   function nuovoCliente() {
     setErrore(null); setSalvato(false);
-    setScheda({ esito: "nuovo", telefono });
-    setNome(""); setNote(""); setNoteConsegna(""); setCercaVia(""); setScelto(null); setCivico("");
+    // se si era scritto un nome (non un numero), il nome va nel nome e il telefono resta da scrivere
+    const scritto = telefono.trim();
+    const eNumero = soloNumero(scritto);
+    setTrovati(null);
+    setScheda({ esito: "nuovo", telefono: eNumero ? scritto : "" });
+    if (!eNumero) setTelefono("");
+    setNome(eNumero ? "" : scritto); setNote(""); setNoteConsegna(""); setCercaVia(""); setScelto(null); setCivico("");
   }
 
   async function salva(eVai = false) {
@@ -187,11 +230,12 @@ function Cliente() {
         </div>
       )}
 
-      <form onSubmit={(e) => { e.preventDefault(); cerca(telefono); }} className="carta cl-cerca">
+      <form onSubmit={(e) => { e.preventDefault(); invia(); }} className="carta cl-cerca">
         <input
-          type="tel"
-          inputMode="tel"
-          placeholder="Numero di telefono"
+          type="search"
+          className="cl-cerca-campo"
+          autoComplete="off"
+          placeholder="Telefono, nome, via o civico"
           value={telefono}
           onChange={(e) => setTelefono(e.target.value)}
         />
@@ -199,6 +243,21 @@ function Cliente() {
         <button type="button" className="nuovo" onClick={nuovoCliente}>+ Nuovo cliente</button>
         <button type="button" onClick={provaChiamata} title="Simula una telefonata in arrivo con questo numero" className="prova">Prova chiamata</button>
       </form>
+
+      {trovati !== null && !(scheda?.esito === "trovato" && soloNumero(telefono)) && (
+        <div className="carta cl-trovati">
+          {trovati.length === 0 && <p className="muto">Nessun cliente con «{telefono.trim()}». Prova con un altro pezzo del nome, della via o del numero, oppure crea il cliente nuovo.</p>}
+          {trovati.map((t) => (
+            <button key={t.id} type="button" onClick={() => apri(t)} className={t.black_list ? "black" : ""}>
+              <span className="cl-t-nome">{t.nome ?? "Senza nome"}{t.black_list && <b> · BLACK LIST</b>}</span>
+              <span className="cl-t-tel">{t.telefono}</span>
+              <span className="cl-t-via">{t.indirizzo ? `${t.indirizzo.via} ${t.indirizzo.civico ?? ""}`.trim() : "nessun indirizzo"}{t.indirizzi > 1 ? ` (+${t.indirizzi - 1})` : ""}</span>
+              <span className="cl-t-ordini muto">{t.ordini > 0 ? `${t.ordini} ordini · ultimo ${new Date(t.ultimo!).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "2-digit" })}` : "mai ordinato qui"}</span>
+            </button>
+          ))}
+          {trovati.length === 30 && <p className="muto">Sono i primi 30: aggiungi una parola per stringere.</p>}
+        </div>
+      )}
 
       {scheda?.esito === "numero_corto" && <p className="muto">Numero troppo corto.</p>}
 
