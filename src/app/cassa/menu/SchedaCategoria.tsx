@@ -38,8 +38,8 @@ export async function rinumeraCategorie(fila: { id?: string; ordine: number }[])
   return null;
 }
 
-// i colori dei tasti della cassa 2Bit, più la terracotta del marchio
-const COLORI = ["#A3452F", "#C0392B", "#E67E22", "#D4A017", "#27AE60", "#16A085", "#2980B9", "#8E44AD", "#7F8C8D", "#5D4037"];
+// i colori dei tasti della cassa 2Bit, più il vino del marchio (grafico giro 26: la terracotta è dell'OS, non della cassa)
+const COLORI = ["#8a1538", "#C0392B", "#E67E22", "#D4A017", "#27AE60", "#16A085", "#2980B9", "#8E44AD", "#7F8C8D", "#5D4037"];
 
 export default function SchedaCategoria({ iniziale, gruppi, tutte, onChiudi, onSalvata }: {
   iniziale: CategoriaCompleta;

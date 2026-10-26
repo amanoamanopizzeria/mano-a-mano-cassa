@@ -1143,3 +1143,43 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .me-cat-tasti { display: inline-flex; gap: 6px; align-items: center; }
 .me-sposta { min-height: 36px; min-width: 36px; padding: 0; font-size: 16px; }
 .me-colore { width: 44px; height: 44px; }
+
+/* ===== /cassa/menu (grafico giro 26, 26/10/2026) =====
+   Stessi tocchi e stesso ordine: cambiano misure e colori. Tutti i tasti a 44 (la cassa è touch), le righe
+   restano alte uguali sul PC perché il respiro passa dal padding ai tasti; i prezzi nel vino. A 390 la riga
+   del prodotto è nome e prezzo sopra, Copia ed Esaurito insieme a destra sotto (prima «Esaurito» cadeva da
+   solo a sinistra); la testa della categoria va a capo intera invece di spezzare il nome e «+ prodotto». */
+.menu-lettura .prodotti li { padding: 4px 0; align-items: center; }
+.menu-lettura .prodotti li .prezzo { color: var(--vino); }
+.menu-lettura .prodotti li.spento .prezzo, .menu-lettura .prodotti li.esaurito .prezzo { color: var(--muto); }
+.menu-lettura .prodotti li .me-nome { min-height: 44px; display: flex; align-items: center; text-align: left; }
+.me-aggiungi, .me-copia, .menu-lettura .esaurito-tasto { min-height: 44px; padding: 0 10px; font-size: 14px; white-space: nowrap; }
+.me-sposta { min-height: 44px; min-width: 44px; width: 44px; }
+.me-cat-testa { flex-wrap: wrap; row-gap: 4px; }
+.me-cat-tasti { flex: none; margin-left: auto; }
+.me-nome-cat { min-height: 44px; text-align: left; }
+.me-testa-tasti a.tasto, .me-testa-tasti button { min-height: 44px; white-space: nowrap; }
+.me-testa-tasti a.tasto { color: var(--vino); border-color: var(--vino); }
+@media (max-width: 600px) {
+  .menu-lettura .prodotti li { padding: 2px 0 6px; gap: 0 8px; }
+  .menu-lettura .prodotti li .me-nome { flex: 1 1 calc(100% - 100px); min-width: 0; }
+  .menu-lettura .prodotti li .me-copia { margin-left: auto; }
+  .menu-lettura .esaurito-tasto { margin-left: 0; }
+}
+/* La scheda del prodotto e della categoria: campi e tasti a 44, spunte nel vino, i titoli dei riquadri in
+   Oswald come le etichette del marchio, la barra Annulla/Salva chiusa da un filo e non più trasparente in fondo. */
+.me-velo { background: rgba(26,23,21,.5); }
+.me-scheda { border-radius: 20px; }
+.me-scheda h2 { color: var(--vino); padding-bottom: 8px; border-bottom: 3px solid var(--oro); }
+.me-campo input, .me-campo select, .me-campo textarea, .me-prezzi input { min-height: 44px; border-radius: 10px; }
+.me-prezzi, .me-dove { border-radius: 14px; }
+.me-prezzi > small { grid-column: 1 / -1; }
+.me-prezzi legend, .me-dove legend { font-family: "Oswald", sans-serif; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; font-size: 14px; color: var(--vino); }
+.me-dove label { flex-wrap: wrap; min-height: 44px; }
+.me-dove label small { flex: 1 1 100%; padding-left: 30px; margin-top: -8px; }
+.me-dove input, .me-scheda input[type=checkbox], .me-scheda input[type=radio] { accent-color: var(--vino); }
+.me-foto { border-radius: 14px; }
+.me-azioni { bottom: -14px; margin: 0 -16px -14px; padding: 10px 16px 14px; background: #fff; border-top: 1px solid var(--bordo); border-radius: 0 0 20px 20px; }
+.me-azioni button { min-height: 44px; padding: 0 18px; white-space: nowrap; }
+.me-colore.scelto { border-color: var(--vino); }
+.me-colore.nessuno.scelto { border-color: var(--vino); }
