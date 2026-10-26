@@ -5,6 +5,10 @@
 // entrati»). In cima il tasto per un ordine nuovo e l'ultima chiamata, sotto i quarti d'ora di oggi da adesso
 // in poi: pizze e consegne «occupate/massimo», rosso quando è pieno. I numeri sono quelli di capacita_giorno,
 // gli stessi di /cassa/fasce e dell'ordine dal sito.
+// Sotto, i −/+ della serata (Edoardo, 26/10/2026: «numero di consegne 2 a quarto d'ora più, diventano 3
+// rider… così come il numero di pizze meno o più in base al personale che sta in cucina»): un tocco cambia di
+// uno il massimo di TUTTI i quarti d'ora da adesso a fine serata, con imposta_fascia, la stessa regola che
+// leggono il sito e gli ordini esterni: un quarto d'ora che si riempie sparisce subito da /ordina.
 import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { CapacitaFascia } from "@/lib/types";
@@ -13,17 +17,23 @@ const oggi = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Ro
 const adessoRoma = () => new Date().toLocaleTimeString("sv-SE", { timeZone: "Europe/Rome" }).slice(0, 5);
 const oraDi = (iso: string) => new Date(iso).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
 
+type Reparto = "produzione" | "consegne";
 interface Chiamata { numero: string; ricevuta_il: string; gestita: boolean }
 
 export default function ColonnaCassa() {
   const [fasce, setFasce] = useState<CapacitaFascia[]>([]);
   const [chiamata, setChiamata] = useState<Chiamata | null>(null);
   const [adesso, setAdesso] = useState(adessoRoma());
+  const [negozio, setNegozio] = useState<string | null>(null);
+  const [salvo, setSalvo] = useState(false);
+  const [ultimo, setUltimo] = useState<{ tipo: Reparto; delta: number; quanti: number } | null>(null);
+  const [errore, setErrore] = useState<string | null>(null);
 
   const carica = useCallback(async () => {
     const supabase = supabaseBrowser();
     const { data: prof } = await supabase.from("profilo").select("id_negozio").maybeSingle();
     if (!prof?.id_negozio) return;
+    setNegozio(prof.id_negozio);
     const [c, ch] = await Promise.all([
       supabase.rpc("capacita_giorno", { p_negozio: prof.id_negozio, p_giorno: oggi() }),
       supabase.from("chiamata").select("numero, ricevuta_il, gestita").order("ricevuta_il", { ascending: false }).limit(1).maybeSingle(),
@@ -52,6 +62,31 @@ export default function ColonnaCassa() {
   const corrente = fasce.filter((f) => f.ora.slice(0, 5) <= adesso).at(-1)?.ora;
   const vista = fasce.filter((f) => !corrente || f.ora >= corrente);
 
+  // il quarto d'ora in corso decide il numero che si vede: è quello che conta adesso
+  const primo = vista[0];
+
+  async function cambia(tipo: Reparto, delta: number, annulla = false) {
+    if (!negozio || salvo || vista.length === 0) return;
+    setSalvo(true); setErrore(null);
+    const supabase = supabaseBrowser();
+    const risultati = await Promise.all(vista.map((f) => {
+      const attuale = tipo === "produzione" ? f.pizze_max : f.consegne_max;
+      return supabase.rpc("imposta_fascia", {
+        p_negozio: negozio, p_giorno: oggi(), p_ora: f.ora, p_tipo: tipo, p_massimo: Math.max(0, attuale + delta),
+      });
+    }));
+    const sbagliato = risultati.find((r) => r.error);
+    if (sbagliato?.error) setErrore("Non salvato: " + sbagliato.error.message);
+    else if (!annulla) {
+      // per 6 secondi resta «Annulla»: con le dita del servizio il + si tocca per sbaglio (come in /cassa/fasce)
+      const u = { tipo, delta, quanti: Date.now() };
+      setUltimo(u);
+      setTimeout(() => setUltimo((x) => (x?.quanti === u.quanti ? null : x)), 6000);
+    } else setUltimo(null);
+    await carica();
+    setSalvo(false);
+  }
+
   return (
     <aside className="cc-colonna">
       <a href="/cassa/nuovo" className="cc-nuovo">+ Nuovo ordine</a>
@@ -66,6 +101,28 @@ export default function ColonnaCassa() {
           <span className="cc-etichetta">Nessuna chiamata ricevuta</span>
         )}
       </div>
+      {primo && (
+        <div className="cc-serata">
+          <span className="cc-etichetta">Da adesso a fine serata, a quarto d&apos;ora</span>
+          {(["produzione", "consegne"] as const).map((tipo) => {
+            const n = tipo === "produzione" ? primo.pizze_max : primo.consegne_max;
+            return (
+              <div className="cc-passo" key={tipo}>
+                <span className="cc-passo-nome">{tipo === "produzione" ? "Pizze" : "Consegne"}<small>{tipo === "consegne" ? (n === 1 ? "1 rider" : `${n} rider`) : "in base alla cucina"}</small></span>
+                <button type="button" onClick={() => cambia(tipo, -1)} disabled={salvo || n <= 0} aria-label={tipo === "produzione" ? "Una pizza in meno" : "Una consegna in meno"}>−</button>
+                <b>{n}</b>
+                <button type="button" onClick={() => cambia(tipo, 1)} disabled={salvo} aria-label={tipo === "produzione" ? "Una pizza in più" : "Una consegna in più"}>+</button>
+              </div>
+            );
+          })}
+          {ultimo && (
+            <button type="button" className="cc-annulla" disabled={salvo} onClick={() => cambia(ultimo.tipo, -ultimo.delta, true)}>
+              Salvato · Annulla
+            </button>
+          )}
+          {errore && <span className="cc-errore">{errore}</span>}
+        </div>
+      )}
       <div className="cc-fasce">
         <div className="cc-riga cc-intesta"><span>Ora</span><span>Pizze</span><span>Consegne</span></div>
         {vista.length === 0 && <p className="cc-vuoto">Nessun quarto d&apos;ora aperto oggi.</p>}

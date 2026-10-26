@@ -109,8 +109,9 @@ export default function Ordina() {
     supabaseBrowser().rpc("sito_fasce", { p_tipo: tipo, p_giorno: giorno }).then(({ data, error }) => {
       if (error || !data) { setFasciaEsito("errore"); setFasce([]); return; }
       const r = data as { esito: string; fasce?: Fascia[] };
-      setFasciaEsito(r.esito); setFasce(r.fasce ?? []);
+      // i quarti d'ora pieni (o chiusi dalla cassa coi −) non si mostrano proprio (Edoardo 26/10: «devono sparire»)
       const libere = (r.fasce ?? []).filter((x) => !x.piena);
+      setFasciaEsito(r.esito); setFasce(libere);
       // «il prima possibile» è già scelto: chi vuole un'altra ora la tocca (critico giro 9: sedici quarti d'ora uguali e nessuno proposto)
       setFascia((f) => (f && libere.some((x) => x.inizio === f.inizio) ? f : libere[0] ?? null));
     });
@@ -393,7 +394,7 @@ export default function Ordina() {
             ))}
           </div>
           <div className="o-sez">{tipo === "domicilio" ? "Orario di consegna" : "Orario di ritiro"} · {etichettaGiorno(giorno)}</div>
-          <p className="o-sotto">Il primo orario libero è già scelto: tocca un altro quarto d&apos;ora se preferisci. Quelli barrati sono pieni.</p>
+          <p className="o-sotto">Il primo orario libero è già scelto: tocca un altro quarto d&apos;ora se preferisci.</p>
           {fasce === null && <div className="o-nota">Guardo i posti liberi…</div>}
           {fasce !== null && fasce.length === 0 && (
             <div className="o-avviso chiuso">{fasciaEsito === "chiuso" ? "Quel giorno siamo chiusi." : fasciaEsito === "errore" ? "Non riesco a leggere gli orari: riprova." : "Per oggi non ci sono più orari: prova domani."}</div>
