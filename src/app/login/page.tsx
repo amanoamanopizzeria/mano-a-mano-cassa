@@ -1,6 +1,7 @@
 "use client";
 
-// Accesso per lo staff (cassa, rider) e per i clienti.
+// Accesso per lo staff (cassa, rider). Niente «Registrati» (controllo ECC, 26/10/2026): le utenze le crea
+// Edoardo dal pannello di Supabase, i clienti ordinano da /ordina senza account.
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -17,13 +18,10 @@ export default function Login() {
     supabaseBrowser().auth.getSession().then(({ data }) => { if (data.session) router.replace("/"); });
   }, [router]);
 
-  async function accedi(registra: boolean) {
+  async function accedi() {
     setInCorso(true);
     setMessaggio(null);
-    const supabase = supabaseBrowser();
-    const { error } = registra
-      ? await supabase.auth.signUp({ email, password })
-      : await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabaseBrowser().auth.signInWithPassword({ email, password });
     setInCorso(false);
     if (error) {
       setMessaggio(error.message);
@@ -43,7 +41,7 @@ export default function Login() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          accedi(false);
+          accedi();
         }}
         className="carta"
       >
@@ -66,9 +64,6 @@ export default function Login() {
         />
         <button className="primario a-entra" type="submit" disabled={inCorso}>
           Accedi
-        </button>
-        <button type="button" className="a-registra" disabled={inCorso} onClick={() => accedi(true)}>
-          Registrati
         </button>
       </form>
       {messaggio && <p className="a-msg">{messaggio}</p>}
