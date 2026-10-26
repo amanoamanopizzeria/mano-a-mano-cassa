@@ -1,0 +1,3 @@
+-- DA DECIDERE (Edoardo) — NON APPLICATA. Critico giro 31, 26/10/2026.
+-- La comanda della cassa salva il prezzo che manda il browser (0037, crea ordine cassa). /ordina invece
+-- riprezza sul server. Riprezzare anche la cassa toglierebbe la possibilità di un prezzo a mano.

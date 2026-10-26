@@ -1214,3 +1214,4 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .lo-pillola[style*="--zona"] { border-left-width: 8px; }
 .lo-pillola.ritardo[style*="--zona"] { border-left-color: #c62828 !important; }
 .lo-p-doppia { font-size: 13px; background: #fff; border: 1px dashed var(--vino, #8a1538); border-radius: 999px; padding: 1px 8px; }
+.db-menu { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--vino, #8a1538); border-radius: 999px; color: var(--vino, #8a1538); font-weight: 700; text-decoration: none; }

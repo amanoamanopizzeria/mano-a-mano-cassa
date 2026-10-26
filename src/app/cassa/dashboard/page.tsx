@@ -178,6 +178,8 @@ function Dashboard() {
     <main className="db-pagina">
       <div className="db-testa">
         <h1>Conti e cruscotto</h1>
+        {/* anche da casa: dalla dashboard si cambia il menù (Edoardo, 26/10/2026) */}
+        <a href="/cassa/menu" className="db-menu">Cambia il menù →</a>
         <div className="db-periodi" role="tablist">
           {(["serata", "settimana", "mese"] as Periodo[]).map((x) => (
             <button key={x} role="tab" aria-selected={periodo === x} className={periodo === x ? "on" : ""} onClick={() => setPeriodo(x)}>{x === "serata" ? "Serata" : x === "settimana" ? "Settimana" : "Mese"}</button>
