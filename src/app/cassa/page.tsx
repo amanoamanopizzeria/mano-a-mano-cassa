@@ -360,6 +360,10 @@ function Cassa() {
   };
   const preordiniVisti = ordini.filter((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o) && filtro !== "quarti");
   const [riderPos, setRiderPos] = useState<Map<string, { lat: number; lng: number; il: string }>>(new Map());
+  const [strada, setStrada] = useState<Map<string, { min: number; google: boolean; il: number }>>(new Map());
+  const ultimaStrada = useRef(0);
+  const inConsegnaRef = useRef(inConsegna);
+  inConsegnaRef.current = inConsegna;
   useEffect(() => {
     if (inConsegna.length === 0) return;
     let vivo = true;
@@ -371,6 +375,21 @@ function Cassa() {
         if (r.lat != null && r.lng != null && r.aggiornata_il) m.set(r.id, { lat: r.lat, lng: r.lng, il: r.aggiornata_il });
       }
       setRiderPos(m);
+      // il tempo per strada da Google (Routes, col traffico) una volta al minuto: ogni 15 s costerebbe
+      // quattro volte tanto e il numero non cambia. Senza Google la stessa rotta dà la linea d'aria.
+      if (Date.now() - ultimaStrada.current < 60_000) return;
+      const coppie = inConsegnaRef.current.flatMap((o) => {
+        const k = o.consegna?.[0]; const pos = k?.id_rider ? m.get(k.id_rider) : undefined;
+        return pos && k?.stato !== "assegnata" && o.indirizzo?.lat != null && o.indirizzo?.lng != null
+          ? [{ id: o.id, da: { lat: pos.lat, lng: pos.lng }, a: { lat: o.indirizzo.lat, lng: o.indirizzo.lng } }] : [];
+      }).slice(0, 10);
+      if (coppie.length === 0) return;
+      ultimaStrada.current = Date.now();
+      const r = await fetch("/api/indirizzi/tempi", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origini: coppie.map((c) => c.da), destinazioni: coppie.map((c) => c.a) }) }).catch(() => null);
+      const t = r?.ok ? (await r.json()) as { fonte: string; minuti: (number | null)[][] } : null;
+      if (!vivo || !t) return;
+      setStrada(new Map(coppie.flatMap((c, i) => (t.minuti[i]?.[i] != null ? [[c.id, { min: t.minuti[i][i]!, google: t.fonte === "google", il: Date.now() }]] : []))));
     };
     leggi();
     const t = setInterval(leggi, 15_000);
@@ -384,9 +403,12 @@ function Cassa() {
     const fresca = p && adesso - new Date(p.il).getTime() < 3 * 60_000;
     const quando = p ? `posizione ${Math.max(0, Math.round((adesso - new Date(p.il).getTime()) / 60_000))} min fa` : "nessuna posizione dal rider";
     if (!fresca || o.indirizzo?.lat == null || o.indirizzo?.lng == null) return { testo: "in viaggio", pos: quando };
-    // linea d'aria × 1,4 a 22 km/h, più 2 minuti per parcheggiare (la stessa stima della mappa)
-    const min = Math.round(Math.hypot((p!.lat - o.indirizzo.lat) * 111, (p!.lng - o.indirizzo.lng) * 83) * 1.4 / 22 * 60 + 2);
-    return { testo: `arriva fra ${min} min (verso le ${oraDi(new Date(adesso + min * 60_000).toISOString())})`, pos: quando };
+    // Google Maps col traffico se c'è e ha meno di 2 minuti, più 2 minuti per parcheggiare; se no la linea
+    // d'aria × 1,4 a 22 km/h (la stessa stima della mappa)
+    const g = strada.get(o.id);
+    const daGoogle = g && g.google && adesso - g.il < 2 * 60_000;
+    const min = daGoogle ? g.min + 2 : Math.round(Math.hypot((p!.lat - o.indirizzo.lat) * 111, (p!.lng - o.indirizzo.lng) * 83) * 1.4 / 22 * 60 + 2);
+    return { testo: `arriva fra ${min} min (verso le ${oraDi(new Date(adesso + min * 60_000).toISOString())})`, pos: quando + (daGoogle ? " · Google Maps" : " · stima") };
   };
   const [apertoQ, setApertoQ] = useState<string | null>(null);
 
