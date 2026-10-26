@@ -32,6 +32,7 @@
 | `15_REPORT_E_EXPORT.md` | Le **due** letture dell'OS (API per articolo, CSV per ordine); le 40 colonne del CSV una per una con la traduzione nostra; `RigaVendita` contro `v_vendite_giornata` campo per campo; cosa aggiungere perché l'OS non si accorga del cambio |
 | `16_DOMANDE_PER_EDOARDO.md` | Le **20 domande** che non si deducono, ognuna con «cosa cambia a seconda della risposta» |
 | `17_REA_COMPLETO_25_10.md` · `18_DOMANDE_PER_EDOARDO.md` | Rapporto completo del 25/10/2026 (cassa 2Bit, back-office ordini e zone, menu e disponibilità, app, sito, rider, telefono, stampa) con lo stato di ogni voce e le domande per Edoardo |
+| `24_DASHBOARD_E_DATI_VELOCISSIMO.md` | La dashboard di Velocissimo **dentro**: il motore a widget (6 entità, metriche, dimensioni, 7 grafici, periodi, confronto periodo/anno prima), le **7 dashboard** widget per widget coi numeri di settembre 2026, i **report** con colonne, filtri e «Metriche», Ordini e Clienti (filtri e colonne), **come funzionano gli export**, il confronto con la nostra `/cassa/dashboard` e **le dieci cose che mancano** in ordine, coi dati del nostro DB (26/10/2026) |
 | `dati/prodotti_nomi_ricette.md` | I 177 prodotti: id, codice, nome, pagina catalogo, ricetta, descrizione |
 | `dati/prodotti_listini.md` | I tre listini per prodotto e il food cost |
 
