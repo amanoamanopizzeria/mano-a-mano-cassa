@@ -1057,3 +1057,35 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .lo-mappa { font-family: "Figtree", sans-serif; text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--vino, #8a1538); }
 .lo-consegna .lo-pillola { flex-basis: 230px; background: #fff; }
 .lo-p-arrivo b { color: #1a4f9c; }
+
+/* Conti e cruscotto (/cassa/dashboard, 26/10/2026) */
+.db-pagina { max-width: 1200px; margin: 0 auto; padding: 16px; }
+.db-testa { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.db-testa h1 { margin: 0; }
+.db-periodi { display: flex; gap: 4px; }
+.db-periodi button.on { background: var(--accento); color: #fff; }
+.db-giorno { display: flex; gap: 6px; align-items: center; }
+.db-giorno button { min-width: 44px; font-size: 20px; }
+.db-titolo { font-weight: 600; text-transform: capitalize; margin: 10px 0; }
+.db-titolo .muto { text-transform: none; font-weight: 400; }
+.db-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.db-kpi .carta { display: flex; flex-direction: column; gap: 4px; }
+.db-kpi span { font-size: 13px; color: var(--muto); }
+.db-kpi b { font-size: 24px; font-variant-numeric: tabular-nums; }
+.db-su { color: #2f7a3a; font-size: 13px; }
+.db-giu { color: var(--accento); font-size: 13px; }
+.db-griglia { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 10px; margin-top: 10px; }
+.db-blocco h2 { font-size: 16px; margin: 0 0 8px; }
+.db-barra { display: grid; grid-template-columns: 110px 1fr auto; gap: 8px; align-items: center; padding: 3px 0; font-size: 14px; }
+.db-fondo { height: 10px; background: rgba(0,0,0,.07); border-radius: 5px; overflow: hidden; }
+.db-fondo span { display: block; height: 100%; background: var(--accento); border-radius: 5px; }
+.db-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.db-riga { display: grid; grid-template-columns: 1fr auto auto auto; gap: 12px; padding: 4px 0; font-size: 14px; font-variant-numeric: tabular-nums; border-bottom: 1px solid rgba(0,0,0,.06); }
+.db-ordini { margin-top: 10px; }
+.db-ordini-testa { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.db-scarica { display: flex; flex-wrap: wrap; gap: 6px; }
+.db-tabella { overflow-x: auto; }
+.db-tabella table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.db-tabella th, .db-tabella td { text-align: left; padding: 6px 8px; border-bottom: 1px solid rgba(0,0,0,.06); white-space: nowrap; }
+.db-tabella .num { text-align: right; font-variant-numeric: tabular-nums; }
+.db-tabella tr.annullato td { color: var(--muto); text-decoration: line-through; }

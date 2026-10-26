@@ -55,6 +55,10 @@ export default function Home() {
           <strong>Capacità</strong>
           <p className="muto">Turni del giorno, pizze e consegne per quarto d&apos;ora, blocchi.</p>
         </Link>
+        <Link href="/cassa/dashboard" className="carta">
+          <strong>Conti e cruscotto</strong>
+          <p className="muto">Venduto, origini, pagamenti, rider e tutti gli ordini, con il CSV.</p>
+        </Link>
         <Link href="/cassa/riepilogo" className="carta">
           <strong>Riepilogo</strong>
           <p className="muto">Ordini di oggi per canale, pizze, consegne e incasso.</p>
