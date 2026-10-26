@@ -211,11 +211,13 @@ function Rider() {
 
   // Il giro più corto fra le consegne date, partendo dalla pizzeria (con i minuti di Google se ci sono)
   async function girOrdinato(cons: ConsegnaRider[]): Promise<ConsegnaRider[]> {
+    // quelle senza punto sulla mappa vanno in fondo, non si perdono (controllo ECC, 26/10/2026)
     const tappe = cons.filter(conPunto);
-    if (tappe.length < 2) return cons;
+    const senzaPunto = cons.filter((c) => !conPunto(c));
+    if (tappe.length < 2) return [...tappe, ...senzaPunto];
     const punti = [PIZZERIA, ...tappe.map((c) => ({ lat: c.lat!, lng: c.lng! }))];
     const t = await chiediTempi(punti, punti);
-    return t ? ordineGiro(tappe.length, t.minuti).map((i) => tappe[i]) : tappe;
+    return [...(t ? ordineGiro(tappe.length, t.minuti).map((i) => tappe[i]) : tappe), ...senzaPunto];
   }
 
   // «Naviga tutte»: Google Maps col giro dalla pizzeria, una tappa dopo l'altra nell'ordine più corto
