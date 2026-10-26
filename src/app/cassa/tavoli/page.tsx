@@ -42,7 +42,7 @@ function Tavoli() {
   const [tavoli, setTavoli] = useState<Tavolo[]>([]);
   const [errore, setErrore] = useState<string | null>(null);
   const [, setOra] = useState(0);
-  const [conto, setConto] = useState<{ tavolo: Tavolo; ordini: OrdineConto[] } | null>(null);
+  const [conto, setConto] = useState<{ tavolo: Tavolo; ordini: OrdineConto[]; prezzoCoperto: number } | null>(null);
   const [chiudo, setChiudo] = useState(false);
 
   const carica = useCallback(async () => {
@@ -87,7 +87,9 @@ function Tavoli() {
       .select("id, numero_visibile, numero, totale, stato, sconto, ordine_riga(id, descrizione, quantita, prezzo_unit, variazioni, id_riga_padre)")
       .eq("id_tavolo", t.id).not("stato", "in", "(annullato,ritirato,consegnato)").order("creato_il");
     if (error) { setErrore(error.message); return; }
-    setConto({ tavolo: t, ordini: (data ?? []) as unknown as OrdineConto[] });
+    // Il coperto (1,50 € a persona, Edoardo 25/10) lo aggiunge il database al conto (mig. 0065): qui si mostra prima.
+    const { data: neg } = await supabaseBrowser().from("negozio").select("prezzo_coperto").limit(1).maybeSingle();
+    setConto({ tavolo: t, ordini: (data ?? []) as unknown as OrdineConto[], prezzoCoperto: Number(neg?.prezzo_coperto ?? 1.5) });
   }
 
   // Si incassa (contanti o POS): gli ordini si chiudono e il tavolo si libera, in una transazione (mig. 0041).
@@ -147,7 +149,9 @@ function Tavoli() {
       {conto && (() => {
         const righe = conto.ordini.flatMap((o) => o.ordine_riga);
         const padri = righe.filter((r) => !r.id_riga_padre);
-        const totale = conto.ordini.reduce((a, o) => a + Number(o.totale), 0);
+        const giaCoperto = righe.some((r) => r.descrizione === "Coperto");
+        const coperto = padri.length > 0 && !giaCoperto ? conto.tavolo.coperti * conto.prezzoCoperto : 0;
+        const totale = conto.ordini.reduce((a, o) => a + Number(o.totale), 0) + coperto;
         return (
           <div className="conto-velo" onClick={() => setConto(null)}>
             <section className="carta conto" onClick={(e) => e.stopPropagation()}>
@@ -174,6 +178,13 @@ function Tavoli() {
                     </li>
                     )),
                   ])}
+                  {coperto > 0 && (
+                    <li key="coperto">
+                      <span className="q">{conto.tavolo.coperti}×</span>
+                      <span className="d">Coperto</span>
+                      <span className="p">{euro(coperto)}</span>
+                    </li>
+                  )}
                 </ul>
               )}
               {conto.ordini.some((o) => Number(o.sconto) > 0) && <div className="muto sconti">sconti −{euro(conto.ordini.reduce((a, o) => a + Number(o.sconto ?? 0), 0))}</div>}
