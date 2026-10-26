@@ -109,9 +109,9 @@ export default function Ordina() {
     supabaseBrowser().rpc("sito_fasce", { p_tipo: tipo, p_giorno: giorno }).then(({ data, error }) => {
       if (error || !data) { setFasciaEsito("errore"); setFasce([]); return; }
       const r = data as { esito: string; fasce?: Fascia[] };
-      // i quarti d'ora pieni (o chiusi dalla cassa coi −) non si mostrano proprio (Edoardo 26/10: «devono sparire»)
+      // i quarti d'ora pieni (anche quelli ridotti dalla cassa coi −) restano in vista con «SOLD OUT» e non si scelgono
+      setFasciaEsito(r.esito); setFasce(r.fasce ?? []);
       const libere = (r.fasce ?? []).filter((x) => !x.piena);
-      setFasciaEsito(r.esito); setFasce(libere);
       // «il prima possibile» è già scelto: chi vuole un'altra ora la tocca (critico giro 9: sedici quarti d'ora uguali e nessuno proposto)
       setFascia((f) => (f && libere.some((x) => x.inizio === f.inizio) ? f : libere[0] ?? null));
     });
@@ -394,7 +394,7 @@ export default function Ordina() {
             ))}
           </div>
           <div className="o-sez">{tipo === "domicilio" ? "Orario di consegna" : "Orario di ritiro"} · {etichettaGiorno(giorno)}</div>
-          <p className="o-sotto">Il primo orario libero è già scelto: tocca un altro quarto d&apos;ora se preferisci.</p>
+          <p className="o-sotto">Il primo orario libero è già scelto: tocca un altro quarto d&apos;ora se preferisci. Quelli SOLD OUT sono pieni.</p>
           {fasce === null && <div className="o-nota">Guardo i posti liberi…</div>}
           {fasce !== null && fasce.length === 0 && (
             <div className="o-avviso chiuso">{fasciaEsito === "chiuso" ? "Quel giorno siamo chiusi." : fasciaEsito === "errore" ? "Non riesco a leggere gli orari: riprova." : "Per oggi non ci sono più orari: prova domani."}</div>
@@ -402,7 +402,7 @@ export default function Ordina() {
           {fasce !== null && fasce.length > 0 && (
             <div className="o-fasce">
               {fasce.map((f) => (
-                <button key={f.inizio} onClick={() => { if (!f.piena) { setFascia(f); setErrore(null); vai("dati"); } }} className={(fascia?.inizio === f.inizio ? "on" : "") + (f.piena ? " piena" : "")} disabled={f.piena}>{f.ora}</button>
+                <button key={f.inizio} onClick={() => { if (!f.piena) { setFascia(f); setErrore(null); vai("dati"); } }} className={(fascia?.inizio === f.inizio ? "on" : "") + (f.piena ? " piena" : "")} disabled={f.piena}>{f.ora}{f.piena && <small>SOLD OUT</small>}</button>
               ))}
             </div>
           )}
