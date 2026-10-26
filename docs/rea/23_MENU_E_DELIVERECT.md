@@ -101,7 +101,7 @@ location vera.
 | `categories[].posCategoryId`, `name` | `categoria.id`, `categoria.nome` |
 | `products[].plu` (**univoco**) | `prodotto.codice` (oggi quasi vuoto; vedi sotto) |
 | `name`, `description`, `imageUrl` | `nome`, `descrizione`, `foto_url` |
-| `price` in centesimi | `prezzo_piattaforme` (L3) × 100, se vuoto `prezzo` |
+| `price` in centesimi | `prezzo_piattaforme` (L3) × 100; L3 vuoto = il prodotto non va sulle piattaforme |
 | `deliveryTax`, `takeawayTax`, `eatInTax` (millesimi: 10% = 10000) | `aliquota_iva` × 1000 |
 | `productType` 1 prodotto, 2 variante, 3 gruppo di varianti | `prodotto` = 1; `variazione` = 2; `categoria_gruppo_variazione` = 3 (con `min`, `max`, `maxFree` = `min_n`, `max_n`, `max_gratis`) |
 | `subProducts` | i gruppi della categoria del prodotto |

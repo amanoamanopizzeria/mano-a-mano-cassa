@@ -55,7 +55,8 @@ export default function SchedaProdotto({ iniziale, categorie, gruppi, onChiudi, 
   const [l3, setL3] = useState(scriviEuro(iniziale.prezzo_piattaforme));
   const [salvo, setSalvo] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
-  const cambia = <K extends keyof ProdottoScheda>(k: K, v: ProdottoScheda[K]) => setP((x) => ({ ...x, [k]: v }));
+  const [fotoRotta, setFotoRotta] = useState(false);
+  const cambia = <K extends keyof ProdottoScheda>(k: K, v: ProdottoScheda[K]) => { setErrore(null); setP((x) => ({ ...x, [k]: v })); };
 
   async function salva() {
     setErrore(null);
@@ -63,19 +64,22 @@ export default function SchedaProdotto({ iniziale, categorie, gruppi, onChiudi, 
     const prezzo = leggiEuro(l1), tavolo = leggiEuro(l2), piattaforme = leggiEuro(l3);
     if (!nome) { setErrore("Scrivi il nome del prodotto."); return; }
     if (!p.id_categoria) { setErrore("Scegli la categoria: decide le varianti, la comanda e dove sta nel menù."); return; }
-    if (prezzo == null || Number.isNaN(prezzo)) { setErrore("Scrivi il prezzo d'asporto (es. 8,50)."); return; }
-    if (Number.isNaN(tavolo) || Number.isNaN(piattaforme)) { setErrore("Un prezzo non è un numero: scrivilo come 8,50 o lascialo vuoto."); return; }
+    // critico giro 31: l'errore dice QUALE prezzo, e un negativo non è «scrivi il prezzo»
+    if (prezzo == null) { setErrore("Scrivi il prezzo d'asporto (es. 8,50)."); return; }
+    if (Number.isNaN(prezzo)) { setErrore("Il prezzo d'asporto non va: scrivilo come 8,50 (niente lettere né segno meno)."); return; }
+    if (Number.isNaN(tavolo)) { setErrore("Il prezzo di sala non va: scrivilo come 8,50 o lascialo vuoto."); return; }
+    if (Number.isNaN(piattaforme)) { setErrore("Il prezzo piattaforme non va: scrivilo come 8,50 o lascialo vuoto."); return; }
     setSalvo(true);
     const supabase = supabaseBrowser();
     // un codice già usato da un altro prodotto confonderebbe Deliverect (PLU doppio: ne tiene uno solo)
     const codice = p.codice?.trim() || null;
     if (codice) {
-      const { data: doppio } = await supabase.from("prodotto").select("id, nome").eq("codice", codice).neq("id", p.id ?? "00000000-0000-0000-0000-000000000000").limit(1);
+      const { data: doppio } = await supabase.from("prodotto").select("id, nome").ilike("codice", codice.replace(/[\\%_]/g, "\\$&")).neq("id", p.id ?? "00000000-0000-0000-0000-000000000000").limit(1);
       if (doppio && doppio.length) { setSalvo(false); setErrore(`Il codice ${codice} è già di «${doppio[0].nome}»: due prodotti non possono avere lo stesso codice.`); return; }
     }
     let ordine = p.ordine;
-    if (nuovo) {
-      // in fondo alla sua categoria
+    if (nuovo || p.id_categoria !== iniziale.id_categoria) {
+      // in fondo alla sua categoria (anche quando la si cambia: critico giro 31)
       const { data: ultimo } = await supabase.from("prodotto").select("ordine").eq("id_categoria", p.id_categoria).order("ordine", { ascending: false }).limit(1);
       ordine = ((ultimo?.[0]?.ordine as number | undefined) ?? 0) + 1;
     }
@@ -95,8 +99,9 @@ export default function SchedaProdotto({ iniziale, categorie, gruppi, onChiudi, 
 
   const nomeGruppo = (id: string | null) => gruppi.find((g) => g.id === id)?.nome ?? "";
   return (
-    <div className="me-velo" role="dialog" aria-modal="true" aria-label={nuovo ? "Nuovo prodotto" : `Modifica ${iniziale.nome}`} onClick={onChiudi}>
-      <form className="me-scheda carta" onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); salva(); }}>
+    <div className="me-velo" role="dialog" aria-modal="true" aria-label={nuovo ? "Nuovo prodotto" : `Modifica ${iniziale.nome}`} >
+      {/* il fondo grigio non chiude: un tocco sbagliato perdeva tutta la scheda (critico giro 31) */}
+      <form className="me-scheda carta" onSubmit={(e) => { e.preventDefault(); salva(); }}>
         <h2>{nuovo ? (iniziale.nome ? "Copia di un prodotto" : "Nuovo prodotto") : "Modifica prodotto"}</h2>
 
         <label className="me-campo">Nome
@@ -114,7 +119,8 @@ export default function SchedaProdotto({ iniziale, categorie, gruppi, onChiudi, 
           <legend>Prezzi</legend>
           <label>Asporto, app, totem <small>(L1)</small><input inputMode="decimal" value={l1} onChange={(e) => setL1(e.target.value)} placeholder="8,50" /></label>
           <label>Sala <small>(L2, vuoto = come asporto)</small><input inputMode="decimal" value={l2} onChange={(e) => setL2(e.target.value)} placeholder={l1 || "—"} /></label>
-          <label>Piattaforme <small>(L3: Glovo, Deliveroo, Just Eat)</small><input inputMode="decimal" value={l3} onChange={(e) => setL3(e.target.value)} placeholder={l1 || "—"} /></label>
+          <label>Piattaforme <small>(L3: Glovo, Deliveroo, Just Eat)</small><input inputMode="decimal" value={l3} onChange={(e) => setL3(e.target.value)} placeholder="vuoto = non va" /></label>
+          <small className="muto">Sulle piattaforme va solo ciò che ha il prezzo L3 (e non sotto «In cassa» spento): per toglierlo da Glovo, svuota il prezzo piattaforme.</small>
         </fieldset>
 
         <fieldset className="me-dove">
@@ -132,8 +138,9 @@ export default function SchedaProdotto({ iniziale, categorie, gruppi, onChiudi, 
             <input value={p.foto_url ?? ""} onChange={(e) => cambia("foto_url", e.target.value)} placeholder="https://…" />
           </label>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {p.foto_url?.startsWith("http") && <img className="me-foto" src={p.foto_url} alt="" />}
+          {p.foto_url?.startsWith("http") && <img key={p.foto_url} className="me-foto" src={p.foto_url} alt="" onError={() => setFotoRotta(true)} onLoad={() => setFotoRotta(false)} />}
         </div>
+        {fotoRotta && p.foto_url && <p className="m-errore">Questa foto non si apre: controlla l&apos;indirizzo, se no in app e sul totem resta il riquadro vuoto.</p>}
         <div className="me-riga">
           <label className="me-campo">Codice <small className="muto">(PLU per Deliverect)</small>
             <input value={p.codice ?? ""} onChange={(e) => cambia("codice", e.target.value)} placeholder="es. 24" />

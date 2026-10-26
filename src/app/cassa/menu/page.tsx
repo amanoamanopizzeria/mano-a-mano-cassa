@@ -77,8 +77,10 @@ function Menu() {
       return vecchio ? ps.map((y) => (y.id === x.id ? nuovo : y)) : [...ps, nuovo];
     });
     setScheda(null);
-    setSalvato(`«${x.nome}» salvato: è già in cassa${x.attivo && x.visibile_app ? ", nell'app e sul sito" : ""}${x.attivo && x.visibile_totem ? " e sul totem" : ""}.`);
-    setTimeout(() => setSalvato(null), 6000);
+    // critico giro 31: uno spento non «è già in cassa»; la copia nasce solo in cassa, finché non la si controlla
+    const dove = [x.attivo && "in cassa", x.attivo && x.visibile_app && "nell'app e sul sito", x.attivo && x.visibile_totem && "sul totem"].filter(Boolean);
+    setSalvato(dove.length ? `«${x.nome}» salvato: è già ${dove.join(", ")}.` : `«${x.nome}» salvato e spento: non si vende da nessuna parte.`);
+    setTimeout(() => setSalvato(null), 8000);
     setTimeout(() => document.getElementById(`prod-${x.id}`)?.scrollIntoView({ block: "center", behavior: "smooth" }), 100);
   }
 
@@ -94,6 +96,7 @@ function Menu() {
       <p className="muto">Tocca un prodotto per cambiarlo, o «Copia» per farne uno simile in un attimo. Quello che salvi è subito in cassa, nell&apos;app, sul sito e sul totem. «Esaurito stasera» lo toglie fino alle 6 di mattina.</p>
       {errore && <p className="m-errore">{errore}</p>}
       {salvato && <p className="me-salvato" role="status">{salvato}</p>}
+      {!errore && gruppi.length === 0 && <p className="muto">Carico il menù…</p>}
       {scheda && (
         <SchedaProdotto iniziale={scheda} categorie={categorie} gruppi={gruppi} onChiudi={() => setScheda(null)} onSalvato={dopoSalvataggio} />
       )}
@@ -132,7 +135,7 @@ function Menu() {
                   return (
                     <li key={p.id} id={`prod-${p.id}`} className={!p.attivo ? "spento" : esaurito(p) ? "esaurito" : undefined}>
                       <button type="button" className="nome me-nome" onClick={() => setScheda(p)} title="Cambia il prodotto">{p.nome}</button><span className="prezzo">{Number(p.prezzo).toFixed(2).replace(".", ",")} €</span>
-                      <button type="button" className="me-copia" onClick={() => setScheda({ ...p, id: undefined, ordine: undefined, codice: null, nome: p.nome + " (copia)", attivo: true })}>Copia</button>
+                      <button type="button" className="me-copia" onClick={() => setScheda({ ...p, id: undefined, ordine: undefined, codice: null, foto_url: null, nome: p.nome + " (copia)", attivo: true, visibile_app: false, visibile_web: false, visibile_totem: false })}>Copia</button>
                       {p.attivo && (
                         <button className={"esaurito-tasto" + (esaurito(p) ? " primario" : "")} onClick={() => segnaEsaurito(p, !esaurito(p))}>
                           {esaurito(p) ? "Rimetti in vendita" : "Esaurito stasera"}

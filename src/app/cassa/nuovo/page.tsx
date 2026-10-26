@@ -186,6 +186,20 @@ function Cassa() {
     })();
   }, []);
 
+  // Critico giro 31: un prezzo cambiato in /cassa/menu non arrivava a una cassa già aperta. Il menù si
+  // rilegge ogni due minuti e quando la finestra torna in primo piano (le righe già battute restano).
+  useEffect(() => {
+    const rileggi = async () => {
+      if (document.visibilityState !== "visible") return;
+      const m = await leggiMenu();
+      if (m.errore) return;
+      setCategorie(m.categorie); setProdotti(m.prodotti); setVarianti(m.varianti); setGruppiCat(m.gruppi); setPacchetti(m.pacchetti);
+    };
+    const giro = setInterval(rileggi, 120_000);
+    document.addEventListener("visibilitychange", rileggi);
+    return () => { clearInterval(giro); document.removeEventListener("visibilitychange", rileggi); };
+  }, []);
+
   // Gli orari del giorno scelto (o di oggi), per i quarti d'ora offerti.
   useEffect(() => {
     if (!idNegozio) return;
