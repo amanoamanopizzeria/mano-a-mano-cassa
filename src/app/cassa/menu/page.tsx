@@ -82,7 +82,13 @@ function Menu() {
   const sorelleDi = (c: Categoria) => categorie.filter((x) => x.id_gruppo === c.id_gruppo).sort((a, b) => a.ordine - b.ordine);
   const primaDelGruppo = (c: Categoria) => sorelleDi(c)[0]?.id === c.id;
   const ultimaDelGruppo = (c: Categoria) => sorelleDi(c).at(-1)?.id === c.id;
+  const [sposto, setSposto] = useState(false);
   async function sposta(c: Categoria, verso: -1 | 1) {
+    if (sposto) return;
+    setSposto(true);
+    try { await spostaOra(c, verso); } finally { setSposto(false); }
+  }
+  async function spostaOra(c: Categoria, verso: -1 | 1) {
     const fila = [...categorie].sort((a, b) => a.ordine - b.ordine);
     const sorelle = fila.filter((x) => x.id_gruppo === c.id_gruppo);
     const altra = sorelle[sorelle.findIndex((x) => x.id === c.id) + verso];
@@ -92,7 +98,7 @@ function Menu() {
     senza.splice(j, 0, c);
     const errore = await rinumeraCategorie(senza);
     if (errore) setErrore(errore);
-    rileggiCategorie();
+    await rileggiCategorie();
   }
   function dopoCategoria(x: CategoriaCompleta & { id: string }) {
     setCategorie((cs) => (cs.some((y) => y.id === x.id) ? cs.map((y) => (y.id === x.id ? x : y)) : [...cs, x]).sort((a, b) => a.ordine - b.ordine));
@@ -162,8 +168,8 @@ function Menu() {
                   {c.colore && <span className="me-pallino" style={{ background: c.colore }} aria-hidden />}{c.nome}
                 </button>
                 <span className="me-cat-tasti">
-                  <button type="button" className="me-sposta" disabled={primaDelGruppo(c)} onClick={() => sposta(c, -1)} aria-label={`Sposta ${c.nome} prima`} title="Prima">↑</button>
-                  <button type="button" className="me-sposta" disabled={ultimaDelGruppo(c)} onClick={() => sposta(c, 1)} aria-label={`Sposta ${c.nome} dopo`} title="Dopo">↓</button>
+                  <button type="button" className="me-sposta" disabled={sposto || primaDelGruppo(c)} onClick={() => sposta(c, -1)} aria-label={`Sposta ${c.nome} prima`} title="Prima">↑</button>
+                  <button type="button" className="me-sposta" disabled={sposto || ultimaDelGruppo(c)} onClick={() => sposta(c, 1)} aria-label={`Sposta ${c.nome} dopo`} title="Dopo">↓</button>
                   <button type="button" className="me-aggiungi" onClick={() => setScheda(prodottoVuoto(c.id))}>+ prodotto</button>
                 </span>
               </div>

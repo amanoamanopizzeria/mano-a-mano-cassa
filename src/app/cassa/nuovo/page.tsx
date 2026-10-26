@@ -209,9 +209,12 @@ function Cassa() {
     // un prodotto spento nel frattempo esce dalla comanda, e lo si dice (critico giro 33: si poteva ancora inviare)
     const vivi = new Set(prodotti.map((p) => p.id));
     setRighe((prev) => {
-      const tolte = prev.filter((r) => !vivi.has(r.id_prodotto));
+      // solo le righe CON un prodotto: quelle venute da app o dall'esterno non ce l'hanno (critico giro 34:
+      // «Modifica» di APP-4 si svuotava dicendo «spento nel menù»)
+      const spenta = (r: RigaOrdine) => !!r.id_prodotto && !vivi.has(r.id_prodotto);
+      const tolte = prev.filter(spenta);
       if (tolte.length) setErrore(`Tolto dalla comanda perché spento nel menù: ${tolte.map((r) => r.descrizione).join(", ")}.`);
-      return riprezzaRighe(prev.filter((r) => vivi.has(r.id_prodotto)), prodotti, tipo === "tavolo" ? "tavolo" : "asporto");
+      return riprezzaRighe(prev.filter((r) => !spenta(r)), prodotti, tipo === "tavolo" ? "tavolo" : "asporto");
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [riletto]);

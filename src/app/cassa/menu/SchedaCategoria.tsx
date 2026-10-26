@@ -12,10 +12,17 @@ export interface CategoriaCompleta {
 }
 /** Una categoria nuova prende stampa e forno dalle sorelle del suo gruppo: sotto Bar non nasce «pizza» (critico giro 32). */
 export const categoriaVuota = (idGruppo: string | null, sorelle: CategoriaCompleta[] = []): CategoriaCompleta => {
-  const modello = sorelle.find((c) => c.id_gruppo === idGruppo);
+  // quello che fanno la maggior parte delle sorelle (critico giro 34: in Cucina la prima, le Pucce, è
+  // l'unica col forno)
+  const del = sorelle.filter((c) => c.id_gruppo === idGruppo);
+  const piuSpesso = <T,>(xs: T[], base: T): T => {
+    const n = new Map<T, number>();
+    xs.forEach((x) => n.set(x, (n.get(x) ?? 0) + 1));
+    return [...n.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? base;
+  };
   return {
     nome: "", id_gruppo: idGruppo, ordine: 0, colore: null,
-    destinazione: modello?.destinazione ?? "cucina", impegna_forno: modello?.impegna_forno ?? true,
+    destinazione: piuSpesso(del.map((c) => c.destinazione), "cucina"), impegna_forno: piuSpesso(del.map((c) => c.impegna_forno), true),
     visibile_app: true, visibile_web: true, visibile_totem: true,
   };
 };
