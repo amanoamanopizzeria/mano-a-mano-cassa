@@ -973,3 +973,16 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .rider .r-barra-scelte span { flex: 1 1 100%; font-size: 15px; }
 .rider .r-barra-scelte button { flex: 1; min-height: 52px; font-size: 17px; }
 .rider .r-attesa { font-size: 14px; line-height: 1.3; padding: 8px 0; }
+
+/* ===== giro 25 del grafico (26/10/2026): il coperto nel conto del tavolo ===== */
+/* Il coperto (mig. 0065) è del tavolo, non di un ordine: sta sotto le righe col suo filo, in grigio,
+   e dice quanto a persona; il prezzo resta nero come gli altri. Sul PC il foglio fa come a 390:
+   scorrono solo le righe, totale e tasti restano sempre in vista anche con un conto lungo. */
+.sala .conto .righe li.coperto { border-top: 1px solid var(--bordo); border-bottom: none; margin-top: 6px; padding-top: 10px; }
+.sala .conto .righe li.coperto .q, .sala .conto .righe li.coperto .d { color: var(--muto); }
+.sala .conto .righe li:has(+ li.coperto) { border-bottom: none; }
+.sala .conto .righe li.coperto .d small { display: inline; margin-left: 6px; }
+.sala .conto { display: flex; flex-direction: column; }
+.sala .conto header, .sala .conto .totale, .sala .conto .azioni-conto { flex: none; }
+.sala .conto .righe { overflow: auto; flex: 1 1 auto; min-height: 0; }
+@media print { .sala .conto .righe { overflow: visible; } .sala .conto .righe li.coperto .q, .sala .conto .righe li.coperto .d { color: #000; } }
