@@ -509,9 +509,11 @@ function Testata({ indietro, annulla, titolo }: { indietro?: () => void; annulla
   );
 }
 
-/** Foto del prodotto, o un disco oro con l'iniziale finché la foto non c'è. */
+/** Foto del prodotto, o il bollino quando la foto non c'è o non si carica (le foto stanno ancora sul CDN
+ *  di WebApp: se un link muore, prima si vedeva l'icona dell'immagine rotta su un riquadro vuoto). */
 function Foto({ p, classe, tondo }: { p?: ProdottoMenu; classe: string; tondo?: boolean }) {
-  if (p?.foto_url) return <img src={p.foto_url} alt="" className={classe} />;
+  const [rotta, setRotta] = useState<string | null>(null);
+  if (p?.foto_url && rotta !== p.foto_url) return <img src={p.foto_url} alt="" className={classe} onError={() => setRotta(p.foto_url)} />;
   // Senza foto: il bollino, non l'iniziale (il critico leggeva «CBurgeria», «SInsalate»).
   return (
     <div className={"t-manca" + (tondo ? " tondo" : "")} aria-hidden>

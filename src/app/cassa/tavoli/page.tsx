@@ -157,7 +157,7 @@ function Tavoli() {
             <section className="carta conto" onClick={(e) => e.stopPropagation()}>
               <header>
                 <strong className="num">Tavolo {conto.tavolo.numero}</strong>
-                <span className="muto">{conto.tavolo.coperti} coperti · {minutiDa(conto.tavolo.aperto_il)} min</span>
+                <span className="muto">{conto.tavolo.coperti} {conto.tavolo.coperti === 1 ? "coperto" : "coperti"} · {minutiDa(conto.tavolo.aperto_il)} min</span>
                 <button className="chiudi-conto" onClick={() => setConto(null)}>✕</button>
               </header>
               {padri.length === 0 ? (
@@ -179,9 +179,9 @@ function Tavoli() {
                     )),
                   ])}
                   {coperto > 0 && (
-                    <li key="coperto">
+                    <li key="coperto" className="coperto">
                       <span className="q">{conto.tavolo.coperti}×</span>
-                      <span className="d">Coperto</span>
+                      <span className="d">Coperto <small>{euro(conto.prezzoCoperto)} a persona</small></span>
                       <span className="p">{euro(coperto)}</span>
                     </li>
                   )}
