@@ -346,10 +346,10 @@ function Cassa() {
     q, giorno: giornoRoma(q),
     ordini: inUscita.filter((o) => quartoDi(o) === q).sort((a, b) => (a.ora_consegna ?? a.creato_il).localeCompare(b.ora_consegna ?? b.creato_il)),
   }));
+  // il giorno col suo nome e la data, sempre: dopo mezzanotte «domani» e «stasera» si confondono
   const etichettaGiorno = (g: string) => {
-    if (g === giornoRoma(adesso)) return "Stasera";
-    if (g === giornoRoma(adesso + 86_400_000)) return "Domani";
-    return new Date(g + "T12:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+    const nome = new Date(g + "T12:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+    return g === giornoRoma(adesso) ? `${nome} · serata in corso` : nome;
   };
   const preordiniVisti = ordini.filter((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o) && filtro !== "quarti");
   const [apertoQ, setApertoQ] = useState<string | null>(null);
@@ -371,7 +371,7 @@ function Cassa() {
       {ordini.length === 0 && !errore && (
         <p className="muto">Nessun ordine. Quando arriva, compare qui da solo.</p>
       )}
-      {ordini.some((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o)) && (
+      {preordiniVisti.length > 0 && (
         <details className="preordini" open>
           <summary>Preordini <small>{preordiniVisti.length} · si stampano da soli {ATTESA_MIN} minuti prima</small></summary>
           <div className="griglia">
