@@ -32,7 +32,7 @@ export const prodottoVuoto = (idCategoria: string | null): ProdottoScheda => ({
   aliquota_iva: 10, foto_url: null, attivo: true, visibile_app: true, visibile_web: true, visibile_totem: true,
 });
 
-// «8,50» e «8.50» valgono uguale; vuoto = nessun prezzo (per L2 e L3: vale quello d'asporto)
+// «8,50» e «8.50» valgono uguale; vuoto = nessun prezzo (L2 vuoto: come asporto; L3 vuoto: non va sulle piattaforme)
 const leggiEuro = (s: string): number | null => {
   const t = s.trim().replace(/\s|€/g, "").replace(",", ".");
   if (t === "") return null;
@@ -56,6 +56,7 @@ export default function SchedaProdotto({ iniziale, categorie, gruppi, onChiudi, 
   const [salvo, setSalvo] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
   const [fotoRotta, setFotoRotta] = useState(false);
+  const [confermaPrezzo, setConfermaPrezzo] = useState(false);
   const cambia = <K extends keyof ProdottoScheda>(k: K, v: ProdottoScheda[K]) => { setErrore(null); setP((x) => ({ ...x, [k]: v })); };
 
   async function salva() {
@@ -69,6 +70,9 @@ export default function SchedaProdotto({ iniziale, categorie, gruppi, onChiudi, 
     if (Number.isNaN(prezzo)) { setErrore("Il prezzo d'asporto non va: scrivilo come 8,50 (niente lettere né segno meno)."); return; }
     if (Number.isNaN(tavolo)) { setErrore("Il prezzo di sala non va: scrivilo come 8,50 o lascialo vuoto."); return; }
     if (Number.isNaN(piattaforme)) { setErrore("Il prezzo piattaforme non va: scrivilo come 8,50 o lascialo vuoto."); return; }
+    // critico giro 31-32: 0 € o un prezzo da bottiglia buona passano solo se lo si conferma
+    const strano = [prezzo, tavolo, piattaforme].some((x) => x != null && (x === 0 || x > 50));
+    if (strano && !confermaPrezzo) { setConfermaPrezzo(true); setErrore("Un prezzo è 0 € o sopra i 50 €: se è giusto, premi Salva di nuovo."); return; }
     setSalvo(true);
     const supabase = supabaseBrowser();
     // un codice già usato da un altro prodotto confonderebbe Deliverect (PLU doppio: ne tiene uno solo)
@@ -117,9 +121,9 @@ export default function SchedaProdotto({ iniziale, categorie, gruppi, onChiudi, 
 
         <fieldset className="me-prezzi">
           <legend>Prezzi</legend>
-          <label>Asporto, app, totem <small>(L1)</small><input inputMode="decimal" value={l1} onChange={(e) => setL1(e.target.value)} placeholder="8,50" /></label>
-          <label>Sala <small>(L2, vuoto = come asporto)</small><input inputMode="decimal" value={l2} onChange={(e) => setL2(e.target.value)} placeholder={l1 || "—"} /></label>
-          <label>Piattaforme <small>(L3: Glovo, Deliveroo, Just Eat)</small><input inputMode="decimal" value={l3} onChange={(e) => setL3(e.target.value)} placeholder="vuoto = non va" /></label>
+          <label>Asporto, app, totem <small>(L1)</small><input inputMode="decimal" value={l1} onChange={(e) => { setErrore(null); setConfermaPrezzo(false); setL1(e.target.value); }} placeholder="8,50" /></label>
+          <label>Sala <small>(L2, vuoto = come asporto)</small><input inputMode="decimal" value={l2} onChange={(e) => { setErrore(null); setConfermaPrezzo(false); setL2(e.target.value); }} placeholder={l1 || "—"} /></label>
+          <label>Piattaforme <small>(L3: Glovo, Deliveroo, Just Eat)</small><input inputMode="decimal" value={l3} onChange={(e) => { setErrore(null); setConfermaPrezzo(false); setL3(e.target.value); }} placeholder="vuoto = non va" /></label>
           <small className="muto">Sulle piattaforme va solo ciò che ha il prezzo L3 (e non sotto «In cassa» spento): per toglierlo da Glovo, svuota il prezzo piattaforme.</small>
         </fieldset>
 

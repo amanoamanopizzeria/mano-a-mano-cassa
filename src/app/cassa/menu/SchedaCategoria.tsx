@@ -10,21 +10,29 @@ export interface CategoriaCompleta {
   destinazione: "cucina" | "cassa" | "nessuna"; impegna_forno: boolean;
   visibile_app: boolean; visibile_web: boolean; visibile_totem: boolean;
 }
-export const categoriaVuota = (idGruppo: string | null): CategoriaCompleta => ({
-  nome: "", id_gruppo: idGruppo, ordine: 0, colore: null, destinazione: "cucina", impegna_forno: true,
-  visibile_app: true, visibile_web: true, visibile_totem: true,
-});
+/** Una categoria nuova prende stampa e forno dalle sorelle del suo gruppo: sotto Bar non nasce «pizza» (critico giro 32). */
+export const categoriaVuota = (idGruppo: string | null, sorelle: CategoriaCompleta[] = []): CategoriaCompleta => {
+  const modello = sorelle.find((c) => c.id_gruppo === idGruppo);
+  return {
+    nome: "", id_gruppo: idGruppo, ordine: 0, colore: null,
+    destinazione: modello?.destinazione ?? "cucina", impegna_forno: modello?.impegna_forno ?? true,
+    visibile_app: true, visibile_web: true, visibile_totem: true,
+  };
+};
 
 // i colori dei tasti della cassa 2Bit, più la terracotta del marchio
 const COLORI = ["#A3452F", "#C0392B", "#E67E22", "#D4A017", "#27AE60", "#16A085", "#2980B9", "#8E44AD", "#7F8C8D", "#5D4037"];
 
-export default function SchedaCategoria({ iniziale, gruppi, onChiudi, onSalvata }: {
+export default function SchedaCategoria({ iniziale, gruppi, tutte, onChiudi, onSalvata }: {
   iniziale: CategoriaCompleta;
+  tutte: CategoriaCompleta[];
   gruppi: { id: string; nome: string }[];
   onChiudi: () => void;
   onSalvata: (c: CategoriaCompleta & { id: string }) => void;
 }) {
   const nuova = !iniziale.id;
+  // i colori di oggi (quelli di Velocissimo) vengono prima: toccarne un altro non deve perdere il vecchio
+  const colori = [...new Set([iniziale.colore, ...tutte.map((x) => x.colore), ...COLORI].filter((x): x is string => !!x).map((x) => x.toLowerCase()))];
   const [c, setC] = useState<CategoriaCompleta>(iniziale);
   const [salvo, setSalvo] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
@@ -33,13 +41,20 @@ export default function SchedaCategoria({ iniziale, gruppi, onChiudi, onSalvata 
   async function salva() {
     const nome = c.nome.trim();
     if (!nome) { setErrore("Scrivi il nome della categoria."); return; }
-    if (!c.id_gruppo) { setErrore("Scegli il gruppo (Pizze, Cucina, Bere…)."); return; }
+    if (!c.id_gruppo) { setErrore("Scegli il gruppo (Pizze, Cucina, Bar…)."); return; }
     setSalvo(true);
     const supabase = supabaseBrowser();
     let ordine = c.ordine;
     if (nuova || c.id_gruppo !== iniziale.id_gruppo) {
-      const { data: ultima } = await supabase.from("categoria").select("ordine").order("ordine", { ascending: false }).limit(1);
-      ordine = ((ultima?.[0]?.ordine as number | undefined) ?? 0) + 1;
+      // subito dopo l'ultima del suo gruppo, e chi viene dopo scala di uno (prima finiva dopo «Menù»)
+      const delGruppo = tutte.filter((x) => x.id_gruppo === c.id_gruppo && x.id !== c.id);
+      const dopo = delGruppo.length ? Math.max(...delGruppo.map((x) => x.ordine)) : Math.max(0, ...tutte.map((x) => x.ordine));
+      ordine = dopo + 1;
+      const daScalare = tutte.filter((x) => x.id && x.id !== c.id && x.ordine >= ordine);
+      for (const x of daScalare.sort((a, b) => b.ordine - a.ordine)) {
+        const u = await supabase.from("categoria").update({ ordine: x.ordine + 1 }).eq("id", x.id!);
+        if (u.error) { setSalvo(false); setErrore("Non salvata: " + u.error.message); return; }
+      }
     }
     const riga = {
       nome, id_gruppo: c.id_gruppo, ordine, colore: c.colore, destinazione: c.destinazione, impegna_forno: c.impegna_forno,
@@ -70,9 +85,9 @@ export default function SchedaCategoria({ iniziale, gruppi, onChiudi, onSalvata 
         <fieldset className="me-dove">
           <legend>Colore del tasto in cassa</legend>
           <div className="me-colori">
-            {COLORI.map((col) => (
-              <button key={col} type="button" className={"me-colore" + (c.colore === col ? " scelto" : "")} style={{ background: col }}
-                aria-label={`Colore ${col}`} aria-pressed={c.colore === col} onClick={() => cambia("colore", col)} />
+            {colori.map((col) => (
+              <button key={col} type="button" className={"me-colore" + (c.colore?.toLowerCase() === col ? " scelto" : "")} style={{ background: col }}
+                aria-label={`Colore ${col}`} aria-pressed={c.colore?.toLowerCase() === col} onClick={() => cambia("colore", col)} />
             ))}
             <button type="button" className={"me-colore nessuno" + (!c.colore ? " scelto" : "")} aria-pressed={!c.colore} onClick={() => cambia("colore", null)}>nessuno</button>
           </div>

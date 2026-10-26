@@ -194,11 +194,21 @@ function Cassa() {
       const m = await leggiMenu();
       if (m.errore) return;
       setCategorie(m.categorie); setProdotti(m.prodotti); setVarianti(m.varianti); setGruppiCat(m.gruppi); setPacchetti(m.pacchetti);
+      setRiletto((n) => n + 1);
     };
     const giro = setInterval(rileggi, 120_000);
     document.addEventListener("visibilitychange", rileggi);
     return () => { clearInterval(giro); document.removeEventListener("visibilitychange", rileggi); };
   }, []);
+
+  // Critico giro 32: dopo una rilettura anche le righe già battute prendono il prezzo nuovo (non al primo
+  // caricamento: un ordine riaperto con «Modifica» tiene i suoi prezzi finché il menù non cambia).
+  const [riletto, setRiletto] = useState(0);
+  useEffect(() => {
+    if (riletto === 0) return;
+    setRighe((prev) => riprezzaRighe(prev, prodotti, tipo === "tavolo" ? "tavolo" : "asporto"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [riletto]);
 
   // Gli orari del giorno scelto (o di oggi), per i quarti d'ora offerti.
   useEffect(() => {

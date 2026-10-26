@@ -72,8 +72,26 @@ function Menu() {
   const [scheda, setScheda] = useState<ProdottoScheda | null>(null);
   const [salvato, setSalvato] = useState<string | null>(null);
   const [schedaCat, setSchedaCat] = useState<CategoriaCompleta | null>(null);
+  async function rileggiCategorie() {
+    const { data } = await supabaseBrowser().from("categoria").select("id, nome, id_gruppo, ordine, colore, destinazione, impegna_forno, visibile_app, visibile_web, visibile_totem").order("ordine");
+    if (data) setCategorie(data as Categoria[]);
+  }
+  // ↑ ↓: scambia il posto con la categoria accanto dello stesso gruppo (è l'ordine dei tasti in cassa e del menù online)
+  async function sposta(c: Categoria, verso: -1 | 1) {
+    const fila = categorie.filter((x) => x.id_gruppo === c.id_gruppo).sort((a, b) => a.ordine - b.ordine);
+    const i = fila.findIndex((x) => x.id === c.id);
+    const altra = fila[i + verso];
+    if (!altra) return;
+    const supabase = supabaseBrowser();
+    const a = c.ordine === altra.ordine ? altra.ordine + verso : altra.ordine;
+    const r1 = await supabase.from("categoria").update({ ordine: a }).eq("id", c.id);
+    const r2 = await supabase.from("categoria").update({ ordine: c.ordine }).eq("id", altra.id);
+    if (r1.error || r2.error) setErrore((r1.error ?? r2.error)!.message);
+    rileggiCategorie();
+  }
   function dopoCategoria(x: CategoriaCompleta & { id: string }) {
     setCategorie((cs) => (cs.some((y) => y.id === x.id) ? cs.map((y) => (y.id === x.id ? x : y)) : [...cs, x]).sort((a, b) => a.ordine - b.ordine));
+    rileggiCategorie(); // le altre possono essere scalate di uno
     setSchedaCat(null);
     setSalvato(`Categoria «${x.nome}» salvata.`);
     setTimeout(() => setSalvato(null), 8000);
@@ -106,7 +124,7 @@ function Menu() {
       {errore && <p className="m-errore">{errore}</p>}
       {salvato && <p className="me-salvato" role="status">{salvato}</p>}
       {!errore && gruppi.length === 0 && <p className="muto">Carico il menù…</p>}
-      {schedaCat && <SchedaCategoria iniziale={schedaCat} gruppi={gruppi} onChiudi={() => setSchedaCat(null)} onSalvata={dopoCategoria} />}
+      {schedaCat && <SchedaCategoria iniziale={schedaCat} gruppi={gruppi} tutte={categorie} onChiudi={() => setSchedaCat(null)} onSalvata={dopoCategoria} />}
       {scheda && (
         <SchedaProdotto iniziale={scheda} categorie={categorie} gruppi={gruppi} onChiudi={() => setScheda(null)} onSalvato={dopoSalvataggio} />
       )}
@@ -130,7 +148,7 @@ function Menu() {
 
       {gruppi.map((g) => (
         <section key={g.id} className="m-gruppo">
-          <div className="me-cat-testa"><h2>{g.nome}</h2><button type="button" className="me-aggiungi" onClick={() => setSchedaCat(categoriaVuota(g.id))}>+ categoria</button></div>
+          <div className="me-cat-testa"><h2>{g.nome}</h2><button type="button" className="me-aggiungi" onClick={() => setSchedaCat(categoriaVuota(g.id, categorie))}>+ categoria</button></div>
           <div className="m-categorie">
           {categorie.filter((c) => c.id_gruppo === g.id).map((c) => (
             <div key={c.id} id={`cat-${c.id}`} className="carta">
@@ -138,7 +156,11 @@ function Menu() {
                 <button type="button" className="cat me-nome-cat" onClick={() => setSchedaCat(c)} title="Cambia la categoria">
                   {c.colore && <span className="me-pallino" style={{ background: c.colore }} aria-hidden />}{c.nome}
                 </button>
-                <button type="button" className="me-aggiungi" onClick={() => setScheda(prodottoVuoto(c.id))}>+ prodotto</button>
+                <span className="me-cat-tasti">
+                  <button type="button" className="me-sposta" onClick={() => sposta(c, -1)} aria-label={`Sposta ${c.nome} prima`} title="Prima">↑</button>
+                  <button type="button" className="me-sposta" onClick={() => sposta(c, 1)} aria-label={`Sposta ${c.nome} dopo`} title="Dopo">↓</button>
+                  <button type="button" className="me-aggiungi" onClick={() => setScheda(prodottoVuoto(c.id))}>+ prodotto</button>
+                </span>
               </div>
               {(() => {
                 const della = prodotti.filter((p) => p.id_categoria === c.id);
