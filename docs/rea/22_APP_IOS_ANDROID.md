@@ -96,7 +96,33 @@ Cercati nel JavaScript della web-app (2,27 MB):
 | 4 | Chiedere a **WEBAPP SRL** il **trasferimento** di `it.webapp.amanoamanopugliese` al conto Play di Vi.Ru | Edoardo, solo quando l'app nostra è pronta | finché Velocissimo è il fornitore, chiederlo prima può rovinare il rapporto; se dicono no: app Android nuova, e i 500+ clienti Android la riscaricano (il coupon «Benvenuto da APP» c'è già come leva) |
 | 5 | Fare uscire l'iPhone **prima** di disdire Velocissimo (§22.2) | insieme | Apple approva in 1–3 giorni; conviene tenere un margine di settimane |
 
-## 22.7 In una riga
+## 22.7 La decisione di Edoardo (26/10/2026) e la strada per Android
+
+> «Non succede che lui la spegnerà: noi dovremo andare in parallelo finché non siamo sicuri di poter
+> prendere tutti gli ordini, e poi bloccheremo la loro… Avremo un aggiornamento da mandare su iOS e
+> questo già ce l'abbiamo. Il problema sarà su Google, che è pubblicata a loro nome.»
+
+- **Il taglio lo decidiamo noi**, dopo il parallelo. Il tasto di spegnimento (§22.2) resta un rischio,
+  ma non è lo scenario previsto.
+- **iPhone**: l'app nostra esce come versione 2.0.0 di id6453763774. Non è proprio istantanea, perché
+  la revisione di Apple dura di solito 1–3 giorni. Si manda in revisione prima, e si pubblica a mano
+  il giorno del taglio («rilascio manuale» in App Store Connect).
+- **Android, senza contare sul trasferimento**: app nuova nel conto Google di Vi.Ru, con un
+  identificativo nostro. Va preparata e approvata **prima** del taglio. Poi si portano i clienti
+  Android a scaricarla mentre la vecchia funziona ancora: avviso nell'ordine, QR in negozio e sui
+  cartoni, messaggio ai clienti col consenso, coupon di benvenuto. Il giorno del taglio, chi è
+  rimasto sulla vecchia trova Velocissimo spento.
+- **Il centralino** fa parte dell'abbonamento Velocissimo (400–500 € al mese per tutti i servizi):
+  va rifatto anche quello prima del taglio. Oggi da noi c'è già la scheda che si apre da sola con
+  chi chiama (`/api/telefono/chiamata`): manca il centralino vero.
+
+**Il guscio c'è già** (26/10): `app-mobile/` (Capacitor 7, stesso identificativo, versione 2.0.0,
+apre `/ordina`, e senza rete mostra il telefono della pizzeria). Il giro GitHub «App Android
+(prova)» costruisce l'APK di prova, che si installa accanto all'app di oggi (suffisso `.prova`).
+Per l'iPhone serve un Mac con Xcode, oppure un giro GitHub su macOS, e i certificati del conto
+Vi.Ru.
+
+## 22.8 In una riga
 
 L'iPhone è già di Vi.Ru e si può aggiornare con un'app nostra. L'Android è di Velocissimo e va
 trasferito, oppure rifatto. Velocissimo può oscurarle tutte e due, quindi le nostre vanno pronte
