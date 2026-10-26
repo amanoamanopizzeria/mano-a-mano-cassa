@@ -92,3 +92,30 @@ report clienti (li fa mano-a-mano-os), form del sito, moduli Velocissimo non att
 Per tutti e tre la lettura da Velocissimo è in sola lettura. La scrittura nella cassa passa da una
 migrazione nuova e dalla funzione d'import già esistente (`importa_clienti_velocissimo`, mig. 0049),
 con un controllo dopo: somma dei punti e numero di card uguali da una parte e dall'altra.
+
+## 8. Le differenze di card e punti, spiegate (26/10/2026)
+
+Tre letture, tre numeri: l'appoggio (letto da `/customer` il 25/10 verso le 01:36) dice 37.908 punti,
+l'export di Edoardo («export 28», 26/10) 37.798, il back-office letto dal Mac 37.889.
+
+- **I punti si muovono ogni sera.** Nell'export, 19 clienti hanno usato la card **il 25/10** (1.502
+  punti in tutto sui loro saldi), 25 il 24/10 e 13 il 23/10. L'appoggio era stato letto prima del
+  servizio del 25/10: quei 19 saldi lì sono di prima, e un premio riscattato fa scendere il totale.
+  Tre letture fatte in tre momenti non possono coincidere.
+- **Le card nell'export sono 1.558 «FIDELITY CARD»**, tutte con numero diverso, più una riga
+  «cardgenerica». Il back-office ne contava 1.576–1.578: la ventina di differenza non si spiega senza
+  la lista del back-office card per card (la sessione del Mac è chiusa).
+
+**Regola che ne esce:** il passaggio si fa da **una sola fotografia**, l'export clienti di Velocissimo
+scaricato a servizio finito, la sera prima del passaggio. Da quella si caricano clienti, card, saldo
+punti e consensi (l'appoggio letto da `/customer` non ha le card e resta solo come controllo). Dopo il
+caricamento si confrontano somma dei punti e numero di card con lo stesso file: devono coincidere al
+punto e alla card.
+
+## 9. Fatto il 26/10/2026
+
+- Regola dei punti nella cassa (mig. 0065): 1 punto ogni 5 € pagati, IVA compresa, consegna esclusa,
+  coperti compresi. Provata in una transazione annullata.
+- Coperto 1,50 € a persona nel conto del tavolo (mig. 0065).
+- Zone di prova «Centro» e «Periferia»: già spente (`attiva = false`), non si offrono ai clienti.
+- Blocco dei ruoli (mig. 0063): nessuno può darsi un ruolo da solo. Provato.
