@@ -46,13 +46,13 @@ function contoAllaRovescia(o: { ora_consegna?: string | null; creato_il: string;
   return min >= 0 ? { testo: `fra ${min} min`, ritardo: false } : { testo: `in ritardo di ${-min} min`, ritardo: true };
 }
 // la consegna col rider: la carta dice chi ce l'ha (critico giro 23)
-const SELECT_ORDINE = "*, cliente(nome, telefono, note), indirizzo(via, civico, note), zona(nome), tavolo(numero), consegna(stato, rider(nome))";
+const SELECT_ORDINE = "*, cliente(nome, telefono, note), indirizzo(via, civico, note, lat, lng), zona(nome), tavolo(numero), consegna(stato, id_rider, ritirata_il, in_viaggio_il, rider(nome))";
 type OrdineCassa = Ordine & {
-  consegna?: { stato: string; rider: { nome: string } | null }[] | null;
+  consegna?: { stato: string; id_rider?: string | null; ritirata_il?: string | null; in_viaggio_il?: string | null; rider: { nome: string } | null }[] | null;
   pronto_il?: string | null;
   nome_cliente?: string | null; pagamento?: "contanti" | "pos" | null; paga_con?: number | null;
   cliente?: { nome: string | null; telefono: string | null; note: string | null } | null;
-  indirizzo?: { via: string; civico: string | null; note?: string | null } | null;
+  indirizzo?: { via: string; civico: string | null; note?: string | null; lat?: number | null; lng?: number | null } | null;
   zona?: { nome: string } | null; costo_consegna?: number | null;
   tavolo?: { numero: string } | null; sconto?: number | null; modificato_il?: string | null;
 };
@@ -338,9 +338,15 @@ function Cassa() {
     ? quartoDi(o) + (o.tipo === "domicilio" ? 30 : 0) * 60_000
     : new Date(o.creato_il).getTime() + ATTESA_MIN * 60_000;
   const inUscita = ordini.filter((o) =>
-    o.tipo !== "tavolo" && ["ricevuto", "in_preparazione", "pronto", "in_consegna"].includes(o.stato)
+    o.tipo !== "tavolo" && ["ricevuto", "in_preparazione", "pronto"].includes(o.stato)
+    && !["assegnata", "ritirata"].includes(o.consegna?.[0]?.stato ?? "")
     && (diStasera(o, adesso) || quartoDi(o) >= inizioSerata(adesso)));
   const quartoAdesso = Math.floor(adesso / 900_000) * 900_000;
+  // In consegna (Edoardo 26/10): appena un rider la prende esce dalle righe e sta qui, con chi la porta, dov'è e
+  // fra quanto arriva, così se il cliente chiama si sa rispondere. Consegnata, va fra i Chiusi.
+  const inConsegna = ordini.filter((o) => o.tipo === "domicilio" && o.stato !== "annullato" && o.stato !== "consegnato"
+    && (o.stato === "in_consegna" || ["assegnata", "ritirata"].includes(o.consegna?.[0]?.stato ?? "")))
+    .sort((a, b) => (a.ora_consegna ?? a.creato_il).localeCompare(b.ora_consegna ?? b.creato_il));
   const giornoRoma = (t: number) => new Date(t - 6 * 3_600_000).toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
   const righeQuarti = [...new Set(inUscita.map(quartoDi))].sort((a, b) => a - b).map((q) => ({
     q, giorno: giornoRoma(q),
@@ -352,6 +358,35 @@ function Cassa() {
     return g === giornoRoma(adesso) ? `${nome} · serata in corso` : nome;
   };
   const preordiniVisti = ordini.filter((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o) && filtro !== "quarti");
+  const [riderPos, setRiderPos] = useState<Map<string, { lat: number; lng: number; il: string }>>(new Map());
+  useEffect(() => {
+    if (inConsegna.length === 0) return;
+    let vivo = true;
+    const leggi = async () => {
+      const { data } = await supabaseBrowser().rpc("rider_in_mappa");
+      if (!vivo) return;
+      const m = new Map<string, { lat: number; lng: number; il: string }>();
+      for (const r of (data ?? []) as { id: string; lat: number | null; lng: number | null; aggiornata_il: string | null }[]) {
+        if (r.lat != null && r.lng != null && r.aggiornata_il) m.set(r.id, { lat: r.lat, lng: r.lng, il: r.aggiornata_il });
+      }
+      setRiderPos(m);
+    };
+    leggi();
+    const t = setInterval(leggi, 15_000);
+    return () => { vivo = false; clearInterval(t); };
+  }, [inConsegna.length]);
+  /** «arriva fra 6 min (19:42)» dalla posizione del rider; senza posizione fresca si dice e basta. */
+  const arrivo = (o: OrdineCassa) => {
+    const k = o.consegna?.[0];
+    if (!k || k.stato === "assegnata") return { testo: "deve ancora partire dalla pizzeria", pos: null as string | null };
+    const p = k.id_rider ? riderPos.get(k.id_rider) : undefined;
+    const fresca = p && adesso - new Date(p.il).getTime() < 3 * 60_000;
+    const quando = p ? `posizione ${Math.max(0, Math.round((adesso - new Date(p.il).getTime()) / 60_000))} min fa` : "nessuna posizione dal rider";
+    if (!fresca || o.indirizzo?.lat == null || o.indirizzo?.lng == null) return { testo: "in viaggio", pos: quando };
+    // linea d'aria × 1,4 a 22 km/h, più 2 minuti per parcheggiare (la stessa stima della mappa)
+    const min = Math.round(Math.hypot((p!.lat - o.indirizzo.lat) * 111, (p!.lng - o.indirizzo.lng) * 83) * 1.4 / 22 * 60 + 2);
+    return { testo: `arriva fra ${min} min (verso le ${oraDi(new Date(adesso + min * 60_000).toISOString())})`, pos: quando };
+  };
   const [apertoQ, setApertoQ] = useState<string | null>(null);
 
   return (
@@ -411,12 +446,34 @@ function Cassa() {
           Critico giro 16: a 390 la pagina era 19,6 schermate con gli ordini di ieri «in ritardo di 930 min»: in griglia solo stasera. */}
       <div className="lo-filtri" role="tablist">
         {(Object.keys(FILTRI) as (keyof typeof FILTRI)[]).map((k) => {
-          const n = k === "quarti" ? inUscita.length : ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && diStasera(o, adesso) && (FILTRI[k].s as readonly string[]).includes(o.stato)).length;
+          const n = k === "quarti" ? inUscita.length + inConsegna.length : ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && diStasera(o, adesso) && (FILTRI[k].s as readonly string[]).includes(o.stato)).length;
           return <button key={k} role="tab" aria-selected={filtro === k} className={"lo-filtro" + (filtro === k ? " attivo" : "")} onClick={() => setFiltro(k)}>{FILTRI[k].t} <b>{n}</b></button>;
         })}
       </div>
       {ordini.some((o) => !diStasera(o, adesso) && !ePreordine(o, adesso)) && (
         <button className="vecchi" onClick={() => setVecchiAperti((v) => !v)}>{vecchiAperti ? "Nascondi ieri e prima" : `Ieri e prima (${ordini.filter((o) => !diStasera(o, adesso) && !ePreordine(o, adesso)).length})`}</button>
+      )}
+      {filtro === "quarti" && inConsegna.length > 0 && (
+        <section className="lo-consegna" aria-label="In consegna">
+          <h2 className="lo-giorno">In consegna ({inConsegna.length}) <a href="/cassa/mappa" className="lo-mappa">Mappa dei rider ↗</a></h2>
+          <div className="lo-quarto-fila">
+            {inConsegna.map((o) => {
+              const a = arrivo(o);
+              const ritardo = o.ora_consegna ? Math.round((adesso - (quartoDi(o) + 30 * 60_000)) / 60_000) : 0;
+              return (
+                <button key={o.id} className={"lo-pillola in_consegna" + (ritardo > 0 ? " ritardo" : "") + (apertoQ === o.id ? " scelta" : "")} onClick={() => setApertoQ((x) => (x === o.id ? null : o.id))}>
+                  <span className="lo-p-testa"><b>{o.numero_visibile ?? `#${o.numero}`}</b><em>{o.consegna?.[0]?.rider?.nome ?? "rider ?"}</em></span>
+                  <span className="lo-p-chi">{o.cliente?.nome ?? o.nome_cliente ?? "—"}{o.cliente?.telefono && <small> · {o.cliente.telefono}</small>}</span>
+                  <span className="lo-p-via">{o.indirizzo ? `${o.indirizzo.via} ${o.indirizzo.civico ?? ""}` : "—"}</span>
+                  <span className="lo-p-arrivo"><b>{a.testo}</b></span>
+                  {a.pos && <span className="lo-p-rider">{a.pos}</span>}
+                  <span className="lo-p-tot">{euro(o.totale)}{ritardo > 0 ? <> · <b>in ritardo di {ritardo} min</b></> : o.ora_consegna ? ` · entro le ${oraDi(new Date(quartoDi(o) + 30 * 60_000).toISOString())}` : ""}</span>
+                </button>
+              );
+            })}
+          </div>
+          {(() => { const x = inConsegna.find((o) => o.id === apertoQ); return x ? <div className="lo-quarto-carta">{carta(x)}</div> : null; })()}
+        </section>
       )}
       {filtro === "quarti" && (
         <div className="lo-quarti">

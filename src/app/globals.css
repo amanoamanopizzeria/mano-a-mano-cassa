@@ -1051,3 +1051,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .r-serata-numeri b { font-size: 22px; color: #1a1715; font-variant-numeric: tabular-nums; }
 .r-installa { padding: 10px 12px; font-size: 15px; }
 .r-installa button { width: 100%; min-height: 48px; }
+
+.lo-consegna { margin-bottom: 8px; padding: 8px; border-radius: 12px; background: #eef3fb; border: 1px solid #c9d8ef; }
+.lo-consegna .lo-giorno { margin-top: 0; display: flex; justify-content: space-between; align-items: baseline; }
+.lo-mappa { font-family: "Figtree", sans-serif; text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--vino, #8a1538); }
+.lo-consegna .lo-pillola { flex-basis: 230px; background: #fff; }
+.lo-p-arrivo b { color: #1a4f9c; }
