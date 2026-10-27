@@ -100,6 +100,7 @@ Quelle nuove, in fondo alla 18 (che resta valida):
 - **D22.** La porta 9000 è davvero aperta dal router verso Internet? Se sì, possiamo chiuderla quando il cloud non serve più, oppure prima?
 - **D23.** Chi aggiorna il registro IP del cloud, visto che l'attività `ping-executer` è disabilitata e l'IP non è cambiato dal 2023?
 - **D24.** Il .19 sembra un telefono o una base Gigaset. Sai se c'è una base Gigaset in negozio e se è collegata alla rete? E il cavo telefonico del modem USB (quello che riconosce il numero) va al Cisco, alla base Gigaset o a una presa diretta?
+- **Catena telefonica (Edoardo, 27/10, 01:36Z):** due linee analogiche con trasferimento di chiamata verso il digitale; le chiamate suonano sul telefono Gigaset (il .19 in LAN) e arrivano al Cisco; dal Cisco una linea telefonica analogica va al modem USB U.S. Robotics, che legge il numero per il 2Bit.
 - **D26.** Il riconoscimento del numero passa dal modem USB U.S. Robotics su COM4, che il 2Bit legge via TAPI. È un modem telefonico analogico: riceve la linea con cavo RJ11 dal centralino o dal router. Nel 2Bit non c'è nessuna configurazione VoIP. Da dove esce quella linea è la domanda che decide come sostituire il riconoscimento (vedi REA 21 §5).
 - **D25.** Il totem è acceso in negozio? Non ci sono suoi ordini nel 2Bit negli ultimi 30 giorni: o non si usa, o invia gli ordini in un altro modo.
 
