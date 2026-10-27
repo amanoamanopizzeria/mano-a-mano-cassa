@@ -1,4 +1,4 @@
-# REA 28 · Cosa manca rispetto al 2Bit, dopo la lettura del PC di cassa (27/10/2026)
+# REA 29 · Cosa manca rispetto al 2Bit, dopo la lettura del PC di cassa (27/10/2026)
 
 *Domanda di Edoardo (27/10, 01:19Z): «adesso che hai accesso al PC e controlli le stampanti, fai un'altra analisi stracompleta per capire cosa ci manca di tutte le cose loro».*
 
