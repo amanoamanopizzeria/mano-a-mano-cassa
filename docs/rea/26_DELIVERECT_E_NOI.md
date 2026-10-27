@@ -255,3 +255,41 @@ col menù tutto acceso.
   resources.developers.deliverect.com/en/articles/13628895-pos-integration-overview ·
   discuss/69b02ab5ffc8d35285e0913f · discuss/694580ed3a090894d8c3e929 ·
   deliverect.com/en-ca/pricing.
+
+## 26.8 Cosa è pronto nel codice (27/10/2026, notte)
+
+Edoardo (01:19Z): «continua a fare REA e sviluppare tutto quello che serve con Deliverect, ci devo
+parlare». Le domande per la chiamata sono nella `28`. Tutto quello che segue è **spento**: senza le chiavi
+su Vercel non riceve e non chiama nessuno. Nessun cambio al database applicato.
+
+| Pezzo | Dove | Si accende con |
+|---|---|---|
+| Ricevitore delle **copie** (Reporting Webhooks): salva il messaggio così com'è, non crea ordini, non stampa, non manda stati | `src/app/api/deliverect/copia/route.ts` | `DELIVERECT_COPIA_SECRET` + la tabella `supabase/da_decidere/deliverect_copie.sql` (da approvare) |
+| **Client API** per quando saremo il POS: accesso OAuth, stato dell'ordine, occupato (busy mode), esaurito (snooze per PLU) | `src/lib/deliverect/api.ts` | `DELIVERECT_CLIENT_ID`, `DELIVERECT_CLIENT_SECRET` (staging di base; `DELIVERECT_BASE` per la produzione) |
+| **Ricevitore POS** rivisto | `src/app/api/deliverect/ordine/route.ts` | `DELIVERECT_WEBHOOK_SECRET`, `DELIVERECT_ID_NEGOZIO` |
+
+Cosa è cambiato nel ricevitore POS, dalla documentazione letta il 27/10:
+- **non risponde più 422 né 409** a un ordine pagato: un canale che non conosciamo entra lo stesso
+  (segnato Glovo, la nota lo dice), così come un PLU sconosciuto e un quarto pieno (0073);
+- i canali: Deliveroo **2** e Just Eat **9** dall'esempio di `/allChannels`; **Glovo non è nella
+  documentazione pubblica**: si legge in staging e si scrive in `DELIVERECT_CANALI`;
+- l'**orario**: prima ogni ordine entrava nel quarto d'ora di «adesso»; ora in quello di `pickupTime`
+  (sempre presente, UTC), così un Glovo programmato per le 21 occupa il quarto delle 21;
+- gli **annulli** (status 100, stesso `_id`): l'ordine diventa annullato con la nota «ANNULLATO DALLA
+  PIATTAFORMA» e, se il client è acceso, parte il 110;
+- lo stato **20 (accettato)** parte dopo la risposta, solo col client acceso.
+
+Fatti della documentazione che servono dopo:
+- **firma:** `X-Server-Authorization-HMAC-SHA256`, esadecimale, sul corpo così com'è; le Reporting Webhooks hanno
+  la stessa intestazione;
+- **Reporting Webhooks:** un solo tentativo, 20 s, mai ripetute;
+- **ordini:** Deliverect ritenta solo se non si collega in 3 s o riceve 502/503/504, 5 volte;
+- **certificazione:** la lista non è pubblica.
+
+Resta da fare, prima della certificazione:
+- la **stampa dell'annullo** in cucina: oggi la cassa lo vede, la cucina no;
+- lo **stato 90** quando il rider della piattaforma ritira;
+- l'**occupato legato ai quarti pieni** e l'**esaurito di stasera** verso lo snooze (il client c'è,
+  manca chi lo chiama);
+- il **Register POS** (`ordersWebhookURL`, `syncProductsURL`);
+- il **sync del menù** dall'anteprima di `menu.ts`.
