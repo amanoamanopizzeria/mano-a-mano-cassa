@@ -1279,3 +1279,25 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .riepilogo .r-cont input { flex: 1 1 140px; min-height: 44px; padding: 0 12px; border: 1px solid var(--bordo); border-radius: 10px; font: inherit; font-size: 16px; }
 .riepilogo .r-cont button { min-height: 44px; padding: 0 16px; border: 0; border-radius: 10px; background: var(--vino); color: #fff; font: inherit; font-size: 15px; }
 .riepilogo .r-cont button:disabled { opacity: .4; }
+
+/* /cassa/nuovo: la colonna dei quarti d'ora resta aperta accanto all'ordine (Edoardo, 26/10/2026) */
+.cassa-nuovo > .cc-colonna.in-ordine { width: 230px; flex: none; position: static; height: auto; max-height: 100dvh; }
+.cc-colonna.in-ordine .cc-riga { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: default; }
+.cc-colonna.in-ordine button.cc-riga { cursor: pointer; min-height: 44px; }
+.cc-colonna.in-ordine button.cc-riga:hover { background: var(--vino-chiaro, #f6e6ea); }
+.cc-colonna.in-ordine .cc-riga.scelta { background: var(--vino, #8a1538); color: #fff; }
+.cc-colonna.in-ordine .cc-riga.scelta .cc-cella { color: #fff; }
+@media (max-width: 1024px) { .cassa-nuovo > .cc-colonna.in-ordine { width: 190px; } }
+@media (max-width: 900px) {
+  .cassa-nuovo > .cc-colonna.in-ordine { border-right: 1px solid var(--oro-chiaro, #e8d5b0); border-bottom: 0; overflow-y: auto; }
+  .cc-colonna.in-ordine .cc-fasce { flex-direction: column; overflow-x: visible; }
+  .cc-colonna.in-ordine .cc-fasce .cc-intesta { display: grid; }
+  .cc-colonna.in-ordine .cc-fasce .cc-riga { grid-template-columns: 48px 1fr 1fr; min-width: 0; }
+}
+@media (max-width: 760px) {
+  .cc-colonna.in-ordine .cc-fasce .cc-intesta { display: none; }
+  .cassa-nuovo > .cc-colonna.in-ordine { width: 112px; padding: 6px 4px; border-right: 1px solid var(--oro-chiaro, #e8d5b0); border-bottom: 0; }
+  .cc-colonna.in-ordine .cc-chiamata, .cc-colonna.in-ordine .cc-serata { display: none; }
+  .cc-colonna.in-ordine .cc-fasce { display: flex; flex-direction: column; overflow: visible; }
+  .cc-colonna.in-ordine .cc-fasce .cc-riga { grid-template-columns: 1fr; min-width: 0; gap: 0; padding: 4px; }
+}

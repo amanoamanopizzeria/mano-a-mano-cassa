@@ -16,6 +16,7 @@ import {
 } from "@/lib/menu";
 import type { Variazione } from "@/lib/types";
 import MiniMappa from "@/components/MiniMappa";
+import ColonnaCassa from "../ColonnaCassa";
 
 interface Tavolo { id: string; numero: string; stato: string }
 type Tipo = "banco" | "tavolo" | "ritiro" | "domicilio";
@@ -301,20 +302,22 @@ function Cassa() {
   const VICINA_MIN = 5;   // per strada: entro 5 minuti di motorino è una doppia
 
   const orarioTipo = orari.find((o) => o.tipo === (tipo === "domicilio" || tipo === "ritiro" ? tipo : "apertura")) ?? null;
-  const quartiScelta = useMemo(() => {
+  const quartiDel = (g: string) => {
     if (!orarioTipo) return [] as string[];
     const out: string[] = [];
     const [h1, m1] = orarioTipo.dalle.split(":").map(Number);
     const [h2, m2] = orarioTipo.alle.split(":").map(Number);
     const adesso = new Date();
-    const g = giorno || oggiISO();
     for (let t = h1 * 60 + m1; t <= h2 * 60 + m2; t += 15) {
       const hh = String(Math.floor(t / 60)).padStart(2, "0"), mm = String(t % 60).padStart(2, "0");
       if (g === oggiISO() && t < adesso.getHours() * 60 + adesso.getMinutes() + 15) continue;   // attesa minima 15 min
       out.push(`${hh}:${mm}`);
     }
     return out;
-  }, [orarioTipo, giorno]);
+  };
+  const quartiScelta = useMemo(() => quartiDel(giorno || oggiISO()), [orarioTipo, giorno]); // eslint-disable-line react-hooks/exhaustive-deps
+  // la colonna a sinistra mostra la serata di oggi: un tocco là vale per oggi, qualunque giorno sia scelto qui
+  const quartiOggi = useMemo(() => quartiDel(oggiISO()), [orarioTipo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const listino = tipo === "tavolo" ? "tavolo" : "asporto";
   const catCorrente = categorie.find((c) => c.id === categoria);
@@ -536,6 +539,14 @@ function Cassa() {
 
   return (
     <div className="schermo cassa-nuovo">
+      {/* ===== La colonna dei quarti d'ora, sempre aperta mentre si prende l'ordine (Edoardo 26/10) ===== */}
+      <ColonnaCassa inOrdine={{
+        ora: giorno === oggiISO() ? ora || null : null,
+        scegli: tipo === "ritiro" || tipo === "domicilio" ? (q) => {
+          if (!quartiOggi.includes(q)) { setErrore(`Alle ${q} ${tipo === "ritiro" ? "non si ritira" : "non si consegna"}: scegli un altro quarto d'ora.`); return; }
+          setGiorno(oggiISO()); setOra(q); setErrore(null);
+        } : undefined,
+      }} />
       {/* ===== Sinistra: categorie e tessere (giro 18 del grafico: le classi stanno in globals.css,
           il colore della categoria resta un dato e viaggia nella variabile --riga) ===== */}
       <div className="cn-sinistra">

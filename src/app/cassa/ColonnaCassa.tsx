@@ -23,7 +23,12 @@ const oraDi = (iso: string) => new Date(iso).toLocaleTimeString("it-IT", { hour:
 type Reparto = "produzione" | "consegne";
 interface Chiamata { numero: string; ricevuta_il: string; gestita: boolean }
 
-export default function ColonnaCassa() {
+// Dentro l'ordine (Edoardo, 26/10/2026: «quando prendi l'ordine devi avere comunque la barra a sinistra sempre
+// aperta per sapere dove inserirlo») la stessa colonna resta accanto alla comanda: senza «+ Nuovo ordine», e
+// per asporto e domicilio un tocco sul quarto d'ora lo mette nell'ordine.
+export interface ColonnaInOrdine { ora: string | null; scegli?: (ora: string) => void }
+
+export default function ColonnaCassa({ inOrdine }: { inOrdine?: ColonnaInOrdine } = {}) {
   const [fasce, setFasce] = useState<CapacitaFascia[]>([]);
   const [chiamata, setChiamata] = useState<Chiamata | null>(null);
   const [adesso, setAdesso] = useState(adessoRoma());
@@ -96,8 +101,8 @@ export default function ColonnaCassa() {
   }
 
   return (
-    <aside className="cc-colonna">
-      <a href="/cassa/nuovo" className="cc-nuovo">+ Nuovo ordine</a>
+    <aside className={"cc-colonna" + (inOrdine ? " in-ordine" : "")}>
+      {!inOrdine && <a href="/cassa/nuovo" className="cc-nuovo">+ Nuovo ordine</a>}
       <div className={"cc-chiamata" + (chiamata ? " squilla" : "")}>
         {chiamata ? (
           <>
@@ -137,13 +142,19 @@ export default function ColonnaCassa() {
         {vista.map((f) => {
           const pienaP = f.bloccata_produzione || f.pizze_occupate >= f.pizze_max;
           const pienaC = f.bloccata_consegne || f.consegne_occupate >= f.consegne_max;
-          return (
-            <a href="/cassa/fasce" key={f.ora} className={"cc-riga" + (f.ora === corrente ? " adesso" : "")}>
+          const classe = "cc-riga" + (f.ora === corrente ? " adesso" : "") + (inOrdine?.ora === f.ora.slice(0, 5) ? " scelta" : "");
+          const celle = (
+            <>
               <span className="cc-ora">{f.ora.slice(0, 5)}</span>
               <span className={"cc-cella" + (pienaP ? " piena" : f.pizze_occupate > 0 ? " usata" : "")}>{f.bloccata_produzione ? "chiusa" : `${f.pizze_occupate}/${f.pizze_max}`}</span>
               <span className={"cc-cella" + (pienaC ? " piena" : f.consegne_occupate > 0 ? " usata" : "")}>{f.bloccata_consegne ? "chiusa" : `${f.consegne_occupate}/${f.consegne_max}`}</span>
-            </a>
+            </>
           );
+          if (!inOrdine) return <a href="/cassa/fasce" key={f.ora} className={classe}>{celle}</a>;
+          // nell'ordine la riga non porta via dalla comanda: si sceglie l'ora, o si guarda e basta (banco, tavolo)
+          return inOrdine.scegli
+            ? <button type="button" key={f.ora} className={classe} onClick={() => inOrdine.scegli?.(f.ora.slice(0, 5))} aria-pressed={inOrdine.ora === f.ora.slice(0, 5)}>{celle}</button>
+            : <div key={f.ora} className={classe}>{celle}</div>;
         })}
       </div>
     </aside>
