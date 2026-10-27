@@ -77,7 +77,7 @@ Non sono funzioni da copiare. Sono cose da sapere prima di toccare il PC, e cose
 | PIZZERIA (comanda) | 192.168.1.12:9100 | ESC/POS raw (TM-88), MAC 00-30-B8-2C-B1-00 | pietanze del centro Pizzeria (CDP 3) | IP da mettere in `stampante`, al posto del .50 finto nel `config.esempio.json` |
 | Fiscale FP-81 II RT | 192.168.1.200:9100 | protocollo Epson LAN (`fpmate.cgi` sulla porta web, da verificare) | scontrini | Protocollo da confermare con un test in negozio, con la stampante in stato RT leggibile |
 | ASP (comanda d'asporto, fatture, preconti) | USB `ESDPRT001` (TM-T88V), driver Windows «ASP» | driver Epson Windows (non ESC/POS di rete) | comanda completa dell'asporto (CDP 2), fatture, preconti | Non è in rete: l'agente di stampa la raggiunge solo dal PC in cassa, oppure va collegata in rete. Da decidere (D20). |
-| Porte orfane | 192.168.1.19:9100 (risponde al ping, MAC 58-9E-C6-68-A8-E5, nessun nome DNS, non in nessuna configurazione del 2Bit), 192.168.1.20:9100 (non risponde) | — | nessuna | Confermato da Edoardo (27/10, 01:29Z) che le stampanti sono tre: il .19 **non è una stampante**. Probabilmente è un altro apparecchio di rete (modem, router, telefono o altro). Da identificare dal router o dall'etichetta (D24) |
+| Porte orfane | 192.168.1.19:9100 (risponde al ping, MAC 58-9E-C6-68-A8-E5, nessun nome DNS, non in nessuna configurazione del 2Bit), 192.168.1.20:9100 (non risponde) | — | nessuna | Confermato da Edoardo (27/10, 01:29Z) che le stampanti sono tre: il .19 **non è una stampante**. Lettura passiva del PC (27/10, 01:40Z): quasi certamente un apparecchio **Gigaset** (telefono o base DECT con rete), secondo il prefisso MAC 58-9E-C6 registrato a Gigaset. Questa identificazione viene da una sola fonte online e non è incrociata. Nessun nome NetBIOS, nessuna connessione TCP né SIP verso il .19, e il PC non ha la porta RAW usata. Il .19 non è coinvolto nel 2Bit (Da verificare sul router o sulla base in negozio, D24) |
 | Brother QL-810W | WSD | — | etichette | Fuori dal primo passaggio (voce 19 del REA 21) |
 
 Il ping del PC mostra la fiscale e la PIZZERIA raggiungibili. Il PC non ha stampato nulla, quindi **non sappiamo ancora se la fiscale risponde al protocollo dei comandi**: va provato con il test già previsto nel REA 21, da fare in negozio.
@@ -99,7 +99,8 @@ Quelle nuove, in fondo alla 18 (che resta valida):
 - **D21.** Le 10.000 tessere in `tabFidelity_Tessere` sono clienti reali? Il cloud ne ha 1.578. Prima di importare vogliamo sapere quali sono valide.
 - **D22.** La porta 9000 è davvero aperta dal router verso Internet? Se sì, possiamo chiuderla quando il cloud non serve più, oppure prima?
 - **D23.** Chi aggiorna il registro IP del cloud, visto che l'attività `ping-executer` è disabilitata e l'IP non è cambiato dal 2023?
-- **D24.** Sai cos'è il dispositivo su 192.168.1.19? Risponde al ping, non è configurato nel 2Bit e non è una stampante. Il router o l'etichetta dell'apparecchio dovrebbero dirlo.
+- **D24.** Il .19 sembra un telefono o una base Gigaset. Sai se c'è una base Gigaset in negozio e se è collegata alla rete? E il cavo telefonico del modem USB (quello che riconosce il numero) va al Cisco, alla base Gigaset o a una presa diretta?
+- **D26.** Il riconoscimento del numero passa dal modem USB U.S. Robotics su COM4, che il 2Bit legge via TAPI. Nel 2Bit non c'è nessuna configurazione VoIP. Quindi la linea del modem è analogica. Da dove esce quella linea è la domanda che decide come sostituire il riconoscimento (vedi REA 21 §5).
 - **D25.** Il totem è acceso in negozio? Non ci sono suoi ordini nel 2Bit negli ultimi 30 giorni: o non si usa, o invia gli ordini in un altro modo.
 
 ## 7. Letture da fare sul PC (seconda passata, sola lettura)
