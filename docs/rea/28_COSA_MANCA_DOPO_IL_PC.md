@@ -10,7 +10,7 @@ Questo capitolo **aggiorna** il REA 21 (26/10, 143 voci) con quello che si vede 
 
 ## 0. In breve
 
-- **Tre cose del REA 21 vanno corrette con il PC.** (1) Le comande non vanno su due stampanti per reparto: vanno tutte su una sola, la PIZZERIA. (2) La fiscale è un Epson FP-81 II RT in LAN, non una Ditron. (3) Il database 2Bit si chiama `DD_AMANOAMANOPUGLIESE`, non `DD_DATABASE`.
+- **Tre cose del REA 21 vanno corrette con il PC.** (1) Le comande sono **due**, non una: la PIZZERIA (192.168.1.12) e l'ASP (TM-T88V USB, centro Asporto). L'instradamento c'è, in `PIZ_tabBalancingCDP`: ogni ordine esce completo sull'ASP, e sulla PIZZERIA escono le pietanze del centro Pizzeria. Non esiste una stampante «cucina» per nome. (2) La fiscale è un Epson FP-81 II RT in LAN, non una Ditron. (3) Il database 2Bit si chiama `DD_AMANOAMANOPUGLIESE`, non `DD_DATABASE`.
 - **Gli ordini esterni si distinguono solo dal testo delle note**, e il pagamento «PAGATA CON PAYPAL» è un default del cloud: il nostro modello deve avere campi propri per canale, ID esterno e metodo di pagamento.
 - **Il 2Bit fa più di quello che il REA 21 contava** in tre punti: 49.059 scontrini salvati in locale, 10.000 tessere fedeltà e 11.885 movimenti punti (contro le 1.578 card e i 37.877 punti del cloud), 30 report di vendita (`stats-pack`). Sono i dati da importare, e vanno confrontati prima di spegnere.
 - **Il totem non lascia traccia nel 2Bit**: nei 30 giorni letti non c'è nessun ordine con «TOTEM» nella nota, e la tabella di stato delle richieste totem è vuota. Non sappiamo ancora se il totem sia in uso o come invii gli ordini. È la domanda più importante fra quelle aperte.
@@ -20,7 +20,7 @@ Questo capitolo **aggiorna** il REA 21 (26/10, 143 voci) con quello che si vede 
 
 | Cosa dicevano i REA | Cosa dice il PC | Effetto sul piano |
 |---|---|---|
-| Comande su **due stampanti**, cucina e cassa, con instradamento per reparto (REA 13 §13.10, REA 21 §4) | In `PIZ_tabStampanti` c'è una sola stampante di comanda, **PIZZERIA** (192.168.1.12:9100, TM-88 in ESC/POS raw). Le due centrali «Asporto» e «Pizzeria» non hanno stampante associata, e le 23 categorie non hanno centro di produzione: **tutto va alla PIZZERIA**. | Il nostro instradamento per reparto è una scelta nuova, non una copia. Va deciso con Edoardo (D20). |
+| Comande su **due stampanti**, cucina e cassa, con instradamento per reparto (REA 13 §13.10, REA 21 §4) | Confermato nella seconda verifica: due stampanti di comanda. **PIZZERIA** (192.168.1.12:9100, ESC/POS raw, centro Pizzeria) e **ASP** (driver Windows «EPSON TM-T88V Receipt5», USB, centro Asporto, stampante predefinita per comande d'asporto, fatture e preconti). L'instradamento sta in `PIZ_tabBalancingCDP`, non in `PIZ_tabCentriProduzione.idStampante` (che è NULL). Le 23 categorie non hanno centro, ma le righe di comanda sì: 239.241 righe escono su entrambi i centri, 50.257 solo sull'Asporto, 1 solo sulla Pizzeria. | L'instradamento per reparto esiste già nel 2Bit. Da noi va replicato come «centro di produzione → stampante» (D20). |
 | Fiscale **Ditron PrintF** via Ethernet (REA 13 §13.10, REA 14 §14.3, domanda 2) | `PIZ_tabStampanti` id 4 «FP81/90»: 192.168.1.200:9100, tipo «Fiscale MF/RT», modello FP81/90, protocollo LAN, RT versione 2. Le matricole degli scontrini (99IE…) sono Epson. Il driver `NRG`/`MultiDriver` nel pacchetto è più vecchio (10.0.0.222:23). | Fiscale = **Epson FP-81 II RT** in LAN. La domanda 2 è chiusa dal PC, ma il protocollo va confermato sulla stampante fisica con un test in negozio. |
 | Database `DD_DATABASE`, istanza `LOCALHOST\DUEBIT` (REA 03) | Database `DD_AMANOAMANOPUGLIESE`, istanza `localhost\DUEBIT`, SQL Server 2008 R2 SP3 Express, porta 58788, creato il 06/09/2023, 700 tabelle | Da aggiornare in tutti i documenti che citano il nome. |
 | Ordini app e piattaforme riconoscibili dal canale (REA 13) | Tutti con `OrigineComanda = 1` («App»), anche Glovo, Deliveroo e Just Eat. Il canale sta solo nel testo delle note. | Confermato. Il nostro modello deve avere `canale` ed `id_esterno` come campi veri. |
@@ -74,10 +74,10 @@ Non sono funzioni da copiare. Sono cose da sapere prima di toccare il PC, e cose
 
 | Stampante | Indirizzo | Protocollo | Uso | Per l'agente |
 |---|---|---|---|---|
-| PIZZERIA (comanda) | 192.168.1.12:9100 | ESC/POS raw (TM-88) | tutte le comande | IP da mettere in `stampante`, al posto del .50 finto nel `config.esempio.json` |
+| PIZZERIA (comanda) | 192.168.1.12:9100 | ESC/POS raw (TM-88), MAC 00-30-B8-2C-B1-00 | pietanze del centro Pizzeria (CDP 3) | IP da mettere in `stampante`, al posto del .50 finto nel `config.esempio.json` |
 | Fiscale FP-81 II RT | 192.168.1.200:9100 | protocollo Epson LAN (`fpmate.cgi` sulla porta web, da verificare) | scontrini | Protocollo da confermare con un test in negozio, con la stampante in stato RT leggibile |
-| ASP (fatture e preconti) | USB `ESDPRT001` (TM-T88V) | driver Windows Epson | fatture e preconti | Non è in rete: l'agente la raggiunge solo dal PC, oppure si cambia la stampa dei preconti |
-| Porte orfane | 192.168.1.19:9100 (risponde al ping, MAC 58-9e-c6-68-a8-e5, dispositivo sconosciuto), 192.168.1.20:9100 (non risponde) | — | nessuna | Capire cos'è il .19 (D24): potrebbe essere una seconda comanda |
+| ASP (comanda d'asporto, fatture, preconti) | USB `ESDPRT001` (TM-T88V), driver Windows «ASP» | driver Epson Windows (non ESC/POS di rete) | comanda completa dell'asporto (CDP 2), fatture, preconti | Non è in rete: l'agente di stampa la raggiunge solo dal PC in cassa, oppure va collegata in rete. Da decidere (D20). |
+| Porte orfane | 192.168.1.19:9100 (risponde al ping, MAC 58-9E-C6-68-A8-E5, nessun nome DNS, non in nessuna configurazione del 2Bit), 192.168.1.20:9100 (non risponde) | — | nessuna | Il .19 è l'unica candidata a una «cucina» in rete, ma non è configurata. Da verificare sul posto con l'autotest o l'etichetta (D24) |
 | Brother QL-810W | WSD | — | etichette | Fuori dal primo passaggio (voce 19 del REA 21) |
 
 Il ping del PC mostra la fiscale e la PIZZERIA raggiungibili. Il PC non ha stampato nulla, quindi **non sappiamo ancora se la fiscale risponde al protocollo dei comandi**: va provato con il test già previsto nel REA 21, da fare in negozio.
@@ -86,8 +86,8 @@ Il ping del PC mostra la fiscale e la PIZZERIA raggiungibili. Il PC non ha stamp
 
 Con le correzioni del §1, queste voci del REA 21 cambiano stato:
 
-- **Comanda su due stampanti per reparto** (REA 21 §4, parziale): il 2Bit non ne usa due per reparto. Da noi serve un solo percorso per la comanda, poi si decide se separare (D20).
-- **Stampanti configurate** (REA 21 §4, mancante): gli IP veri sono noti (.12 per la comanda, .200 per la fiscale). Resta da decidere cosa fare con la stampante USB del PC.
+- **Comanda su due stampanti per reparto** (REA 21 §4, parziale): il 2Bit le usa già, con instradamento per centro di produzione in `PIZ_tabBalancingCDP`. Da noi va replicato: centro → stampante, con una stampante per centro (D20).
+- **Stampanti configurate** (REA 21 §4, mancante): sono note (.12 per la PIZZERIA, .200 per la fiscale, ASP via USB). Resta da decidere come portare l'ASP in rete.
 - **Scontrino fiscale** (REA 21 §4, mancante): il modello è noto (Epson FP-81 II RT), il protocollo no. Resta mancante finché non c'è un test.
 - **Telefono** (REA 21 §5): nessuna modifica di stato, ma il 2Bit ha 72 ordini telefonici in 30 giorni: la cifra va usata per dimensionare il centralino.
 
@@ -95,11 +95,11 @@ Con le correzioni del §1, queste voci del REA 21 cambiano stato:
 
 Quelle nuove, in fondo alla 18 (che resta valida):
 
-- **D20.** La comanda la vuoi tutta su una stampante, come oggi (PIZZERIA), o su più stampanti per reparto (pizze, fritti, bar)? Oggi il 2Bit fa tutto su una.
+- **D20.** Le due comande oggi sono PIZZERIA (pietanze di pizzeria) e ASP (comanda completa dell'asporto, più fatture e preconti). Vuoi tenere la stessa divisione? E la ASP, che è collegata via USB al PC di cassa, la portiamo in rete con un IP?
 - **D21.** Le 10.000 tessere in `tabFidelity_Tessere` sono clienti reali? Il cloud ne ha 1.578. Prima di importare vogliamo sapere quali sono valide.
 - **D22.** La porta 9000 è davvero aperta dal router verso Internet? Se sì, possiamo chiuderla quando il cloud non serve più, oppure prima?
 - **D23.** Chi aggiorna il registro IP del cloud, visto che l'attività `ping-executer` è disabilitata e l'IP non è cambiato dal 2023?
-- **D24.** Sai cos'è il dispositivo su 192.168.1.19? Risponde al ping e non è registrato nel 2Bit.
+- **D24.** Sai cos'è il dispositivo su 192.168.1.19? Risponde al ping, non è configurato nel 2Bit, e potrebbe essere la «cucina» che hai nominato. Basta l'autotest o l'etichetta della stampante.
 - **D25.** Il totem è acceso in negozio? Non ci sono suoi ordini nel 2Bit negli ultimi 30 giorni: o non si usa, o invia gli ordini in un altro modo.
 
 ## 7. Letture da fare sul PC (seconda passata, sola lettura)
