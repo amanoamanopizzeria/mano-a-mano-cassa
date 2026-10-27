@@ -195,7 +195,7 @@ function Riepilogo() {
 // Fondo e conteggio di cassa (mig. 0077, REA 21 D7). A inizio sera il fondo, a fine sera i contanti
 // contati e il totale del POS letto sul terminale; accanto quanto doveva esserci e la differenza.
 // Append-only: un conteggio sbagliato non si corregge, se ne scrive un altro e vale l'ultimo.
-type RigaConteggio = { id: number; momento: "fondo" | "chiusura"; contanti: number; pos: number | null; nota: string | null; creato_il: string };
+type RigaConteggio = { id: number; momento: "fondo" | "chiusura"; contanti: number; pos: number | null; nota: string | null; creato_il: string; atteso_contanti: number | null; atteso_pos: number | null };
 // «150», «150,50», «150.50», «1.234,50»: un punto seguito da tre cifre è delle migliaia solo se poi c'è la
 // virgola o se i gruppi sono giusti; sopra 50.000 € in una sera è un errore di battitura (critico giro 41, L1)
 const leggiEuro = (t: string) => {
@@ -222,10 +222,10 @@ function Conteggio({ giornata, attesoContanti, attesoPos }: { giornata: string; 
   sera.current = giornata;
   async function carica() {
     const g = giornata;
-    const { data, error } = await supabaseBrowser().from("cassa_conteggio").select("id, momento, contanti, pos, nota, creato_il").eq("giornata", g).order("creato_il", { ascending: false });
+    const { data, error } = await supabaseBrowser().from("cassa_conteggio").select("id, momento, contanti, pos, nota, creato_il, atteso_contanti, atteso_pos").eq("giornata", g).order("creato_il", { ascending: false });
     if (sera.current !== g) return;   // nel frattempo si è cambiata sera (G1)
     if (error) setErrore(error.message);
-    else setRighe(((data ?? []) as RigaConteggio[]).map((r) => ({ ...r, contanti: Number(r.contanti), pos: r.pos == null ? null : Number(r.pos) })));
+    else setRighe(((data ?? []) as RigaConteggio[]).map((r) => ({ ...r, contanti: Number(r.contanti), pos: r.pos == null ? null : Number(r.pos), atteso_contanti: r.atteso_contanti == null ? null : Number(r.atteso_contanti), atteso_pos: r.atteso_pos == null ? null : Number(r.atteso_pos) })));
   }
   useEffect(() => { setRighe(null); setErrore(null); setFondo(""); setContanti(""); setPos(""); setNota(""); carica(); }, [giornata]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -235,7 +235,11 @@ function Conteggio({ giornata, attesoContanti, attesoPos }: { giornata: string; 
     if (c === null || (momento === "chiusura" && pos.trim() !== "" && p === null)) { setErrore("Scrivi una cifra in euro, per esempio 150 o 150,50."); return; }
     if (giornata > giornataOggi()) { setErrore("Non si conta una sera che non è ancora cominciata."); return; }
     setInvio(true); setErrore(null);
-    const { error } = await supabaseBrowser().from("cassa_conteggio").insert({ giornata, momento, contanti: c, pos: p, nota: nota.trim() || null });
+    // il dovuto si scrive insieme al conteggio: se un rider salda dopo, la differenza di quella sera resta
+    // quella che ha visto chi ha contato (Edoardo 27/10, critico giro 41 G3)
+    const fondoOra = righe?.find((r) => r.momento === "fondo")?.contanti ?? 0;
+    const atteso = momento === "chiusura" && attesoContanti !== null ? { atteso_contanti: Math.round((fondoOra + attesoContanti) * 100) / 100, atteso_pos: attesoPos } : {};
+    const { error } = await supabaseBrowser().from("cassa_conteggio").insert({ giornata, momento, contanti: c, pos: p, nota: nota.trim() || null, ...atteso });
     setInvio(false);
     if (error) { setErrore(error.message); return; }
     setFondo(""); setContanti(""); setPos(""); setNota("");
@@ -245,9 +249,11 @@ function Conteggio({ giornata, attesoContanti, attesoPos }: { giornata: string; 
   if (righe === null) return <><h2>Fondo e conteggio</h2><p className="muto">{errore ?? "Leggo il conteggio…"}</p></>;
   const ultimoFondo = righe.find((r) => r.momento === "fondo");
   const ultimaChiusura = righe.find((r) => r.momento === "chiusura");
-  const deveContanti = attesoContanti === null ? null : (ultimoFondo?.contanti ?? 0) + attesoContanti;
+  // un conteggio già fatto tiene il suo dovuto; senza conteggio (o per quelli di prima del 27/10) si calcola adesso
+  const deveContanti = ultimaChiusura?.atteso_contanti ?? (attesoContanti === null ? null : (ultimoFondo?.contanti ?? 0) + attesoContanti);
+  const devePos = ultimaChiusura?.atteso_contanti != null ? ultimaChiusura.atteso_pos : attesoPos;
   const diffContanti = ultimaChiusura && deveContanti !== null ? Math.round((ultimaChiusura.contanti - deveContanti) * 100) / 100 : null;
-  const diffPos = ultimaChiusura?.pos != null && attesoPos !== null ? Math.round((ultimaChiusura.pos - attesoPos) * 100) / 100 : null;
+  const diffPos = ultimaChiusura?.pos != null && devePos != null ? Math.round((ultimaChiusura.pos - devePos) * 100) / 100 : null;
   const segno = (d: number) => (d === 0 ? "torna" : euro(Math.abs(d)) + (d > 0 ? " in più" : " in meno"));
 
   return (
@@ -272,7 +278,7 @@ function Conteggio({ giornata, attesoContanti, attesoPos }: { giornata: string; 
               {deveContanti !== null && <div className="riga muto"><span>Dovevano esserci</span><span>{euro(deveContanti)}</span></div>}
               {diffContanti !== null && <div className={"riga diff" + (diffContanti === 0 ? " pari" : "")}><span>Differenza</span><strong>{segno(diffContanti)}</strong></div>}
               {ultimaChiusura.pos != null && <div className="riga"><span>POS dal terminale</span><strong>{euro(ultimaChiusura.pos)}</strong></div>}
-              {ultimaChiusura.pos != null && attesoPos !== null && <div className="riga muto"><span>POS in cassa</span><span>{euro(attesoPos)}</span></div>}
+              {ultimaChiusura.pos != null && devePos != null && <div className="riga muto"><span>POS in cassa</span><span>{euro(devePos)}</span></div>}
               {diffPos !== null && <div className={"riga diff" + (diffPos === 0 ? " pari" : "")}><span>Differenza POS</span><strong>{segno(diffPos)}</strong></div>}
               <small className="muto">alle {ora(ultimaChiusura.creato_il)}{ultimaChiusura.nota ? " · " + ultimaChiusura.nota : ""}</small>
             </>
