@@ -1,7 +1,7 @@
 "use client";
 
 // Riepilogo della giornata: ordini per canale e stato, pizze, consegne, incasso.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 import type { Ordine, OrdineRiga } from "@/lib/types";
@@ -40,17 +40,35 @@ function Riepilogo() {
   const [errore, setErrore] = useState<string | null>(null);
   // REA 21 D7: anche il riepilogo di una sera passata, per confrontarla col 2Bit. Di base la serata in corso.
   const [giornata, setGiornata] = useState(giornataOggi);
-  const inCorso = giornata === giornataOggi();
+  // la serata in corso si ricalcola ogni minuto: una scheda lasciata aperta passa da sola alla sera nuova
+  // alle 06:00, se stava guardando quella in corso (critico giro 41, G2)
+  const [stasera, setStasera] = useState(giornataOggi);
+  const staseraPrima = useRef(stasera);
+  useEffect(() => {
+    const t = setInterval(() => setStasera(giornataOggi()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  useEffect(() => {
+    const prima = staseraPrima.current;
+    staseraPrima.current = stasera;
+    if (prima !== stasera) setGiornata((g) => (g === prima ? stasera : g));
+  }, [stasera]);
+  const inCorso = giornata === stasera;
+  const vaiA = (g: string) => setGiornata(g > stasera ? stasera : g);   // niente sere future (M4)
 
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) { setErrore("Supabase non configurato."); return; }
     const supabase = supabaseBrowser();
+    // una risposta arrivata dopo il cambio di sera si butta (critico giro 41, G1)
+    let viva = true;
+    setOrdini([]); setErrore(null);
     async function carica() {
       const { data, error } = await supabase
         .from("ordine")
         .select("*, ordine_riga(*)")
         .or(`and(creato_il.gte.${inizioGiornata(giornata)},creato_il.lt.${inizioGiornata(domani(giornata))}),and(ora_consegna.gte.${inizioGiornata(giornata)},ora_consegna.lt.${inizioGiornata(domani(giornata))})`)
         .order("creato_il", { ascending: false });
+      if (!viva) return;
       if (error) setErrore(error.message);
       // «di stasera» = per la serata in corso: un preordine di domani non conta (critico giro 4b);
       // un ordine senza ora è della serata in cui è stato fatto.
@@ -58,10 +76,10 @@ function Riepilogo() {
     }
     carica();
     const canale = supabase
-      .channel("riepilogo")
+      .channel("riepilogo-" + giornata)
       .on("postgres_changes", { event: "*", schema: "public", table: "ordine" }, () => carica())
       .subscribe();
-    return () => { supabase.removeChannel(canale); };
+    return () => { viva = false; supabase.removeChannel(canale); };
   }, [giornata]);
 
   const validi = ordini.filter((o) => o.stato !== "annullato");
@@ -78,18 +96,23 @@ function Riepilogo() {
   type Incassato = { contantiInCassa: number; posInCassa: number; contantiAiRider: number; posAiRider: number; onlineNostro: number; piattaforme: number; ancoraAperti: number };
   const [incassato, setIncassato] = useState<Incassato | null>(null);
   const [riderDaSaldare, setRiderDaSaldare] = useState<{ nome: string; da_saldare: number }[]>([]);
+  // al cambio di sera si svuota; a ogni ordine nuovo si rilegge senza far sparire i numeri (M5)
+  useEffect(() => { setIncassato(null); setRiderDaSaldare([]); }, [giornata]);
   useEffect(() => {
     // la giornata lavorativa: dopo mezzanotte è ancora la sera prima (taglio alle 06:00 di Roma)
-    setIncassato(null);
+    let viva = true;
     supabaseBrowser().rpc("vendite_giornata_totali", { p_giornata: giornata }).then(({ data }) => {
+      if (!viva) return;
       const d = data as { incassato?: Incassato } | null;
       setIncassato(d?.incassato ?? null);
     });
     // il borsello dei rider è quello di adesso: per una sera passata non vuol dire niente
-    if (!inCorso) { setRiderDaSaldare([]); return; }
+    if (!inCorso) return () => { viva = false; };
     supabaseBrowser().rpc("rider_borsello").then(({ data }) => {
+      if (!viva) return;
       setRiderDaSaldare(((data ?? []) as { nome: string; da_saldare: number }[]).filter((r) => Number(r.da_saldare) > 0).map((r) => ({ nome: r.nome, da_saldare: Number(r.da_saldare) })));
     });
+    return () => { viva = false; };
   }, [ordini, giornata, inCorso]);
   const eur = (n: number) => n.toFixed(2).replace(".", ",") + " €";
 
@@ -100,10 +123,10 @@ function Riepilogo() {
     <main className="riepilogo">
       <h1>Riepilogo {inCorso ? "della serata" : "di " + new Date(giornata + "T12:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</h1>
       <div className="r-giorno">
-        <button type="button" onClick={() => setGiornata(ieri(giornata))}>‹ Sera prima</button>
-        <input type="date" value={giornata} max={giornataOggi()} onChange={(e) => e.target.value && setGiornata(e.target.value)} aria-label="Serata" />
-        <button type="button" disabled={inCorso} onClick={() => setGiornata(domani(giornata))}>Sera dopo ›</button>
-        {!inCorso && <button type="button" onClick={() => setGiornata(giornataOggi())}>Stasera</button>}
+        <button type="button" onClick={() => vaiA(ieri(giornata))}>‹ Prima</button>
+        <input type="date" value={giornata} max={stasera} onChange={(e) => e.target.value && vaiA(e.target.value)} aria-label="Serata" />
+        <button type="button" disabled={giornata >= stasera} onClick={() => vaiA(domani(giornata))}>Dopo ›</button>
+        {!inCorso && <button type="button" onClick={() => setGiornata(stasera)}>Stasera</button>}
       </div>
       {errore && <p className="r-errore">{errore}</p>}
 
@@ -142,7 +165,7 @@ function Riepilogo() {
         {[...perCanale.entries()].map(([canale, n]) => (
           <div key={canale} className="carta numero"><div className="eti">{canale}</div><strong>{n}<small> {n === 1 ? "ordine" : "ordini"}</small></strong></div>
         ))}
-        {perCanale.size === 0 && <p className="muto">{inCorso ? "Nessun ordine oggi." : "Nessun ordine quella sera."}</p>}
+        {perCanale.size === 0 && <p className="muto">{ordini.length > 0 ? `Nessun ordine valido (${ordini.length} annullati).` : inCorso ? "Nessun ordine stasera." : "Nessun ordine quella sera."}</p>}
       </div>
 
       {/* Giro 17 del grafico: gli ordini uno per uno stanno in un ramo chiuso (sono la parte lunga: 47 carte
@@ -173,7 +196,16 @@ function Riepilogo() {
 // contati e il totale del POS letto sul terminale; accanto quanto doveva esserci e la differenza.
 // Append-only: un conteggio sbagliato non si corregge, se ne scrive un altro e vale l'ultimo.
 type RigaConteggio = { id: number; momento: "fondo" | "chiusura"; contanti: number; pos: number | null; nota: string | null; creato_il: string };
-const leggiEuro = (t: string) => { const n = Number(t.replace(/\s|€/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".")); return t.trim() !== "" && Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null; };
+// «150», «150,50», «150.50», «1.234,50»: un punto seguito da tre cifre è delle migliaia solo se poi c'è la
+// virgola o se i gruppi sono giusti; sopra 50.000 € in una sera è un errore di battitura (critico giro 41, L1)
+const leggiEuro = (t: string) => {
+  const x = t.replace(/\s|€/g, "");
+  let n: number;
+  if (/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(x) && x.includes(",")) n = Number(x.replace(/\./g, "").replace(",", "."));
+  else if (/^\d+([.,]\d{1,2})?$/.test(x)) n = Number(x.replace(",", "."));
+  else return null;
+  return Number.isFinite(n) && n <= 50_000 ? Math.round(n * 100) / 100 : null;
+};
 const euro = (n: number) => n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 const ora = (iso: string) => new Date(iso).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
 
@@ -186,17 +218,22 @@ function Conteggio({ giornata, attesoContanti, attesoPos }: { giornata: string; 
   const [nota, setNota] = useState("");
   const [invio, setInvio] = useState(false);
 
+  const sera = useRef(giornata);
+  sera.current = giornata;
   async function carica() {
-    const { data, error } = await supabaseBrowser().from("cassa_conteggio").select("id, momento, contanti, pos, nota, creato_il").eq("giornata", giornata).order("creato_il", { ascending: false });
+    const g = giornata;
+    const { data, error } = await supabaseBrowser().from("cassa_conteggio").select("id, momento, contanti, pos, nota, creato_il").eq("giornata", g).order("creato_il", { ascending: false });
+    if (sera.current !== g) return;   // nel frattempo si è cambiata sera (G1)
     if (error) setErrore(error.message);
     else setRighe(((data ?? []) as RigaConteggio[]).map((r) => ({ ...r, contanti: Number(r.contanti), pos: r.pos == null ? null : Number(r.pos) })));
   }
-  useEffect(() => { setRighe(null); setErrore(null); carica(); }, [giornata]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setRighe(null); setErrore(null); setFondo(""); setContanti(""); setPos(""); setNota(""); carica(); }, [giornata]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function scrivi(momento: "fondo" | "chiusura") {
     const c = leggiEuro(momento === "fondo" ? fondo : contanti);
     const p = momento === "chiusura" && pos.trim() !== "" ? leggiEuro(pos) : null;
-    if (c === null || (momento === "chiusura" && pos.trim() !== "" && p === null)) { setErrore("Scrivi una cifra, per esempio 150 o 150,50."); return; }
+    if (c === null || (momento === "chiusura" && pos.trim() !== "" && p === null)) { setErrore("Scrivi una cifra in euro, per esempio 150 o 150,50."); return; }
+    if (giornata > giornataOggi()) { setErrore("Non si conta una sera che non è ancora cominciata."); return; }
     setInvio(true); setErrore(null);
     const { error } = await supabaseBrowser().from("cassa_conteggio").insert({ giornata, momento, contanti: c, pos: p, nota: nota.trim() || null });
     setInvio(false);
@@ -211,7 +248,7 @@ function Conteggio({ giornata, attesoContanti, attesoPos }: { giornata: string; 
   const deveContanti = attesoContanti === null ? null : (ultimoFondo?.contanti ?? 0) + attesoContanti;
   const diffContanti = ultimaChiusura && deveContanti !== null ? Math.round((ultimaChiusura.contanti - deveContanti) * 100) / 100 : null;
   const diffPos = ultimaChiusura?.pos != null && attesoPos !== null ? Math.round((ultimaChiusura.pos - attesoPos) * 100) / 100 : null;
-  const segno = (d: number) => (d === 0 ? "torna" : (d > 0 ? "+" : "−") + euro(Math.abs(d)) + (d > 0 ? " in più" : " in meno"));
+  const segno = (d: number) => (d === 0 ? "torna" : euro(Math.abs(d)) + (d > 0 ? " in più" : " in meno"));
 
   return (
     <section className="r-conteggio">
@@ -239,7 +276,7 @@ function Conteggio({ giornata, attesoContanti, attesoPos }: { giornata: string; 
               {diffPos !== null && <div className={"riga diff" + (diffPos === 0 ? " pari" : "")}><span>Differenza POS</span><strong>{segno(diffPos)}</strong></div>}
               <small className="muto">alle {ora(ultimaChiusura.creato_il)}{ultimaChiusura.nota ? " · " + ultimaChiusura.nota : ""}</small>
             </>
-          ) : <p className="muto">Non ancora contato.{!ultimoFondo && " Senza fondo, la differenza parte da zero."}</p>}
+          ) : <p className="muto">Non ancora contato.{!ultimoFondo && " Il fondo non è scritto: lo conto come zero."}</p>}
           <form onSubmit={(e) => { e.preventDefault(); scrivi("chiusura"); }}>
             <input inputMode="decimal" placeholder="Contanti contati" value={contanti} onChange={(e) => setContanti(e.target.value)} aria-label="Contanti contati in euro" />
             <input inputMode="decimal" placeholder="Totale POS (facoltativo)" value={pos} onChange={(e) => setPos(e.target.value)} aria-label="Totale POS in euro" />
