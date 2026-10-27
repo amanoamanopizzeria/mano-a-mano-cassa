@@ -68,10 +68,11 @@ Primo e ultimo ordine per canale (storico): App/web dal 19/09/2023 (12.809 ordin
   - Clienti: `ClienteGetCliOrContById`, `ClienteAddOrUpdate`, `ClienteGetClientiByDTOSearch`.
   - Consegne: `OrdineInConsegna`, `OrdineConsegnato`, `DissociaOrdineDaPony`.
   - Fedeltà: `Tessera/*`, `TransazioneTessera/GetBy` (molto frequente).
-- Glovo, Deliveroo e Just Eat entrano dallo **stesso endpoint** e risultano già pagati con PayPal. Il cloud del fornitore li inoltra quindi come ordini «App», e probabilmente li riceve da Deliverect o da un sistema simile.
+- Glovo, Deliveroo e Just Eat entrano dallo **stesso endpoint** dell'app propria, con origine «App». Il percorso è confermato da Edoardo: Glovo / Deliveroo / Just Eat → Deliverect → cloud di web-app.it → PC di cassa (porta 9000) → database.
+- Gli ordini di Deliverect risultano sempre «PAGATA CON PAYPAL»: è il pagamento predefinito che il cloud assegna, **non** il metodo usato dal cliente.
 - Secondo client: il palmare «EasyPosMobile 22.0.12» sulla LAN, `192.168.1.18:9000`.
 - `ping-executer` chiama `service.web-app.it/pluto-server/public/api/negozi/ip-address?port=9000` per dichiarare l'IP pubblico. L'ultimo log è del 18/09/2023 (allora l'IP era 93.61.19.81). Oggi è disabilitato, eppure l'IP 93.39.252.83 è sempre quello: probabilmente è fisso o registrato altrove.
-- **Deliverect**: nessuna occorrenza di «deliverect» in 9.960 file di testo di `C:\2BIT` (config, ini, xml, json, log, sql, bat) né nel database. Sul PC non c'è un'integrazione diretta. Se esiste, sta a monte, nel cloud del fornitore. Da confermare con loro.
+- **Deliverect**: nessuna occorrenza di «deliverect» in 9.960 file di testo di `C:\2BIT` né nel database. Sul PC non c'è un'integrazione diretta: Deliverect parla solo con il cloud del fornitore.
 
 ## Tema 2 — Stampanti
 
@@ -106,12 +107,11 @@ Primo e ultimo ordine per canale (storico): App/web dal 19/09/2023 (12.809 ordin
 
 ## Cosa resta incerto
 
-1. Se Deliverect esiste davvero e dove passa. Da chiedere al fornitore come i marketplace entrano nel suo cloud.
-2. Il modello esatto della fiscale. Nel database è «FP81/90» con protocollo LAN 9100, ma la stampante non è stata interrogata.
-3. Cos'è `192.168.1.19`, che risponde al ping, e cos'è la rete `192.168.15.x`.
-4. Se «ASP» (IP 0.0.0.0) stampa davvero sulla TM-T88V USB.
-5. Il 2Bit principale era chiuso: non si è vista una stampa in diretta.
-6. Il port forwarding della 9000 sul router: dedotto dagli IP nei log, non verificato.
+1. Il modello esatto della fiscale. Nel database è «FP81/90» con protocollo LAN 9100, ma la stampante non è stata interrogata.
+2. Cos'è `192.168.1.19`, che risponde al ping, e cos'è la rete `192.168.15.x`.
+3. Se «ASP» (IP 0.0.0.0) stampa davvero sulla TM-T88V USB.
+4. Il 2Bit principale era chiuso: non si è vista una stampa in diretta.
+5. Il port forwarding della 9000 sul router: dedotto dagli IP nei log, non verificato.
 
 ## Rischi da sistemare (non urgenti per il lancio, ma da chiudere)
 
@@ -125,4 +125,4 @@ Primo e ultimo ordine per canale (storico): App/web dal 19/09/2023 (12.809 ordin
 - Gli ordini di app, sito e totem vanno progettati come canali distinti, non ricavati dalle note. La nostra cassa deve avere origine e piattaforma come campi veri.
 - La comanda va instradata per reparto, cosa che il 2Bit non fa. Per noi è un'occasione, non un vincolo.
 - La fiscale è un Epson in LAN sulla porta 9100: il protocollo va confermato sulla stampante fisica in negozio, con test, prima di inviarle scontrini veri.
-- Gli ordini dei marketplace passano dal cloud del fornitore: prima di spegnere Velocissimo serve capire esattamente come arrivano.
+- I marketplace passano da Deliverect → cloud del fornitore → cassa. Per spegnere Velocissimo, Deliverect deve puntare alla nostra cassa (il nostro `/api/deliverect/ordine` è pronto). Il canale e l'ID esterno vanno salvati in campi dedicati, non nelle note.
