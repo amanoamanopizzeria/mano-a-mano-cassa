@@ -123,7 +123,7 @@ Dal REA 27 e 29 (sola lettura sul PC, 27/10) e dalla tua conferma:
 |---|---|---|---|---|
 | P1 | **Accendere l'agente di stampa** sul PC: righe in `stampante` per la PIZZERIA (.12:9100) e la ASP | Senza, la cassa nuova non comanda la cucina | codice pronto (0047, 0058); manca la configurazione | **D20** (vedi sotto); `STAMPA_KEY` su Vercel e sul PC |
 | P2 | **La ASP è USB, non in rete.** L'agente oggi manda alla porta 9100 | O l'agente impara a stampare su una stampante di Windows, o la ASP va in rete con un IP | mancante | **D20**; con «stampante di Windows» è solo codice dell'agente |
-| P3 | **Il numero di chi chiama dal modem USB**: un pezzo dell'agente che legge il modem e chiama `/api/telefono/chiamata` | Oggi lo legge il 2Bit. **Il modem lo può aprire un solo programma alla volta**: nel parallelo o il 2Bit o noi | mancante | **D26**: nel parallelo chi tiene il modem? Alternativa: un secondo modem o un centralino VoIP |
+| P3 | **Il numero di chi chiama senza togliere il modem al 2Bit** | Verificato il 28/10: il 2Bit salva ogni chiamata in `PIZ_tabChiamateRicevute` **allo squillo** (entro 1 s). Si legge in sola lettura e si manda a `/api/telefono/chiamata`: il 2Bit non se ne accorge | codice pronto e spento: `agente-chiamate/` (PowerShell, niente da installare) | l'ok di Edoardo per l'utente SQL di sola lettura (chiesto nel thread del PC); `TELEFONO_KEY` in `chiave.txt` sul PC |
 | P4 | **Lo scontrino fiscale** sull'Epson: emissione, annullo, X e Z, cassetto, IVA vere | Senza, non si spegne il 2Bit | mancante | test in negozio con la stampante in RT (REA 17 §9.3); **D2, D7, D14** |
 | P5 | **L'agente lettore** che copia nella cassa nuova gli ordini di app e piattaforme dal database del 2Bit (`DD_AMANOAMANOPUGLIESE`, sola lettura) | È la strada di base del parallelo per gli ordini online (REA 25 strada 1, REA 26 strada A) | da costruire | **D25-1 / D26-6**: va bene un programma in sola lettura sul PC? |
 | P6 | **Confronto 2Bit e cloud**: 51.550 ordini nel 2Bit contro 55.593 nel cloud; 10.000 tessere contro 1.578 card | Da spiegare prima di importare | da leggere | seconda lettura del PC (REA 29 §7) |
@@ -237,8 +237,8 @@ Quelle già fatte, ancora senza risposta (il numero è quello del REA dove stann
 
 Nuove di stanotte:
 
-- **D30-1.** Gli ordini «PROVA serata intensa» del 27/10 (n. 121–132): li annullo io? *Cosa cambia:* oggi la dashboard e l'export del 27/10 li contano come venduto.
-- **D30-2.** Nel parallelo, **il modem del telefono resta al 2Bit** e la cassa nuova riceve il numero solo dopo, o lo prendiamo noi? *Cosa cambia:* il modem lo apre un solo programma; se lo prendiamo noi, il 2Bit non apre più la scheda del cliente.
+- **D30-1.** ~~Gli ordini di prova del 27/10~~: annullati il 28/10 col sì di Edoardo.
+- **D30-2.** ~~Chi tiene il modem nel parallelo?~~ Risolta il 28/10: il modem resta al 2Bit, noi leggiamo la sua tabella delle chiamate (P3).
 - **D30-3.** Posso mettere `claude remote-control` **in avvio automatico** sul PC di cassa? *Cosa cambia:* dopo un riavvio il collegamento torna da solo, senza che tu riapra PowerShell.
 
 ## Fonti
