@@ -43,3 +43,11 @@ il POS della location.»
   ricevere gli ordini da subito.
 - **Non** attivare un secondo sistema che manda stati (un KDS, per esempio): Glovo vedrebbe due
   «accettato» o un «pronto» falso.
+
+## Aggiunte del 28/10 (dalla documentazione, `31`)
+
+8. **Just Eat e lo «stampato».** La documentazione dice che Just Eat non ritira l'ordine se il POS non
+   lo segna almeno «stampato» (40). Velocissimo lo fa? Da noi andrà fatto uguale.
+9. **Ritardo invece di chiudere.** Si può dire «+20 minuti» alle piattaforme quando siamo pieni
+   (`preparationTimeDelay`) invece di chiudere? Vale per Glovo, Deliveroo e Just Eat?
+10. **I numeri dei canali e l'URL del gettone di produzione**: chiedili insieme alle chiavi di staging.

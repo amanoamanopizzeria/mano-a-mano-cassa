@@ -293,3 +293,9 @@ Resta da fare, prima della certificazione:
   manca chi lo chiama);
 - il **Register POS** (`ordersWebhookURL`, `syncProductsURL`);
 - il **sync del menù** dall'anteprima di `menu.ts`.
+
+## 26.9 Aggiornamento 28/10
+
+La documentazione per sviluppatori letta a fondo è nella `31`. Corregge questa REA su tre punti: il
+ricevitore deve rispondere **503** (non 500) per farsi ritentare; in staging la firma usa il
+**`channelLink`** di ogni ordine; oltre al 20 servono almeno il **40** (Just Eat) e il **90**.
