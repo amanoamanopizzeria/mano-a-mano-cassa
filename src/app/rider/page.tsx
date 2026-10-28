@@ -272,11 +272,13 @@ function Rider() {
 
   // Il giro più corto fra le consegne date, partendo dalla pizzeria (con i minuti di Google se ci sono)
   async function girOrdinato(cons: ConsegnaRider[]): Promise<ConsegnaRider[]> {
+    // quelle senza punto sulla mappa vanno in fondo, non si perdono (controllo ECC, 26/10/2026)
     const tappe = cons.filter(conPunto);
-    if (tappe.length < 2) return cons;
+    const senzaPunto = cons.filter((c) => !conPunto(c));
+    if (tappe.length < 2) return [...tappe, ...senzaPunto];
     const punti = [PIZZERIA, ...tappe.map((c) => ({ lat: c.lat!, lng: c.lng! }))];
     const t = await chiediTempi(punti, punti);
-    return t ? ordineGiro(tappe.length, t.minuti).map((i) => tappe[i]) : tappe;
+    return [...(t ? ordineGiro(tappe.length, t.minuti).map((i) => tappe[i]) : tappe), ...senzaPunto];
   }
 
   // «Naviga tutte»: Google Maps col giro dalla pizzeria, una tappa dopo l'altra nell'ordine più corto
@@ -367,8 +369,8 @@ function Rider() {
       {borsello && (
         <p className="muto r-borsello">
           Hai in mano <b>{euro(borsello.in_mano)}</b>
-          {borsello.da_saldare > 0 && <> · da versare in cassa {euro(borsello.da_saldare)}</>}
-          . A fine serata si fa il dare-avere in cassa e queste spariscono.
+          {borsello.da_saldare > 0 && <> · <b>da versare in cassa {euro(borsello.da_saldare)}</b> (incassi di consegne non ancora saldate, anche di una serata precedente)</>}
+          . Si salda al banco: queste spariscono dall'elenco appena il dare-avere è fatto.
         </p>
       )}
       {daSaldare.length === 0 && <p className="muto">Niente da saldare.</p>}

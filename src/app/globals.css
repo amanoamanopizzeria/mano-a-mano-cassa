@@ -241,7 +241,6 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .accesso.app .carta { display: grid; gap: 10px; }
 .accesso.app input { width: 100%; min-width: 0; box-sizing: border-box; min-height: 52px; padding: 12px 14px; font-size: 17px; }
 .accesso.app .a-entra { min-height: 56px; padding: 0 16px; font-size: 18px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .06em; }
-.accesso.app .a-registra { min-height: 44px; background: transparent; border-color: transparent; color: var(--muto); font-size: 15px; text-decoration: underline; }
 .accesso.app .a-msg { margin-top: 12px; padding: 10px 14px; border-radius: 12px; background: var(--errore-chiaro); color: var(--errore); font-weight: 600; font-size: 15px; }
 
 /* ===== giro 3 del grafico (23/10/2026): i minori del critico 4b ===== */
