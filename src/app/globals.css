@@ -954,6 +954,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .lo-filtro { min-height: 48px; padding: 8px 16px; border-radius: 999px; border: 2px solid var(--vino, #8a1538); background: #fff; color: var(--vino, #8a1538); font-size: 16px; font-weight: 700; }
 .lo-filtro b { margin-left: 4px; }
 .lo-filtro.attivo { background: var(--vino, #8a1538); color: #fff; }
+.lo-filtro small { margin-left: 4px; font-weight: 500; font-size: 13px; opacity: .8; }
+/* la lente: a destra dei filtri, larga quanto serve a scrivere un nome (REA 30 C2) */
+.lo-cerca { flex: 1 1 220px; min-height: 48px; padding: 8px 16px; border-radius: 999px; border: 2px solid var(--vino, #8a1538); font-size: 16px; }
+.lo-cerca-via { margin-left: 8px; min-height: 40px; font-size: 14px; }
 @media (max-width: 900px) {
   .cassa-casa { grid-template-columns: 1fr; }
   .cc-colonna { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--oro-chiaro, #e8d5b0); }

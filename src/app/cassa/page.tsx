@@ -132,6 +132,8 @@ function Cassa() {
   const [mappaDi, setMappaDi] = useState<string | null>(null);
   // gli ordini divisi per stato, come le colonne di 2Bit (Edoardo, 25/10/2026)
   const [filtro, setFiltro] = useState<keyof typeof FILTRI>("quarti");
+  // la lente del 2Bit (REA 21 §2, REA 30 C2): numero, nome, telefono o via, su tutti gli ordini caricati
+  const [cerca, setCerca] = useState("");
 
   useEffect(() => { try { setStampaAuto(localStorage.getItem(STAMPA_LS) === "1"); } catch {} }, []);
   function cambiaStampaAuto(v: boolean) { setStampaAuto(v); try { localStorage.setItem(STAMPA_LS, v ? "1" : "0"); } catch {} }
@@ -378,6 +380,15 @@ function Cassa() {
     const nome = new Date(g + "T12:00:00").toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
     return g === giornoRoma(adesso) ? `${nome} · serata in corso` : nome;
   };
+  const parolaCercata = cerca.trim().toLowerCase().replace(/^#/, "");
+  const soloCifre = parolaCercata.replace(/\D/g, "");
+  const trovati = parolaCercata.length === 0 ? null : ordini.filter((o) => {
+    const numero = String(o.numero_visibile ?? o.numero).toLowerCase();
+    if (numero === parolaCercata || String(o.numero) === parolaCercata) return true;
+    if (soloCifre.length >= 4 && (o.cliente?.telefono ?? "").replace(/\D/g, "").includes(soloCifre)) return true;
+    const testo = [o.cliente?.nome, o.nome_cliente, o.indirizzo?.via, o.note].filter(Boolean).join(" ").toLowerCase();
+    return parolaCercata.length >= 2 && testo.includes(parolaCercata);
+  }).sort((a, b) => b.creato_il.localeCompare(a.creato_il));
   const preordiniVisti = ordini.filter((o) => ePreordine(o, adesso) && PREORDINE_ATTIVO(o) && filtro !== "quarti");
   const [riderPos, setRiderPos] = useState<Map<string, { lat: number; lng: number; il: string }>>(new Map());
   const [strada, setStrada] = useState<Map<string, { min: number; google: boolean; il: number }>>(new Map());
@@ -552,14 +563,25 @@ function Cassa() {
           Critico giro 16: a 390 la pagina era 19,6 schermate con gli ordini di ieri «in ritardo di 930 min»: in griglia solo stasera. */}
       <div className="lo-filtri" role="tablist">
         {(Object.keys(FILTRI) as (keyof typeof FILTRI)[]).map((k) => {
-          const n = k === "quarti" ? inUscita.length + inConsegna.length : ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && diStasera(o, adesso) && (FILTRI[k].s as readonly string[]).includes(o.stato)).length;
-          return <button key={k} role="tab" aria-selected={filtro === k} className={"lo-filtro" + (filtro === k ? " attivo" : "")} onClick={() => setFiltro(k)}>{FILTRI[k].t} <b>{n}</b></button>;
+          const diQui = k === "quarti" ? [] : ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && diStasera(o, adesso) && (FILTRI[k].s as readonly string[]).includes(o.stato));
+          // gli annullati stanno fra i Chiusi ma non si contano come chiusi (REA 21 §3, critico giro 29)
+          const annullati = diQui.filter((o) => o.stato === "annullato").length;
+          const n = k === "quarti" ? inUscita.length + inConsegna.length : diQui.length - annullati;
+          return <button key={k} role="tab" aria-selected={filtro === k && !trovati} className={"lo-filtro" + (filtro === k && !trovati ? " attivo" : "")} onClick={() => { setFiltro(k); setCerca(""); }}>{FILTRI[k].t} <b>{n}</b>{annullati > 0 && <small> + {annullati} annullati</small>}</button>;
         })}
+        <input className="lo-cerca" type="search" inputMode="search" placeholder="Cerca n°, nome, telefono, via" value={cerca}
+          onChange={(e) => setCerca(e.target.value)} aria-label="Cerca un ordine" />
       </div>
+      {trovati && (
+        <section aria-label="Ordini trovati">
+          <h2 className="lo-giorno">{trovati.length === 0 ? `Nessun ordine con «${cerca.trim()}»` : `Trovati ${trovati.length}`} <button className="lo-cerca-via" onClick={() => setCerca("")}>Chiudi la ricerca</button></h2>
+          <div className="griglia">{trovati.map((o) => carta(o))}</div>
+        </section>
+      )}
       {ordini.some((o) => !diStasera(o, adesso) && !ePreordine(o, adesso)) && (
         <button className="vecchi" onClick={() => setVecchiAperti((v) => !v)}>{vecchiAperti ? "Nascondi ieri e prima" : `Ieri e prima (${ordini.filter((o) => !diStasera(o, adesso) && !ePreordine(o, adesso)).length})`}</button>
       )}
-      {filtro === "quarti" && inConsegna.length > 0 && (
+      {!trovati && filtro === "quarti" && inConsegna.length > 0 && (
         <section className="lo-consegna" aria-label="In consegna">
           <h2 className="lo-giorno">In consegna ({inConsegna.length}) <a href="/cassa/mappa" className="lo-mappa">Mappa dei rider ↗</a></h2>
           <div className="lo-quarto-fila">
@@ -581,7 +603,7 @@ function Cassa() {
           {(() => { const x = inConsegna.find((o) => o.id === apertoQ); return x ? <div className="lo-quarto-carta">{carta(x)}</div> : null; })()}
         </section>
       )}
-      {filtro === "quarti" && (
+      {!trovati && filtro === "quarti" && (
         <div className="lo-quarti">
           {righeQuarti.length === 0 && <p className="muto">Niente da far uscire: gli ordini nuovi compaiono qui nel loro quarto d&apos;ora.</p>}
           {righeQuarti.map(({ q, giorno, ordini: os }, i) => {
@@ -623,7 +645,7 @@ function Cassa() {
           })}
         </div>
       )}
-      {filtro !== "quarti" && <div className="griglia">
+      {!trovati && filtro !== "quarti" && <div className="griglia">
         {ordini.filter((o) => (!ePreordine(o, adesso) || !PREORDINE_ATTIVO(o)) && (diStasera(o, adesso) || vecchiAperti) && (FILTRI[filtro].s as readonly string[]).includes(o.stato))
           // i più urgenti prima: chi ha l'ora più vicina (o è entrato prima) in cima
           .sort((a, b) => (a.ora_consegna ?? a.creato_il).localeCompare(b.ora_consegna ?? b.creato_il) * (filtro === "chiusi" ? -1 : 1))
