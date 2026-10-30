@@ -229,3 +229,36 @@ Utile quando rifacciamo la sala e il conto diviso.
 - Database (`tnuyeyqwoqhmgpskqtuq`): prova di `copia_2bit_salva` in una transazione annullata, 30/10.
 - PC di cassa (sola lettura, 30/10 mattina): identità, login e database di SQL Server.
 - REA 27, 29, 30; memoria del progetto (decisioni di Edoardo del 30/10).
+
+## 32.10 Letto nel codice, pomeriggio del 30/10 (senza decompilatore)
+
+ILSpy non è installato: i permessi del PC l'hanno bloccato anche dopo l'ok di Edoardo. Servono le due righe lanciate da lui.
+Questo è quello che la scansione dell'IL ha letto. Può sfuggire qualche chiamata indiretta.
+
+**Fiscale (V):**
+- **pagamenti del 2Bit:** Contanti=1, POS=2, CartaCredito=3, Assegno=4, Ticket=5, NonPagato=6, Prepagata=7, RestoTicket=8;
+- **pagamenti verso la Epson:** Cash=0, Cheque=1, Credit=2, Ticket=3;
+- **reparti per IVA:** 22 → 1, 10 → 2, 4 → 3, 5 → 4, esente → 13. Il nostro `REPARTO_IVA_10` ora è 2, da confermare sulla stampante;
+- **Satispay:** nessun codice;
+- **sconto:** `printRecItemAdjustment`;
+- **annullo:** `printRecVoid` più la verifica directIO 9205;
+- **reso:** `printRecRefund`.
+
+**Ciclo di vita:**
+- `Consegnata` la scrive l'AppServer solo in `InserisciComanda` e `TrasferisciInComandaGuest` (V);
+- `StatoConsegna` non lo scrive mai l'AppServer (V);
+- `OrdineInConsegna` imposta `idPony` e stampa la consegna (V);
+- chi segna «consegnato» è un'altra parte: SQL diretto, stored procedure o programma di cassa (D);
+- ⚠️ per il copiatore: lo stato «consegnato» nella SELECT va provato col login di sola lettura.
+
+**Ingresso (V):**
+- gli ordini web passano per `PostInviaConsegnaAsporto` → `InviaComandaAsporto` → `PServerArrivatoOrdineWeb`;
+- Just Eat entra da `PutConnectOrder`;
+- di Deliverect non c'è traccia, e chi chiama dall'esterno resta ignoto.
+
+**Ancora aperti:**
+- i valori di `StatoConsegna`;
+- se `idComanda` si riusa;
+- i reparti e le copie delle comande;
+- cosa controlla la Z prima di partire.
+

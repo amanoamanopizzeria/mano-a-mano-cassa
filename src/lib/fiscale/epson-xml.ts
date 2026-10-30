@@ -14,9 +14,10 @@ export interface PagamentoScontrino { metodo: PagamentoFiscale; importo: number 
 export interface Scontrino { righe: RigaScontrino[]; pagamenti: PagamentoScontrino[]; sconto?: number; operatore?: number }
 
 // Tutto il menù è al 10 % (Edoardo, 30/10): un reparto solo. Il numero del reparto con l'IVA al 10 % va letto
-// dalla programmazione della stampante: 1 è un'ipotesi da verificare.
-export const REPARTO_IVA_10 = 1;
-// paymentType del protocollo Epson: 0 contanti, 2 carta/POS, 3 ticket (buono pasto); «index» sceglie la voce
+// dalla programmazione della stampante. Il 2Bit usa 22 → 1, 10 → 2, 4 → 3, 5 → 4, esente → 13 (letto sul PC, 30/10):
+// si conferma sulla stampante prima della prova.
+export const REPARTO_IVA_10 = 2;
+// paymentType del protocollo Epson: 0 contanti, 2 carta/POS, 3 ticket (buono pasto), come li usa anche il 2Bit; «index» sceglie la voce
 // programmata sulla stampante. Da verificare sulla programmazione vera prima della prova.
 const TIPO_PAGAMENTO: Record<PagamentoFiscale, { tipo: number; indice: number; descrizione: string }> = {
   contanti: { tipo: 0, indice: 0, descrizione: "CONTANTI" },
