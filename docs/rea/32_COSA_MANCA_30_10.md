@@ -302,3 +302,22 @@ VB6 e non si decompila: il flusso fiscale qui sotto è quello .NET (Totem/AppSer
 
 I nostri messaggi in `src/lib/fiscale/epson-xml.ts` seguono già lo stesso ordine: niente da cambiare finché non c'è la
 prova in negozio.
+
+**Ingresso degli ordini esterni (V):**
+- l'ingresso generale è `api/InviaConsegnaAsporto`, autenticato, e l'ordine dichiara origine ed `ExtOrderId`;
+- i doppioni, cioè stesso id esterno con la stessa origine, sono rifiutati con il codice −112;
+- Just Eat ha un ingresso suo, `PutConnectOrder`;
+- l'annullo dall'esterno è `api/EliminaConsegnaDeliveryPartner`, rifiutato se l'ordine è stato toccato negli ultimi 4 s;
+- Marketplace è solo catalogo;
+- Glovo, Deliveroo e UberEat hanno solo il codice d'origine, e Deliverect non compare;
+- (D) chiama web-app.it o Deliverect, dichiarando l'origine: va confermato;
+- (D) `IsEliminata=1` la scrive il server di stampa.
+
+Per il copiatore la chiave forte di un ordine esterno è id esterno + origine.
+
+**Comande (V):**
+- l'AppServer non stampa: mette messaggi in coda (`ORDER_EXT`, `N_ECOMANDA`, `STAMPAPERS`…) per
+  `EasyposPrinterServer.exe`;
+- quel programma, `EscPosPrinterWatcher.exe` e `HotelConnector.exe` non sono .NET, quindi non si decompilano;
+- reparti, copie, doppia stampa, pulsante Z e Z programmata si leggono solo nel database (`PIZ_tabCentriProduzione`,
+  `PIZ_tabStampanti`, `PIZ_Messaggi`, le opzioni), con l'utente di sola lettura.
