@@ -1,6 +1,6 @@
 "use client";
 
-// Sala: 10 tavoli dentro e 5 fuori, sulla piantina di Edoardo. Si apre un tavolo con i coperti, si chiude quando paga.
+// Sala: 20 tavoli dentro e 15 fuori. Si apre un tavolo con i coperti, si chiude quando paga.
 // Il colore cambia dopo 60 minuti dall'apertura (alert per proporre il dessert o un altro giro).
 import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -27,7 +27,6 @@ interface Tavolo {
   stato: "libero" | "occupato" | "conto";
   aperto_il: string | null;
   coperti: number;
-  unito_a?: string | null;   // mig. 0081: il tavolo principale del gruppo («1+2»)
 }
 
 const ALERT_MINUTI = 60;
@@ -56,9 +55,6 @@ function Tavoli() {
   // Il tastierino dei coperti sulla pagina (critico giro 29: la finestrella del browser bloccava la pagina).
   // «apri» un tavolo libero, «correggi» uno già occupato (anche aperto da /cassa/nuovo, che non li chiede).
   const [coperti, setCoperti] = useState<{ tavolo: Tavolo; scopo: "apri" | "correggi" } | null>(null);
-  // «Unisci» (Edoardo, 30/10/2026: «voglio unire 1 e 2, o 11 e 12»): si tocca Unisci su un tavolo, poi i tavoli
-  // liberi da mettergli accanto. Il gruppo diventa un tavolone «1+2»: ordini, coperti e conto stanno sul primo.
-  const [unisco, setUnisco] = useState<Tavolo | null>(null);
 
   const carica = useCallback(async () => {
     const { data, error } = await supabaseBrowser()
@@ -89,20 +85,6 @@ function Tavoli() {
     if ((data as { esito: string }).esito !== "ok") { setErrore("Coperti non validi."); return; }
     setErrore(null);
     setConto((c) => (c && c.tavolo.id === t.id ? { ...c, tavolo: { ...c.tavolo, coperti: n } } : c));
-    carica();
-  }
-
-  async function unisciA(principale: Tavolo, altro: Tavolo) {
-    const { data, error } = await supabaseBrowser().rpc("tavolo_unisci", { p_principale: principale.id, p_altro: altro.id });
-    if (error) { setErrore(error.message); return; }
-    const r = data as { esito: string; messaggio?: string };
-    if (r.esito !== "ok") setErrore(r.messaggio ?? "Non si possono unire (" + r.esito + ")."); else setErrore(null);
-    carica();
-  }
-  async function separa(t: Tavolo) {
-    const { error } = await supabaseBrowser().rpc("tavolo_separa", { p_principale: t.id });
-    if (error) setErrore(error.message); else setErrore(null);
-    setUnisco(null);
     carica();
   }
 
@@ -163,89 +145,47 @@ function Tavoli() {
     setConto(null);
   }
 
-  // La piantina disegnata da Edoardo (30/10/2026, docs/sala/PIANTINA.md): fuori 11–15 in fila in alto; dentro la
-  // colonna sinistra dal basso 1–6 e la colonna centrale dal basso 7–10, con il passaggio fra 7 e 8; in basso a
-  // destra il banco. Il 2Bit non ha una piantina: questa è nostra. Un tavolo che non è nel disegno va in fondo.
-  const POSTO: Record<string, { riga: number; colonna: number }> = {
-    "6": { riga: 1, colonna: 1 }, "5": { riga: 2, colonna: 1 }, "4": { riga: 3, colonna: 1 },
-    "3": { riga: 4, colonna: 1 }, "2": { riga: 5, colonna: 1 }, "1": { riga: 6, colonna: 1 },
-    "10": { riga: 1, colonna: 3 }, "9": { riga: 2, colonna: 3 }, "8": { riga: 3, colonna: 3 }, "7": { riga: 5, colonna: 3 },
-  };
-  // dal 30/10 (mig. 0081) i tavoli si chiamano 1…10 dentro e 11…15 fuori; il posto si cerca dalle cifre
-  const postoDi = (t: Tavolo) => POSTO[t.numero.replace(/\D/g, "")];
-  const perNumero = (a: Tavolo, b: Tavolo) => a.numero.localeCompare(b.numero, "it", { numeric: true });
-  // i tavoli uniti a un principale non si disegnano da soli: il principale li disegna come un tavolone
-  const uniti = (t: Tavolo) => tavoli.filter((x) => x.unito_a === t.id).sort(perNumero);
-  const nomeDi = (t: Tavolo) => [t, ...uniti(t)].map((x) => x.numero).join("+");
-  // il tavolone occupa i posti di tutti i suoi tavoli sulla piantina (1+2 = due righe della colonna)
-  const postoGruppo = (t: Tavolo) => {
-    const posti = [t, ...uniti(t)].map(postoDi).filter(Boolean) as { riga: number; colonna: number }[];
-    if (posti.length === 0) return undefined;
-    const r0 = Math.min(...posti.map((p) => p.riga)), r1 = Math.max(...posti.map((p) => p.riga));
-    const c0 = Math.min(...posti.map((p) => p.colonna)), c1 = Math.max(...posti.map((p) => p.colonna));
-    return { gridRow: `${r0} / ${r1 + 1}`, gridColumn: `${c0} / ${c1 + 1}` };
-  };
-  const principali = tavoli.filter((t) => !t.unito_a);
-  const fuori = principali.filter((t) => t.zona === "fuori").sort(perNumero);
-  const dentro = principali.filter((t) => t.zona === "dentro" && postoDi(t));
-  const altri = principali.filter((t) => t.zona === "dentro" && !postoDi(t)).sort(perNumero);
-  const scheda = (t: Tavolo, inPiantina = false) => {
-        const min = minutiDa(t.aperto_il);
-        const allarme = t.stato !== "libero" && min >= ALERT_MINUTI;
-        const gruppo = uniti(t);
-        const scegliCompagno = unisco && unisco.id !== t.id && t.stato === "libero" && gruppo.length === 0;
-        return (
-          <div
-            key={t.id}
-            style={inPiantina ? postoGruppo(t) : (gruppo.length > 0 ? { flexGrow: 1 + gruppo.length } : undefined)}
-            className={"carta tavolo " + t.stato + (allarme ? " allarme" : "") + (gruppo.length > 0 ? " unito" : "")
-              + (unisco?.id === t.id ? " unisce" : "") + (scegliCompagno ? " compagno" : "")}
-            onClick={scegliCompagno ? () => unisciA(unisco, t) : undefined}
-          >
-            <div className="s-intesta">
-              <strong className="num">{nomeDi(t)}</strong>
-              <span className={`badge stato-${t.stato}`}>{t.stato === "occupato" ? "occ." : t.stato}</span>
-            </div>
-            {t.stato !== "libero" && (
-              <div className="muto riga-min">
-                <button className="link-coperti" onClick={() => setCoperti({ tavolo: t, scopo: "correggi" })} aria-label="Correggi i coperti">{t.coperti} cop.</button> · <b className={allarme ? "da-troppo" : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
-              </div>
-            )}
-            {scegliCompagno ? <div className="azioni"><button className="primario">+ Unisci a {nomeDi(unisco)}</button></div> :
-            <div className="azioni">
-              {t.stato === "libero" && <button className="primario" onClick={() => setCoperti({ tavolo: t, scopo: "apri" })}>Apri</button>}
-              {!unisco && <button onClick={() => setUnisco(t)}>Unisci</button>}
-              {unisco?.id === t.id && <button className="primario" onClick={() => setUnisco(null)}>Fatto</button>}
-              {gruppo.length > 0 && <button onClick={() => separa(t)}>Separa</button>}
-              {t.stato !== "libero" && <button className={t.stato === "conto" ? "primario" : ""} onClick={() => passaAlConto(t)}>Conto</button>}
-              {t.stato !== "libero" && <button onClick={() => chiudi(t)}>Libera</button>}
-            </div>}
-          </div>
-        );
-  };
+  const sezioni: { titolo: string; zona: "dentro" | "fuori" }[] = [
+    { titolo: "Dentro", zona: "dentro" },
+    { titolo: "Fuori", zona: "fuori" },
+  ];
 
   return (
     <main className="sala">
       <h1>Sala</h1>
       {errore && <p className="s-errore">{errore}</p>}
-      {unisco && <p className="s-unisci">Tocca i tavoli liberi da unire al <b>{nomeDi(unisco)}</b>, poi <b>Fatto</b>.</p>}
-      <div className="piantina">
-        <section className="s-zona p-fuori">
-          <h2>Fuori</h2>
-          <div className="p-fila">{fuori.map((t) => scheda(t))}</div>
-        </section>
-        <div className="p-muro" aria-hidden="true" />
-        <section className="s-zona p-dentro">
-          <h2>Dentro</h2>
-          <div className="p-griglia">
-            {dentro.map((t) => scheda(t, true))}
-            <div className="p-passaggio" style={{ gridRow: 4, gridColumn: 3 }} aria-hidden="true">passaggio</div>
-            <div className="p-parete" style={{ gridRow: "1 / span 5", gridColumn: 4 }} aria-hidden="true" />
-            <div className="p-banco" style={{ gridRow: "6 / span 1", gridColumn: "3 / span 2" }} aria-hidden="true">banco</div>
+      {sezioni.map((s) => (
+        <section key={s.zona} className="s-zona">
+          <h2>{s.titolo}</h2>
+          <div className="griglia sala-griglia">
+            {tavoli.filter((t) => t.zona === s.zona).sort((a, b) => a.numero.localeCompare(b.numero, "it", { numeric: true })).map((t) => {
+              const min = minutiDa(t.aperto_il);
+              const allarme = t.stato !== "libero" && min >= ALERT_MINUTI;
+              return (
+                <div
+                  key={t.id}
+                  className={"carta tavolo " + t.stato + (allarme ? " allarme" : "")}
+                >
+                  <div className="s-intesta">
+                    <strong className="num">{t.numero}</strong>
+                    <span className={`badge stato-${t.stato}`}>{t.stato === "occupato" ? "occ." : t.stato}</span>
+                  </div>
+                  {t.stato !== "libero" && (
+                    <div className="muto riga-min">
+                      <button className="link-coperti" onClick={() => setCoperti({ tavolo: t, scopo: "correggi" })} aria-label="Correggi i coperti">{t.coperti} cop.</button> · <b className={allarme ? "da-troppo" : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
+                    </div>
+                  )}
+                  <div className="azioni">
+                    {t.stato === "libero" && <button className="primario" onClick={() => setCoperti({ tavolo: t, scopo: "apri" })}>Apri</button>}
+                    {t.stato !== "libero" && <button className={t.stato === "conto" ? "primario" : ""} onClick={() => passaAlConto(t)}>Conto</button>}
+                    {t.stato !== "libero" && <button onClick={() => chiudi(t)}>Libera</button>}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          {altri.length > 0 && <div className="griglia sala-griglia">{altri.map((t) => scheda(t))}</div>}
         </section>
-      </div>
+      ))}
 
       {conto && (() => {
         const righe = conto.ordini.flatMap((o) => o.ordine_riga);
@@ -257,7 +197,7 @@ function Tavoli() {
           <div className="conto-velo" onClick={() => { setConto(null); setDivisi(null); }}>
             <section className="carta conto" onClick={(e) => e.stopPropagation()}>
               <header>
-                <strong className="num">Tavolo {nomeDi(conto.tavolo)}</strong>
+                <strong className="num">Tavolo {conto.tavolo.numero}</strong>
                 <span className="muto">{conto.tavolo.coperti} {conto.tavolo.coperti === 1 ? "coperto" : "coperti"} · {minutiDa(conto.tavolo.aperto_il)} min</span>
                 <button className="chiudi-conto" onClick={() => { setConto(null); setDivisi(null); }}>✕</button>
               </header>
@@ -345,7 +285,7 @@ function Tavoli() {
         <div className="conto-velo coperti-velo" onClick={() => setCoperti(null)}>
           <section className="carta tastierino-coperti" role="dialog" aria-label="Coperti" onClick={(e) => e.stopPropagation()}>
             <header>
-              <strong>Tavolo {nomeDi(coperti.tavolo)}: quanti coperti?</strong>
+              <strong>Tavolo {coperti.tavolo.numero}: quanti coperti?</strong>
               <button className="chiudi-conto" onClick={() => setCoperti(null)}>✕</button>
             </header>
             <div className="numeri">

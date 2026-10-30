@@ -2,14 +2,12 @@
 
 // Protegge una pagina: senza sessione rimanda a /login. Mostra chi è dentro.
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 // barra=false nasconde email ed «Esci»: serve al totem e alla cassa a tutto schermo.
-// Home e Indietro in ogni pagina dello staff (Edoardo, 30/10/2026: «il tasto home e indietro in ogni pagina che apri»).
 export default function AuthGate({ children, barra = true }: { children: React.ReactNode; barra?: boolean }) {
   const router = useRouter();
-  const pagina = usePathname();
   const [email, setEmail] = useState<string | null>(null);
   const [pronto, setPronto] = useState(false);
 
@@ -38,13 +36,6 @@ export default function AuthGate({ children, barra = true }: { children: React.R
   return (
     <>
       {barra && <div className="muto ag-barra">
-        {/* La Home (/) è la cassa dei ragazzi: il quarto d'ora con le prossime comande e «Nuovo ordine». Tutto il
-            resto (riepilogo, rider, conti, menù…) sta nella Dashboard (Edoardo, 30/10/2026). */}
-        <span className="ag-nav">
-          {pagina !== "/" && <button type="button" onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))}>‹ Indietro</button>}
-          {pagina !== "/" && <button type="button" onClick={() => router.push("/")}>⌂ Home</button>}
-          {pagina !== "/dashboard" && <button type="button" onClick={() => router.push("/dashboard")}>☰ Dashboard</button>}
-        </span>
         <span>{email}</span>
         <button onClick={esci}>Esci</button>
       </div>}

@@ -1,6 +1,5 @@
 // Il CSV per ordine a 40 colonne, come l'export «/weborder» di Velocissimo, per mano-a-mano-os
-// (REA 15): GET /api/ordini/csv?giornata=2026-10-23 con x-api-key (ORDINI_ESTERNI_KEY), oppure dalla cassa
-// con la sessione dello staff (Authorization: Bearer <token>): è il «Fine serata · CSV» della Home.
+// (REA 15): GET /api/ordini/csv?giornata=2026-10-23 con x-api-key (ORDINI_ESTERNI_KEY).
 // Una giornata lavorativa alla volta (taglio alle 06:00 di Roma, come /api/vendite). Le righe le
 // fa ordini_giornata (mig. 0040); qui solo il CSV: virgola, tutti i campi fra virgolette, UTF-8,
 // le note su più righe restano dentro le virgolette (il parser dell'OS le legge così).
@@ -19,19 +18,8 @@ function chiaveValida(ricevuta: string | null): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-/** Il token di una sessione Supabase di admin, cassa o totem (come e_staff()). */
-async function staffValido(intestazione: string | null): Promise<boolean> {
-  const token = intestazione?.match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!token) return false;
-  const admin = supabaseAdmin();
-  const { data } = await admin.auth.getUser(token);
-  if (!data.user) return false;
-  const { data: p } = await admin.from("profilo").select("ruolo").eq("id", data.user.id).maybeSingle();
-  return ["admin", "cassa", "totem"].includes(String(p?.ruolo ?? ""));
-}
-
 export async function GET(req: Request) {
-  if (!chiaveValida(req.headers.get("x-api-key")) && !(await staffValido(req.headers.get("authorization")))) {
+  if (!chiaveValida(req.headers.get("x-api-key"))) {
     return NextResponse.json({ status: 401, message: "non autorizzato" }, { status: 401 });
   }
   const giornata = new URL(req.url).searchParams.get("giornata");

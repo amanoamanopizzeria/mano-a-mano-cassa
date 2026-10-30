@@ -9,7 +9,7 @@
 // rider… così come il numero di pizze meno o più in base al personale che sta in cucina»): un tocco cambia di
 // uno il massimo di TUTTI i quarti d'ora da adesso a fine serata, con imposta_fascia, la stessa regola che
 // leggono il sito e gli ordini esterni: un quarto d'ora che si riempie sparisce subito da /ordina.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { CapacitaFascia } from "@/lib/types";
 
@@ -38,11 +38,6 @@ export default function ColonnaCassa({ inOrdine }: { inOrdine?: ColonnaInOrdine 
   // riapriva un quarto chiuso a 0, perché il − si ferma a 0 e il + dopo no)
   const [ultimo, setUltimo] = useState<{ tipo: Reparto; prima: { ora: string; massimo: number }[]; quanti: number } | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
-  // I tocchi si sommano e si salva una volta sola, 2,5 secondi dopo l'ultimo (Edoardo, 30/10/2026: «se uno deve
-  // passare da 34 a 25 può cliccare, arrivare a 25 e poi salvi»). Intanto il numero mostra già dove si arriva.
-  const ATTESA_SALVA = 2500;
-  const [inSospeso, setInSospeso] = useState<Record<Reparto, number>>({ produzione: 0, consegne: 0 });
-  const timer = useRef<Partial<Record<Reparto, ReturnType<typeof setTimeout>>>>({});
 
   const carica = useCallback(async () => {
     const supabase = supabaseBrowser();
@@ -105,25 +100,6 @@ export default function ColonnaCassa({ inOrdine }: { inOrdine?: ColonnaInOrdine 
     setSalvo(false);
   }
 
-  // il salvataggio parte dal timer: deve usare i quarti d'ora di quel momento, non quelli del primo tocco
-  const cambiaOra = useRef(cambia);
-  cambiaOra.current = cambia;
-  useEffect(() => () => { Object.values(timer.current).forEach((t) => t && clearTimeout(t)); }, []);
-  const sospeso = useRef<Record<Reparto, number>>({ produzione: 0, consegne: 0 });
-  function tocca(tipo: Reparto, delta: number) {
-    sospeso.current = { ...sospeso.current, [tipo]: sospeso.current[tipo] + delta };
-    setInSospeso(sospeso.current);
-    const t = timer.current[tipo];
-    if (t) clearTimeout(t);
-    timer.current[tipo] = setTimeout(async () => {
-      timer.current[tipo] = undefined;
-      const quanto = sospeso.current[tipo];
-      if (quanto !== 0) await cambiaOra.current(tipo, quanto);
-      sospeso.current = { ...sospeso.current, [tipo]: 0 };
-      setInSospeso(sospeso.current);
-    }, ATTESA_SALVA);
-  }
-
   return (
     <aside className={"cc-colonna" + (inOrdine ? " in-ordine" : "")}>
       {!inOrdine && <a href="/cassa/nuovo" className="cc-nuovo">+ Nuovo ordine</a>}
@@ -142,14 +118,13 @@ export default function ColonnaCassa({ inOrdine }: { inOrdine?: ColonnaInOrdine 
         <div className="cc-serata">
           <span className="cc-etichetta">Da adesso a fine serata, a quarto d&apos;ora</span>
           {(["produzione", "consegne"] as const).map((tipo) => {
-            const n = Math.max(0, (tipo === "produzione" ? primo.pizze_max : primo.consegne_max) + inSospeso[tipo]);
-            const attesa = inSospeso[tipo] !== 0;
+            const n = tipo === "produzione" ? primo.pizze_max : primo.consegne_max;
             return (
               <div className="cc-passo" key={tipo}>
                 <span className="cc-passo-nome">{tipo === "produzione" ? "Pizze" : "Consegne"}<small>{tipo === "consegne" ? (n === 1 ? "1 rider" : `${n} rider`) : "in base alla cucina"}</small></span>
-                <button type="button" onClick={() => tocca(tipo, -1)} disabled={salvo || n <= 0} aria-label={tipo === "produzione" ? "Una pizza in meno" : "Una consegna in meno"}>−</button>
-                <b className={attesa ? "in-attesa" : ""} title={attesa ? "Si salva fra un attimo" : undefined}>{n}</b>
-                <button type="button" onClick={() => tocca(tipo, 1)} disabled={salvo} aria-label={tipo === "produzione" ? "Una pizza in più" : "Una consegna in più"}>+</button>
+                <button type="button" onClick={() => cambia(tipo, -1)} disabled={salvo || vista.every((f) => (tipo === "produzione" ? f.pizze_max : f.consegne_max) <= 0)} aria-label={tipo === "produzione" ? "Una pizza in meno" : "Una consegna in meno"}>−</button>
+                <b>{n}</b>
+                <button type="button" onClick={() => cambia(tipo, 1)} disabled={salvo} aria-label={tipo === "produzione" ? "Una pizza in più" : "Una consegna in più"}>+</button>
               </div>
             );
           })}

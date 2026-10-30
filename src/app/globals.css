@@ -779,7 +779,6 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 /* La barra con email ed «Esci» di AuthGate, uguale su tutte le pagine. */
 .ag-barra { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding: 8px 16px; }
 .ag-barra button { min-height: 44px; }
-.ag-barra .ag-nav { display: flex; gap: 8px; margin-right: auto; }
 /* /cassa, la griglia della sera: il riquadro nascosto che stampa la comanda e l'errore, alle classi.
    Nessun tasto cambia posto o misura. */
 .lista-ordini .lo-stampa { position: absolute; width: 0; height: 0; border: 0; }
@@ -955,17 +954,12 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .cc-cella.usata { background: #fff3b0; }
 .cc-cella.piena { background: #c62828; color: #fff; }
 .cc-serata { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 12px; background: #f4efe6; }
-.cc-passo { display: grid; grid-template-columns: minmax(0, 1fr) 44px 40px 44px; gap: 4px; align-items: center; }
-/* nella colonna stretta (dentro l'ordine, 190–230 px) il nome va sopra e i −/+ restano in riga, senza sbordare */
-.cc-colonna.in-ordine .cc-passo { grid-template-columns: 44px minmax(0, 1fr) 44px; }
-.cc-colonna.in-ordine .cc-passo-nome { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 6px; }
+.cc-passo { display: grid; grid-template-columns: 1fr 48px 44px 48px; gap: 6px; align-items: center; }
 .cc-passo-nome { display: flex; flex-direction: column; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 15px; }
 .cc-passo-nome small { font-family: "Figtree", sans-serif; text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--muto, #6b6259); }
 .cc-passo button { min-height: 48px; border-radius: 10px; border: 1px solid var(--vino, #8a1538); background: #fff; color: var(--vino, #8a1538); font-size: 26px; font-weight: 700; }
 .cc-passo button:disabled { opacity: .4; }
 .cc-passo b { text-align: center; font-size: 22px; font-variant-numeric: tabular-nums; }
-.cc-passo b.in-attesa { color: var(--vino, #8a1538); text-decoration: underline dotted; }
-.cc-passo-nome, .cc-serata .cc-etichetta { overflow-wrap: anywhere; }
 .cc-annulla { min-height: 44px; border-radius: 10px; border: 0; background: #1a1715; color: #fff; font-weight: 700; font-size: 15px; }
 .cc-errore { font-size: 13px; color: #c62828; }
 .cc-vuoto { font-size: 14px; color: var(--muto, #6b6259); }
@@ -1349,108 +1343,3 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .pin-scheda { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
 .pin-scheda input { min-height: 44px; font-size: 16px; flex: 1 1 140px; }
 .pin-scheda button { min-height: 44px; }
-
-/* Sala: la piantina di Edoardo (30/10/2026, docs/sala/PIANTINA.md) */
-.sala .piantina { display: flex; flex-direction: column; gap: 10px; max-width: 900px; }
-.sala .p-fila { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-.sala .p-muro { height: 6px; border-radius: 3px; background: var(--vino); opacity: .75; }
-.sala .p-griglia { display: grid; grid-template-columns: minmax(0, 1fr) minmax(12px, .5fr) minmax(0, 1fr) minmax(40px, .6fr); grid-auto-rows: minmax(110px, auto); gap: 8px; }
-.sala .p-griglia .tavolo, .sala .p-fila .tavolo { padding: 10px 10px 8px; min-height: 104px; display: flex; flex-direction: column; border-width: 1.5px; }
-.sala .piantina .tavolo .num { font-size: 28px; line-height: 1; }
-.sala .piantina .tavolo .badge { font-size: 12px; padding: 2px 6px; }
-.sala .piantina .tavolo .riga-min { font-size: 13px; white-space: nowrap; margin-top: 2px; }
-.sala .piantina .tavolo .azioni { margin-top: auto; padding-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
-.sala .piantina .tavolo .azioni button { flex: 1; padding: 6px 6px; font-size: 14px; white-space: nowrap; min-height: 40px; }
-.sala .p-passaggio { display: flex; align-items: center; justify-content: center; border: 2px dashed var(--bordo); border-radius: 12px; color: var(--muto); font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 13px; }
-.sala .p-parete { border-left: 4px solid var(--vino); opacity: .5; }
-.sala .p-banco { display: flex; align-items: center; justify-content: center; border-radius: 12px; background: var(--oro-velo); border: 1px solid var(--oro-chiaro); color: var(--muto); font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 14px; }
-@media (max-width: 640px) {
-  .sala .p-fila { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .sala .p-griglia { grid-template-columns: minmax(0, 1fr) 8px minmax(0, 1fr) 0; gap: 6px; }
-  .sala .p-banco { grid-column: 3 / span 1 !important; }
-}
-
-/* Sala disegnata (Edoardo, 30/10/2026: «può essere più carino, disegna dei tavoli dentro e fuori»):
-   il pavimento dentro, il dehors fuori, ogni tavolo è un tavolo con le sedie sopra e sotto. */
-.sala .p-dentro, .sala .p-fuori { border-radius: 18px; padding: 12px 12px 14px; }
-.sala .p-dentro { background: repeating-linear-gradient(90deg, #f6ecdc 0 46px, #f1e4cf 46px 48px); border: 2px solid #e2cfae; }
-.sala .p-fuori { background: radial-gradient(circle at 10% 20%, #e3f1df 0 30%, transparent 31%), radial-gradient(circle at 90% 80%, #e3f1df 0 25%, transparent 26%), #eef6ea; border: 2px dashed #9cc49a; }
-.sala .p-dentro h2, .sala .p-fuori h2 { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #fff; box-shadow: var(--ombra); }
-.sala .p-muro { height: 10px; border-radius: 5px; background: repeating-linear-gradient(90deg, var(--vino) 0 30px, #b8475f 30px 34px); opacity: .9; }
-.sala .piantina .tavolo { position: relative; margin: 14px 4px; border-radius: 18px; border: 2px solid #b08a5a; background: #fffaf2; box-shadow: 0 3px 0 #d8c3a2, var(--ombra); }
-.sala .piantina .tavolo::before, .sala .piantina .tavolo::after { content: ""; position: absolute; left: 22%; right: 22%; height: 9px; border-radius: 6px; background: #c9a77a; box-shadow: inset 0 -2px 0 rgba(0,0,0,.12); }
-.sala .piantina .tavolo::before { top: -14px; }
-.sala .piantina .tavolo::after { bottom: -14px; }
-.sala .p-fuori .tavolo { border-radius: 50% / 38%; border-color: #6f9a6c; box-shadow: 0 3px 0 #b9d4b6, var(--ombra); }
-.sala .p-fuori .tavolo::before, .sala .p-fuori .tavolo::after { background: #8fb88b; }
-.sala .piantina .tavolo.occupato { background: #fff1c9; border-color: var(--oro); }
-.sala .piantina .tavolo.occupato::before, .sala .piantina .tavolo.occupato::after { background: var(--oro); }
-.sala .piantina .tavolo.conto { background: var(--vino-chiaro); border-color: var(--vino); }
-.sala .piantina .tavolo.conto::before, .sala .piantina .tavolo.conto::after { background: var(--vino); }
-.sala .piantina .tavolo.allarme { box-shadow: 0 0 0 3px var(--vino), var(--ombra); }
-.sala .piantina .tavolo .s-intesta { justify-content: center; gap: 6px; }
-.sala .p-banco { background: repeating-linear-gradient(45deg, #efe2c8 0 10px, #e8d7b7 10px 20px); border: 2px solid #c9ab7c; color: #7a6040; }
-.sala .p-passaggio { background: transparent; border-color: #d7c3a3; }
-
-/* Home della cassa (/): il quarto d'ora con le prossime comande, «Nuovo ordine» sempre in vista (30/10/2026). */
-.dash-torna { margin-bottom: 8px; }
-.home-cassa { max-width: none; margin: 0; min-width: 0; }
-.home-cassa .hq-testa { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-bottom: 12px; }
-.home-cassa .hq-adesso { background: var(--vino, #6b1e2e); color: #fff; border-radius: 14px; padding: 14px 16px; }
-.home-cassa .hq-adesso small { opacity: .85; font-size: 15px; letter-spacing: .02em; }
-.home-cassa .hq-numeri { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 4px; font-size: 20px; }
-.home-cassa .hq-numeri b { font-size: 40px; line-height: 1; }
-.home-cassa .hq-numeri em { font-style: normal; font-size: 15px; opacity: .85; }
-.home-cassa .hq-nuovo { display: flex; align-items: center; justify-content: center; border-radius: 14px; background: #c9a981; color: #2b1a10;
-  font-size: 28px; font-weight: 700; text-decoration: none; min-height: 96px; text-align: center; padding: 8px; }
-.home-cassa .hq-tasti { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-.home-cassa .hq-tasti a { flex: 1 1 140px; text-align: center; padding: 12px 10px; border-radius: 10px; border: 1px solid #d9cbb7;
-  background: #fff; color: inherit; text-decoration: none; font-weight: 600; }
-.home-cassa .hq-titolo { font-size: 16px; margin: 18px 0 8px; }
-.home-cassa .hq-quarto { border: 1px solid #e3d8c8; border-radius: 12px; background: #fff; margin-bottom: 8px; overflow: hidden; }
-.home-cassa .hq-quarto.ritardo { border-color: #c0392b; }
-.home-cassa .hq-ora { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 12px; background: #f6efe5; }
-.home-cassa .hq-ora b { font-size: 20px; }
-.home-cassa .hq-posti { font-size: 15px; }
-.home-cassa .hq-tag { font-size: 13px; font-weight: 700; color: #fff; background: #c0392b; border-radius: 6px; padding: 2px 8px; }
-.home-cassa .hq-quarto.pieno .hq-ora { background: #fbe3df; }
-.home-cassa .hq-vuoto { padding: 6px 12px; color: #9a8f80; }
-.home-cassa .hq-comande { list-style: none; margin: 0; padding: 0; }
-.home-cassa .hq-comande li { display: grid; grid-template-columns: 56px 92px minmax(0, 1fr) 56px minmax(120px, auto); gap: 8px; padding: 8px 12px;
-  border-top: 1px solid #f0e8dc; align-items: center; border-left: 5px solid transparent; }
-.home-cassa .hq-comande li .chi { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.home-cassa .hq-comande li .pz { text-align: right; font-weight: 700; }
-.home-cassa .hq-comande li.t-domicilio { border-left-color: #e2b93b; }
-.home-cassa .hq-comande li.t-ritiro { border-left-color: #6b1e2e; }
-.home-cassa .hq-comande li.t-tavolo { border-left-color: #3b7d4f; }
-.home-cassa .hq-comande li.t-banco { border-left-color: #8a7a66; }
-@media (max-width: 640px) {
-  .home-cassa .hq-testa { grid-template-columns: 1fr; }
-  .home-cassa .hq-comande li { grid-template-columns: 48px 76px minmax(0, 1fr) 48px; }
-  .home-cassa .hq-comande li .st { grid-column: 2 / -1; }
-}
-.home-cassa .hq-comande li .st { font-size: 14px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: #f4efe6; text-align: center; white-space: nowrap; }
-.home-cassa .hq-comande li .st-in-consegna, .home-cassa .hq-comande li .st-assegnato { background: #fff3b0; }
-.home-cassa .hq-comande li .st-consegnato, .home-cassa .hq-comande li .st-ritirato { background: #dff0e2; }
-.home-cassa .hq-comande li.uscita { opacity: .55; }
-.home-cassa .hq-comande li.uscita .chi { text-decoration: line-through; }
-.home-cassa .hq-ritardo-titolo { color: #c0392b; font-size: 16px; margin: 6px 0; text-transform: uppercase; letter-spacing: .04em; }
-.dash-esporta { margin: 0 0 16px; } .dash-esporta button { min-height: 52px; font-size: 17px; }
-.home-cassa .hq-passo { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
-.home-cassa .hq-passo button { min-width: 40px; min-height: 40px; padding: 0; font-size: 20px; font-weight: 700; border-radius: 8px; }
-.home-cassa .hq-passo b { min-width: 52px; text-align: center; font-size: 16px; }
-.home-cassa .hq-passo b.in-attesa { color: var(--vino, #8a1538); text-decoration: underline dotted; }
-/* Tavoli uniti (mig. 0081): un tavolone solo «1+2», con le sedie lungo i lati lunghi. */
-.sala .piantina .tavolo.unito { border-width: 2.5px; background: #fff6e6; }
-.sala .p-griglia .tavolo.unito::before, .sala .p-griglia .tavolo.unito::after {
-  top: 14%; bottom: 14%; left: auto; right: auto; width: 9px; height: auto;
-  background: repeating-linear-gradient(to bottom, #c9a77a 0 34px, transparent 34px 52px); box-shadow: none; }
-.sala .p-griglia .tavolo.unito::before { left: -14px; }
-.sala .p-griglia .tavolo.unito::after { right: -14px; }
-.sala .p-fila .tavolo.unito::before, .sala .p-fila .tavolo.unito::after {
-  left: 10%; right: 10%; background: repeating-linear-gradient(to right, #c9a77a 0 34px, transparent 34px 52px); box-shadow: none; }
-.sala .piantina .tavolo.unisce { outline: 3px solid var(--vino, #8a1538); outline-offset: 2px; }
-.sala .piantina .tavolo.compagno { cursor: pointer; outline: 3px dashed #3b7d4f; outline-offset: 2px; }
-.sala .s-unisci { background: #eef6ef; border: 1px solid #3b7d4f; border-radius: 10px; padding: 10px 12px; }
-.fasce-pagina .f-nuovo { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 22px; border-radius: 12px;
-  background: var(--vino, #8a1538); color: #fff; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 20px; text-decoration: none; }

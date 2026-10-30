@@ -528,14 +528,7 @@ function Ordini({ dal, al, canali, tipi, serata }: { dal: string; al: string; ca
         </select>
         <div className="db-scarica">
           <button onClick={scarica}>Scarica CSV ({filtrate.length})</button>
-          {serata && <button onClick={async () => {
-            // Col solo link il browser non manda la chiave: il server ora accetta la sessione dello staff.
-            const { data } = await supabaseBrowser().auth.getSession();
-            const r = await fetch(`/api/ordini/csv?giornata=${serata}`, { headers: { authorization: `Bearer ${data.session?.access_token ?? ""}` } });
-            if (!r.ok) { alert(`CSV non scaricato (${r.status}).`); return; }
-            const el = document.createElement("a"); el.href = URL.createObjectURL(await r.blob());
-            el.download = `export_${serata}.csv`; el.click(); URL.revokeObjectURL(el.href);
-          }}>CSV per mano-a-mano-os (40 colonne)</button>}
+          {serata && <a href={`/api/ordini/csv?giornata=${serata}`}><button>CSV per mano-a-mano-os (40 colonne)</button></a>}
         </div>
       </div>
       {/* i totali dell'elenco filtrato, come il riquadro «Metriche» dei report di Velocissimo */}

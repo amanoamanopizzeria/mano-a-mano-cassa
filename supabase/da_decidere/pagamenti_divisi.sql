@@ -91,7 +91,7 @@ begin
      where id_tavolo = p_id_tavolo and stato not in ('annullato', 'ritirato', 'consegnato');
   end if;
   get diagnostics v_n = row_count;
-  update tavolo set stato = 'libero', aperto_il = null, coperti = 0, unito_a = null where id = p_id_tavolo or unito_a = p_id_tavolo;  -- 0081: scioglie il gruppo
+  update tavolo set stato = 'libero', aperto_il = null, coperti = 0 where id = p_id_tavolo;
   return jsonb_build_object('esito', 'chiuso', 'ordini', v_n, 'totale', v_tot, 'coperto', v_cop, 'resto', v_resto);
 end $$;
 

@@ -20,10 +20,8 @@ import ColonnaCassa from "../ColonnaCassa";
 
 interface Tavolo { id: string; numero: string; stato: string }
 type Tipo = "banco" | "tavolo" | "ritiro" | "domicilio";
-// «Ritiro» e non «Asporto» (Edoardo, 30/10/2026: «se già so che è un ritiro mi conviene cliccare su quel tasto»):
-// è lo stesso tipo, il cliente passa a prendere in un quarto d'ora. Il banco è chi paga e porta via subito.
 const TIPI: { v: Tipo; t: string }[] = [
-  { v: "banco", t: "Banco" }, { v: "tavolo", t: "Tavolo" }, { v: "ritiro", t: "Ritiro" }, { v: "domicilio", t: "Domicilio" },
+  { v: "banco", t: "Banco" }, { v: "tavolo", t: "Tavolo" }, { v: "ritiro", t: "Asporto" }, { v: "domicilio", t: "Domicilio" },
 ];
 
 export default function NuovoOrdinePagina() {
@@ -553,9 +551,7 @@ function Cassa() {
           il colore della categoria resta un dato e viaggia nella variabile --riga) ===== */}
       <div className="cn-sinistra">
         <div className="barra">
-          {/* Indietro e Home anche qui (Edoardo, 30/10/2026); il ⌂ porta alla home come in ogni pagina */}
-          <button className="ghost" aria-label="Indietro" onClick={() => (window.history.length > 1 ? window.history.back() : (window.location.href = "/cassa"))}>‹</button>
-          <Link href="/"><button className="ghost" aria-label="Home">⌂</button></Link>
+          <Link href="/cassa"><button className="ghost">⌂</button></Link>
           <Link href="/cassa/cliente"><button className="ghost">Dati cliente</button></Link>
           <button className="ghost ordine">Ordine</button>
           <Link href="/cassa/tavoli"><button className="ghost">Sala</button></Link>
