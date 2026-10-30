@@ -359,3 +359,10 @@ nuovo: si legge con l'utente Windows, solo SELECT, e nessun dato dei clienti è 
 **Opzioni (V):**
 - chiusura del locale alle 23:30, `NonEffettuareChiusuraComande=1`;
 - nessuna opzione di Z programmata.
+
+**Seconda prova della query, sola SELECT (V):**
+- nelle ultime 48 ore: 43 aperti, 23 consegnati e 3 eliminati, senza doppioni;
+- le colonne del Backup sono le stesse delle testate vive;
+- le righe degli ordini chiusi stanno in `PIZ_tabComandeBackup`: la query ora le cerca anche lì;
+- tra gli «aperti» ci sono banco e ritiri già evasi, che non hanno uno stato finale. Il segnale di chiusura è da trovare
+  (D: `isDocumentoEmesso`).
