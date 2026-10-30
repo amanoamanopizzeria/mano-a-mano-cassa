@@ -1,6 +1,6 @@
 "use client";
 
-// Sala: 20 tavoli dentro e 15 fuori. Si apre un tavolo con i coperti, si chiude quando paga.
+// Sala: 10 tavoli dentro e 5 fuori, sulla piantina di Edoardo. Si apre un tavolo con i coperti, si chiude quando paga.
 // Il colore cambia dopo 60 minuti dall'apertura (alert per proporre il dessert o un altro giro).
 import { useCallback, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -145,47 +145,66 @@ function Tavoli() {
     setConto(null);
   }
 
-  const sezioni: { titolo: string; zona: "dentro" | "fuori" }[] = [
-    { titolo: "Dentro", zona: "dentro" },
-    { titolo: "Fuori", zona: "fuori" },
-  ];
+  // La piantina disegnata da Edoardo (30/10/2026, docs/sala/PIANTINA.md): fuori 11–15 in fila in alto; dentro la
+  // colonna sinistra dal basso 1–6 e la colonna centrale dal basso 7–10, con il passaggio fra 7 e 8; in basso a
+  // destra il banco. Il 2Bit non ha una piantina: questa è nostra. Un tavolo che non è nel disegno va in fondo.
+  const POSTO: Record<string, { riga: number; colonna: number }> = {
+    "6": { riga: 1, colonna: 1 }, "5": { riga: 2, colonna: 1 }, "4": { riga: 3, colonna: 1 },
+    "3": { riga: 4, colonna: 1 }, "2": { riga: 5, colonna: 1 }, "1": { riga: 6, colonna: 1 },
+    "10": { riga: 1, colonna: 3 }, "9": { riga: 2, colonna: 3 }, "8": { riga: 3, colonna: 3 }, "7": { riga: 5, colonna: 3 },
+  };
+  const perNumero = (a: Tavolo, b: Tavolo) => a.numero.localeCompare(b.numero, "it", { numeric: true });
+  const fuori = tavoli.filter((t) => t.zona === "fuori").sort(perNumero);
+  const dentro = tavoli.filter((t) => t.zona === "dentro" && POSTO[t.numero]);
+  const altri = tavoli.filter((t) => t.zona === "dentro" && !POSTO[t.numero]).sort(perNumero);
+  const scheda = (t: Tavolo, posto?: { riga: number; colonna: number }) => {
+        const min = minutiDa(t.aperto_il);
+        const allarme = t.stato !== "libero" && min >= ALERT_MINUTI;
+        return (
+          <div
+            key={t.id}
+            style={posto ? { gridRow: posto.riga, gridColumn: posto.colonna } : undefined}
+            className={"carta tavolo " + t.stato + (allarme ? " allarme" : "")}
+          >
+            <div className="s-intesta">
+              <strong className="num">{t.numero}</strong>
+              <span className={`badge stato-${t.stato}`}>{t.stato === "occupato" ? "occ." : t.stato}</span>
+            </div>
+            {t.stato !== "libero" && (
+              <div className="muto riga-min">
+                <button className="link-coperti" onClick={() => setCoperti({ tavolo: t, scopo: "correggi" })} aria-label="Correggi i coperti">{t.coperti} cop.</button> · <b className={allarme ? "da-troppo" : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
+              </div>
+            )}
+            <div className="azioni">
+              {t.stato === "libero" && <button className="primario" onClick={() => setCoperti({ tavolo: t, scopo: "apri" })}>Apri</button>}
+              {t.stato !== "libero" && <button className={t.stato === "conto" ? "primario" : ""} onClick={() => passaAlConto(t)}>Conto</button>}
+              {t.stato !== "libero" && <button onClick={() => chiudi(t)}>Libera</button>}
+            </div>
+          </div>
+        );
+  };
 
   return (
     <main className="sala">
       <h1>Sala</h1>
       {errore && <p className="s-errore">{errore}</p>}
-      {sezioni.map((s) => (
-        <section key={s.zona} className="s-zona">
-          <h2>{s.titolo}</h2>
-          <div className="griglia sala-griglia">
-            {tavoli.filter((t) => t.zona === s.zona).sort((a, b) => a.numero.localeCompare(b.numero, "it", { numeric: true })).map((t) => {
-              const min = minutiDa(t.aperto_il);
-              const allarme = t.stato !== "libero" && min >= ALERT_MINUTI;
-              return (
-                <div
-                  key={t.id}
-                  className={"carta tavolo " + t.stato + (allarme ? " allarme" : "")}
-                >
-                  <div className="s-intesta">
-                    <strong className="num">{t.numero}</strong>
-                    <span className={`badge stato-${t.stato}`}>{t.stato === "occupato" ? "occ." : t.stato}</span>
-                  </div>
-                  {t.stato !== "libero" && (
-                    <div className="muto riga-min">
-                      <button className="link-coperti" onClick={() => setCoperti({ tavolo: t, scopo: "correggi" })} aria-label="Correggi i coperti">{t.coperti} cop.</button> · <b className={allarme ? "da-troppo" : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
-                    </div>
-                  )}
-                  <div className="azioni">
-                    {t.stato === "libero" && <button className="primario" onClick={() => setCoperti({ tavolo: t, scopo: "apri" })}>Apri</button>}
-                    {t.stato !== "libero" && <button className={t.stato === "conto" ? "primario" : ""} onClick={() => passaAlConto(t)}>Conto</button>}
-                    {t.stato !== "libero" && <button onClick={() => chiudi(t)}>Libera</button>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      <div className="piantina">
+        <section className="s-zona p-fuori">
+          <h2>Fuori</h2>
+          <div className="p-fila">{fuori.map((t) => scheda(t))}</div>
         </section>
-      ))}
+        <div className="p-muro" aria-hidden="true" />
+        <section className="s-zona p-dentro">
+          <h2>Dentro</h2>
+          <div className="p-griglia">
+            {dentro.map((t) => scheda(t, POSTO[t.numero]))}
+            <div className="p-passaggio" style={{ gridRow: 4, gridColumn: 3 }} aria-hidden="true">passaggio</div>
+            <div className="p-parete" style={{ gridRow: "1 / span 5", gridColumn: 4 }} aria-hidden="true" />
+            <div className="p-banco" style={{ gridRow: "6 / span 1", gridColumn: "3 / span 2" }} aria-hidden="true">banco</div>
+          </div>
+          {altri.length > 0 && <div className="griglia sala-griglia">{altri.map((t) => scheda(t))}</div>}
+        </section>
+      </div>
 
       {conto && (() => {
         const righe = conto.ordini.flatMap((o) => o.ordine_riga);

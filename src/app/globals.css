@@ -1349,3 +1349,23 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .pin-scheda { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
 .pin-scheda input { min-height: 44px; font-size: 16px; flex: 1 1 140px; }
 .pin-scheda button { min-height: 44px; }
+
+/* Sala: la piantina di Edoardo (30/10/2026, docs/sala/PIANTINA.md) */
+.sala .piantina { display: flex; flex-direction: column; gap: 10px; max-width: 900px; }
+.sala .p-fila { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.sala .p-muro { height: 6px; border-radius: 3px; background: var(--vino); opacity: .75; }
+.sala .p-griglia { display: grid; grid-template-columns: minmax(0, 1fr) minmax(12px, .5fr) minmax(0, 1fr) minmax(40px, .6fr); grid-auto-rows: minmax(110px, auto); gap: 8px; }
+.sala .p-griglia .tavolo, .sala .p-fila .tavolo { padding: 10px 10px 8px; min-height: 104px; display: flex; flex-direction: column; border-width: 1.5px; }
+.sala .piantina .tavolo .num { font-size: 28px; line-height: 1; }
+.sala .piantina .tavolo .badge { font-size: 12px; padding: 2px 6px; }
+.sala .piantina .tavolo .riga-min { font-size: 13px; white-space: nowrap; margin-top: 2px; }
+.sala .piantina .tavolo .azioni { margin-top: auto; padding-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+.sala .piantina .tavolo .azioni button { flex: 1; padding: 6px 6px; font-size: 14px; white-space: nowrap; min-height: 40px; }
+.sala .p-passaggio { display: flex; align-items: center; justify-content: center; border: 2px dashed var(--bordo); border-radius: 12px; color: var(--muto); font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 13px; }
+.sala .p-parete { border-left: 4px solid var(--vino); opacity: .5; }
+.sala .p-banco { display: flex; align-items: center; justify-content: center; border-radius: 12px; background: var(--oro-velo); border: 1px solid var(--oro-chiaro); color: var(--muto); font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 14px; }
+@media (max-width: 640px) {
+  .sala .p-fila { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sala .p-griglia { grid-template-columns: minmax(0, 1fr) 8px minmax(0, 1fr) 0; gap: 6px; }
+  .sala .p-banco { grid-column: 3 / span 1 !important; }
+}
