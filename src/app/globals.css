@@ -1316,3 +1316,14 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .ch-azioni { grid-area: azioni; display: flex; gap: 8px; }
 .ch-azioni a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px; border: 1px solid var(--bordo); border-radius: 10px; text-decoration: none; color: inherit; background: #fff; }
 .ch-azioni a.primario { background: var(--vino); color: #fff; border-color: var(--vino); }
+
+/* Sala: conto diviso e altri metodi (Edoardo 30/10/2026, risposta D) */
+.sala .conto .diviso { margin-top: 12px; display: grid; gap: 8px; }
+.sala .conto .diviso-parti { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.sala .conto .diviso-parti button { min-width: 44px; min-height: 44px; }
+.sala .conto .diviso-riga { display: grid; grid-template-columns: 1fr 110px 44px; gap: 6px; }
+.sala .conto .diviso-riga select, .sala .conto .diviso-riga input { min-height: 44px; padding: 0 10px; border: 1px solid var(--bordo); border-radius: 10px; font: inherit; font-size: 16px; background: #fff; }
+.sala .conto .diviso-riga input { text-align: right; font-variant-numeric: tabular-nums; }
+.sala .conto .diviso-aggiungi { min-height: 44px; }
+.sala .conto .diviso-stato { font-weight: 600; }
+.sala .conto .diviso-stato.manca { color: #a12a1e; }

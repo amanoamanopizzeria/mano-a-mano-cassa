@@ -11,6 +11,12 @@ import type { Variazione } from "@/lib/types";
 interface RigaConto { id: string; descrizione: string; quantita: number; prezzo_unit: number; variazioni: Variazione[] | null; id_riga_padre: string | null }
 interface OrdineConto { id: string; numero_visibile: string | null; numero: number; totale: number; stato: string; sconto: number | null; ordine_riga: RigaConto[] }
 const euro = (n: number) => n.toFixed(2).replace(".", ",") + " €";
+// Edoardo 30/10/2026 (risposta D): buoni pasto, Satispay e il conto diviso fra più persone, soprattutto ai tavoli.
+type Metodo = "contanti" | "pos" | "buono_pasto" | "satispay";
+const METODI: [Metodo, string][] = [["contanti", "Contanti"], ["pos", "POS"], ["buono_pasto", "Buono pasto"], ["satispay", "Satispay"]];
+interface RigaPagamento { metodo: Metodo; importo: string }
+const numero = (t: string) => Number(t.replace(",", ".")) || 0;
+const centesimi = (n: number) => Math.round(n * 100) / 100;
 const prezzoRiga = (r: RigaConto) => (Number(r.prezzo_unit) + (r.variazioni ?? []).reduce((a, v) => a + Number(v.prezzo ?? 0), 0)) * Number(r.quantita);
 
 interface Tavolo {
@@ -44,6 +50,8 @@ function Tavoli() {
   const [, setOra] = useState(0);
   const [conto, setConto] = useState<{ tavolo: Tavolo; ordini: OrdineConto[]; prezzoCoperto: number } | null>(null);
   const [chiudo, setChiudo] = useState(false);
+  // il pannello «Diviso / altri metodi» del conto: una riga per ogni pagamento
+  const [divisi, setDivisi] = useState<RigaPagamento[] | null>(null);
   // Il tastierino dei coperti sulla pagina (critico giro 29: la finestrella del browser bloccava la pagina).
   // «apri» un tavolo libero, «correggi» uno già occupato (anche aperto da /cassa/nuovo, che non li chiede).
   const [coperti, setCoperti] = useState<{ tavolo: Tavolo; scopo: "apri" | "correggi" } | null>(null);
@@ -113,6 +121,30 @@ function Tavoli() {
     setConto(null);
   }
 
+  // Più pagamenti, o buono pasto e Satispay (tavolo_conto_chiudi2, supabase/da_decidere/pagamenti_divisi.sql):
+  // il database rifà i conti col coperto e chiude solo se la somma arriva al totale; il resto esce dai contanti.
+  async function incassaDiviso(righe: RigaPagamento[]) {
+    if (!conto) return;
+    const pagamenti = righe.map((r) => ({ metodo: r.metodo, importo: centesimi(numero(r.importo)) })).filter((r) => r.importo > 0);
+    if (pagamenti.length === 0) { setErrore("Scrivi almeno un importo."); return; }
+    setChiudo(true);
+    const { data, error } = await supabaseBrowser().rpc("tavolo_conto_chiudi2", { p_id_tavolo: conto.tavolo.id, p_pagamenti: pagamenti });
+    setChiudo(false);
+    if (error) {
+      setErrore(/tavolo_conto_chiudi2|function/i.test(error.message)
+        ? "Il conto diviso non è ancora acceso nel database: serve l'ok di Edoardo sulla modifica dei pagamenti."
+        : error.message);
+      return;
+    }
+    const r = data as { esito: string; mancano?: number; eccedenza?: number; resto?: number };
+    if (r.esito === "manca") { setErrore(`Mancano ${euro(Number(r.mancano))}.`); return; }
+    if (r.esito === "troppo") { setErrore(`Ci sono ${euro(Number(r.eccedenza))} in più fuori dai contanti: il resto si dà solo in contanti.`); return; }
+    if (r.esito !== "chiuso") { setErrore("Conto non chiuso (" + r.esito + ")."); return; }
+    setErrore(Number(r.resto) > 0 ? `Conto chiuso. Resto da dare: ${euro(Number(r.resto))}.` : null);
+    setDivisi(null);
+    setConto(null);
+  }
+
   const sezioni: { titolo: string; zona: "dentro" | "fuori" }[] = [
     { titolo: "Dentro", zona: "dentro" },
     { titolo: "Fuori", zona: "fuori" },
@@ -162,12 +194,12 @@ function Tavoli() {
         const coperto = padri.length > 0 && !giaCoperto ? conto.tavolo.coperti * conto.prezzoCoperto : 0;
         const totale = conto.ordini.reduce((a, o) => a + Number(o.totale), 0) + coperto;
         return (
-          <div className="conto-velo" onClick={() => setConto(null)}>
+          <div className="conto-velo" onClick={() => { setConto(null); setDivisi(null); }}>
             <section className="carta conto" onClick={(e) => e.stopPropagation()}>
               <header>
                 <strong className="num">Tavolo {conto.tavolo.numero}</strong>
                 <span className="muto">{conto.tavolo.coperti} {conto.tavolo.coperti === 1 ? "coperto" : "coperti"} · {minutiDa(conto.tavolo.aperto_il)} min</span>
-                <button className="chiudi-conto" onClick={() => setConto(null)}>✕</button>
+                <button className="chiudi-conto" onClick={() => { setConto(null); setDivisi(null); }}>✕</button>
               </header>
               {padri.length === 0 ? (
                 <p className="muto">Nessun ordine aperto su questo tavolo.</p>
@@ -201,10 +233,49 @@ function Tavoli() {
                 <button className="mancano-coperti" onClick={() => setCoperti({ tavolo: conto.tavolo, scopo: "correggi" })}>Quanti coperti? Il coperto entra nel conto</button>
               )}
               <div className="totale"><span>Totale</span><strong>{euro(totale)}</strong></div>
-              <div className="azioni-conto">
+              {divisi && (() => {
+                const pagato = divisi.reduce((a, r) => a + numero(r.importo), 0);
+                const diff = centesimi(pagato - totale);
+                // «Dividi in N»: N quote uguali, i centesimi che avanzano sull'ultima
+                const inParti = (n: number) => {
+                  const quota = Math.floor((totale / n) * 100) / 100;
+                  setDivisi(Array.from({ length: n }, (_, i) => ({ metodo: "contanti" as Metodo,
+                    importo: (i === n - 1 ? centesimi(totale - quota * (n - 1)) : quota).toFixed(2).replace(".", ",") })));
+                };
+                return (
+                  <div className="diviso">
+                    <div className="diviso-parti">
+                      <span className="muto">Dividi in</span>
+                      {[2, 3, 4, 5, 6].map((n) => <button key={n} onClick={() => inParti(n)}>{n}</button>)}
+                    </div>
+                    {divisi.map((r, i) => (
+                      <div key={i} className="diviso-riga">
+                        <select aria-label="Metodo" value={r.metodo} onChange={(e) => setDivisi(divisi.map((x, j) => (j === i ? { ...x, metodo: e.target.value as Metodo } : x)))}>
+                          {METODI.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+                        </select>
+                        <input aria-label="Importo" inputMode="decimal" value={r.importo} placeholder="0,00"
+                          onChange={(e) => setDivisi(divisi.map((x, j) => (j === i ? { ...x, importo: e.target.value } : x)))} />
+                        <button aria-label="Togli" onClick={() => setDivisi(divisi.filter((_, j) => j !== i))}>✕</button>
+                      </div>
+                    ))}
+                    <button className="diviso-aggiungi" onClick={() => setDivisi([...divisi, { metodo: "contanti",
+                      importo: diff < 0 ? (-diff).toFixed(2).replace(".", ",") : "" }])}>+ Pagamento</button>
+                    <div className={"diviso-stato" + (diff < 0 ? " manca" : "")}>
+                      Pagato {euro(pagato)} · {diff < 0 ? `mancano ${euro(-diff)}` : diff > 0 ? `resto ${euro(diff)}` : "giusto"}
+                    </div>
+                    <div className="azioni-conto">
+                      <button onClick={() => setDivisi(null)}>Indietro</button>
+                      <button className="primario" disabled={chiudo || diff < 0} onClick={() => incassaDiviso(divisi)}>Chiudi il conto</button>
+                    </div>
+                  </div>
+                );
+              })()}
+              <div className="azioni-conto" hidden={!!divisi}>
                 <button onClick={() => window.print()}>Stampa</button>
                 <button className="primario" disabled={chiudo || padri.length === 0 || (conto.tavolo.coperti === 0 && !giaCoperto)} onClick={() => incassa("contanti")}>Contanti</button>
                 <button className="primario" disabled={chiudo || padri.length === 0 || (conto.tavolo.coperti === 0 && !giaCoperto)} onClick={() => incassa("pos")}>POS</button>
+                <button disabled={chiudo || padri.length === 0 || (conto.tavolo.coperti === 0 && !giaCoperto)}
+                  onClick={() => setDivisi([{ metodo: "contanti", importo: totale.toFixed(2).replace(".", ",") }])}>Diviso o altro</button>
               </div>
             </section>
           </div>
