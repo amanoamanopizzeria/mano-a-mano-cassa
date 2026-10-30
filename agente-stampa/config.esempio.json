@@ -2,7 +2,7 @@
   "server": "https://mano-a-mano-cassa.vercel.app",
   "ogniSecondi": 3,
   "stampanti": [
-    { "nome": "cucina", "ruolo": "cucina", "ip": "192.168.1.50", "porta": 9100, "colonne": 48 },
-    { "nome": "cassa",  "ruolo": "cassa",  "ip": "192.168.1.51", "porta": 9100, "colonne": 42 }
+    { "nome": "pizzeria", "ruolo": "cucina", "ip": "192.168.1.12", "porta": 9100, "colonne": 48 },
+    { "nome": "asp",      "ruolo": "cassa",  "windows": "NOME DELLA ASP IN WINDOWS", "colonne": 48 }
   ]
 }

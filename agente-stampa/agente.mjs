@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // Agente di stampa di A Mano A Mano: gira sul PC della cassa, sempre acceso, e manda le comande alle
-// stampanti di rete (porta 9100, ESC/POS). Non ha credenziali Supabase: chiede la coda al server
+// stampanti di rete (porta 9100, ESC/POS) o a quelle installate in Windows (la ASP è USB: campo «windows»). Non ha credenziali Supabase: chiede la coda al server
 // della cassa con la sua chiave (STAMPA_KEY) e riceve i byte già pronti, una copia per stampante.
 // Zero pacchetti: basta Node 18 o più nuovo. Istruzioni in LEGGIMI.md.
 //
 //   node agente.mjs            stampa le comande man mano che arrivano
 //   node agente.mjs --prova    una pagina di prova su ogni stampante, poi esce
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, writeFileSync, rmSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { tmpdir } from "node:os";
 import { createHash } from "node:crypto";
 import net from "node:net";
 import { dirname, join } from "node:path";
@@ -28,8 +30,24 @@ const elenco = stampanti.map((s) => `${s.nome}:${s.ruolo}:${s.colonne || 48}`).j
 const ora = () => new Date().toLocaleTimeString("it-IT");
 const log = (...a) => console.log(`[${ora()}]`, ...a);
 
+const dove = (s) => (s.windows ? `Windows «${s.windows}»` : `${s.ip}:${s.porta || 9100}`);
+
+/** una stampante di Windows (USB): i byte vanno allo spooler in RAW, con stampa-windows.ps1 */
+function mandaWindows(s, byte) {
+  const file = join(tmpdir(), `comanda-${process.pid}-${Date.now()}.bin`);
+  writeFileSync(file, byte);
+  return new Promise((ok, ko) => {
+    execFile("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(qui, "stampa-windows.ps1"), "-Stampante", s.windows, "-File", file],
+      { timeout: 15000, windowsHide: true }, (e, _out, err) => {
+        rmSync(file, { force: true });
+        if (e) ko(new Error(String(err || e.message).trim().split("\n")[0])); else ok();
+      });
+  });
+}
+
 /** manda i byte alla stampante e aspetta che la connessione si chiuda bene */
 function manda(s, byte) {
+  if (s.windows) return mandaWindows(s, byte);
   return new Promise((ok, ko) => {
     const sock = net.connect({ host: s.ip, port: Number(s.porta || 9100) });
     const t = setTimeout(() => { sock.destroy(); ko(new Error("non risponde (5 s)")); }, 5000);
@@ -63,7 +81,7 @@ async function giro() {
         giuSegnalate.delete(s.nome);
         log(`${c.numero} → ${s.nome}`);
       } catch (e) {
-        if (!giuSegnalate.has(s.nome)) log(`!! ${s.nome} (${s.ip}) non stampa: ${e.message}. Riprovo da sola.`);
+        if (!giuSegnalate.has(s.nome)) log(`!! ${s.nome} (${dove(s)}) non stampa: ${e.message}. Riprovo da sola.`);
         giuSegnalate.add(s.nome);
       }
     }
@@ -77,20 +95,20 @@ async function giro() {
 function paginaDiProva(s) {
   const t = (x) => Buffer.from(x, "latin1");
   return Buffer.concat([Buffer.from([0x1b, 0x40, 0x1b, 0x61, 1, 0x1d, 0x21, 0x11]), t("PROVA\n"), Buffer.from([0x1d, 0x21, 0]),
-    t(`A Mano A Mano - agente di stampa\nstampante: ${s.nome} (${s.ruolo})\n${s.ip}:${s.porta || 9100}\n${new Date().toLocaleString("it-IT")}\n`),
+    t(`A Mano A Mano - agente di stampa\nstampante: ${s.nome} (${s.ruolo})\n${dove(s)}\n${new Date().toLocaleString("it-IT")}\n`),
     t("1234567890".repeat(7).slice(0, Number(s.colonne || 48)) + "\n"), Buffer.from([0x1b, 0x64, 2, 0x1d, 0x56, 66, 3])]);
 }
 
 if (process.argv.includes("--prova")) {
   let errori = 0;
   for (const s of stampanti) {
-    try { await manda(s, paginaDiProva(s)); log(`prova → ${s.nome} (${s.ip}) ok`); }
-    catch (e) { errori++; log(`!! ${s.nome} (${s.ip}): ${e.message}`); }
+    try { await manda(s, paginaDiProva(s)); log(`prova → ${s.nome} (${dove(s)}) ok`); }
+    catch (e) { errori++; log(`!! ${s.nome} (${dove(s)}): ${e.message}`); }
   }
   process.exit(errori ? 1 : 0);
 }
 
-log(`agente di stampa acceso: ${stampanti.map((s) => `${s.nome} ${s.ip}`).join(", ")} · server ${server} · ogni ${ogni / 1000} s`);
+log(`agente di stampa acceso: ${stampanti.map((s) => `${s.nome} ${dove(s)}`).join(", ")} · server ${server} · ogni ${ogni / 1000} s`);
 let serverGiu = false;
 for (;;) {
   try { await giro(); if (serverGiu) log("server di nuovo raggiungibile"); serverGiu = false; }

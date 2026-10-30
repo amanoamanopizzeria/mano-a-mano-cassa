@@ -10,7 +10,7 @@ si accende solo il giorno della prova in parallelo, deciso da Edoardo.
 2. Il server gliele manda già pronte in ESC/POS, una copia per stampante. Le copie sono **complete
    e uguali** (righe per reparto, telefono, via, totale, pagamento e resto: Edoardo, 25/10/2026, così
    una comanda persa si ritrova dall'altra); in fondo dicono «copia cucina» o «copia cassa».
-3. L'agente le manda alla porta 9100 di ogni stampante. Quando tutte le hanno prese, lo dice al server
+3. L'agente le manda alla porta 9100 di ogni stampante di rete, o allo spooler di Windows per quelle USB. Quando tutte le hanno prese, lo dice al server
    (`/api/stampa/fatta`) e l'ordine risulta stampato.
 4. Se una stampante è spenta, l'agente lo scrive una volta e riprova da solo; l'altra non ristampa.
 5. Una comanda modificata dalla cassa torna in coda da sola ed esce con «MODIFICATA - RISTAMPA», le
@@ -25,6 +25,16 @@ Due stampanti comande (una Epson, l'altra forse Ditron) e una fiscale Epson, **t
 fiscale NON passa da qui: lo scontrino è un lavoro a parte (serve il modello esatto). Mancano gli
 indirizzi IP: si leggono dal foglio di prova della stampante (su molte Epson: tenere premuto FEED
 all'accensione) o dal pannello del router.
+
+## Le stampanti vere (PC di cassa, letto il 27/10/2026, REA 27)
+
+- **PIZZERIA**: in rete, `192.168.1.12`, porta 9100 → `"ip": "192.168.1.12"`.
+- **ASP**: Epson TM-T88V **via USB** al PC, non in rete → `"windows": "<nome>"`, col nome esatto che ha in
+  Windows (PowerShell: `Get-Printer | Select Name`). L'agente manda i byte allo spooler di Windows in modo
+  RAW con `stampa-windows.ps1`: la carta esce uguale a quella della PIZZERIA, e il 2Bit può continuare a
+  usarla (lo spooler mette in fila). Niente da installare e nessuna impostazione cambiata.
+- Edoardo, 30/10/2026: **la stessa comanda su tutte e due**, una doppia copia. È già così: le due copie sono
+  complete e uguali, cambia solo «copia cucina» / «copia cassa» in fondo.
 
 ## Accenderlo sul PC (il giorno della prova)
 
