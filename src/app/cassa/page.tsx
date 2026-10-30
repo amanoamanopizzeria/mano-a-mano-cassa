@@ -221,6 +221,45 @@ function Cassa() {
     };
   }, []);
 
+  // Correggere un ordine già chiuso (Edoardo, 30/10/2026, risposta C): «solo un admin, con un motivo». Il tasto
+  // compare solo a chi è admin; il database rifà il controllo e scrive il registro (ordine_correzione).
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => {
+    supabaseBrowser().from("profilo").select("ruolo").maybeSingle().then(({ data }) => setAdmin(data?.ruolo === "admin"));
+  }, []);
+  const [correggi, setCorreggi] = useState<{ id: string; azione: "pagamento" | "riapri" | "annulla"; pagamento: string; motivo: string } | null>(null);
+  async function confermaCorrezione() {
+    if (!correggi) return;
+    const { data, error } = await supabaseBrowser().rpc("ordine_correggi", {
+      p_id_ordine: correggi.id, p_azione: correggi.azione, p_motivo: correggi.motivo,
+      p_pagamento: correggi.azione === "pagamento" ? correggi.pagamento : null,
+    });
+    if (error) { setErrore(/ordine_correggi/.test(error.message) ? "La correzione non è ancora accesa nel database." : error.message); return; }
+    const r = data as { esito: string; messaggio?: string };
+    if (r.esito !== "ok") { setErrore(r.messaggio ?? "Correzione non fatta (" + r.esito + ")."); return; }
+    setErrore(null); setCorreggi(null); completa(correggi.id);
+  }
+  const pannelloCorreggi = (o: OrdineCassa) => correggi?.id === o.id && (
+    <div className="correggi">
+      <div className="scelte">
+        {(["pagamento", "riapri", "annulla"] as const).filter((a) => a !== "riapri" || o.tipo !== "domicilio").map((a) => (
+          <button key={a} type="button" className={correggi.azione === a ? "primario" : ""} onClick={() => setCorreggi({ ...correggi, azione: a })}>
+            {a === "pagamento" ? "Cambia pagamento" : a === "riapri" ? "Riapri (torna pronto)" : "Annulla l'ordine"}
+          </button>
+        ))}
+      </div>
+      {correggi.azione === "pagamento" && (
+        <select value={correggi.pagamento} onChange={(e) => setCorreggi({ ...correggi, pagamento: e.target.value })}>
+          {[["contanti", "Contanti"], ["pos", "POS"], ["buono_pasto", "Buono pasto"], ["satispay", "Satispay"]].filter(([v]) => v !== o.pagamento).map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+        </select>
+      )}
+      <input placeholder="Motivo (obbligatorio)" value={correggi.motivo} onChange={(e) => setCorreggi({ ...correggi, motivo: e.target.value })} />
+      <div className="scelte">
+        <button type="button" onClick={() => setCorreggi(null)}>Lascia stare</button>
+        <button type="button" className="primario" disabled={correggi.motivo.trim().length < 5} onClick={confermaCorrezione}>Correggi</button>
+      </div>
+    </div>
+  );
   const [daConfermare, setDaConfermare] = useState<string | null>(null);   // id dell'ordine su cui «Annullato» aspetta il secondo tocco
   // L'orologio a destra di ogni ordine (Edoardo, 25/10/2026): «questa me la metti in quell'altro quarto d'ora».
   const [spostaId, setSpostaId] = useState<string | null>(null);
@@ -336,6 +375,7 @@ function Cassa() {
               {(o.stato === "ricevuto" || o.stato === "in_preparazione" || o.stato === "pronto") && <a href={`/cassa/nuovo?modifica=${o.id}`}><button>Modifica</button></a>}
               {/* critico giro 25: il rider la prende mentre le pizze sono in forno; la cucina deve poter dire «pronto» lo stesso */}
               {o.stato === "in_consegna" && !o.pronto_il && o.consegna?.[0]?.stato === "assegnata" && <button className="azione" onClick={() => segnaPronto(o.id)}>Pronto</button>}
+              {admin && (o.stato === "consegnato" || o.stato === "ritirato") && <button onClick={() => setCorreggi(correggi?.id === o.id ? null : { id: o.id, azione: "pagamento", pagamento: o.pagamento === "contanti" ? "pos" : "contanti", motivo: "" })}>Correggi</button>}
               {passiOrdine(o).map((s) => (
                 <button
                   key={s}
@@ -346,6 +386,7 @@ function Cassa() {
                 </button>
               ))}
             </div>
+            {pannelloCorreggi(o)}
           </article>
   );
 

@@ -332,6 +332,10 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .ordine-c .azioni button { min-height: 44px; font-size: 15px; padding: 0 14px; flex: 1 1 auto; white-space: nowrap; }
 .ordine-c .azioni button.azione { flex: 2 1 auto; }
 .ordine-c .azioni button.primario { flex: 2 1 auto; background: var(--errore); border-color: var(--errore); }
+.ordine-c .correggi { display: grid; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--bordo, #ccc); }
+.ordine-c .correggi .scelte { display: flex; gap: 8px; flex-wrap: wrap; }
+.ordine-c .correggi .scelte button { flex: 1 1 auto; min-height: 44px; }
+.ordine-c .correggi select, .ordine-c .correggi input { min-height: 44px; font-size: 16px; }
 .ordine-c.preordine .num { font-size: 26px; }
 .preordini summary { font-size: 22px; min-height: 44px; display: flex; align-items: center; }
 .preordini summary small { font-size: 14px; }
