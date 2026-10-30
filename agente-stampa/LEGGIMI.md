@@ -30,7 +30,7 @@ all'accensione) o dal pannello del router.
 
 - **PIZZERIA**: in rete, `192.168.1.12`, porta 9100 → `"ip": "192.168.1.12"`.
 - **ASP**: Epson TM-T88V **via USB** al PC, non in rete → `"windows": "<nome>"`, col nome esatto che ha in
-  Windows (PowerShell: `Get-Printer | Select Name`). L'agente manda i byte allo spooler di Windows in modo
+  Windows: il 27/10 era «EPSON TM-T88V Receipt5» (REA 29; ricontrollare con `Get-Printer | Select Name`). L'agente manda i byte allo spooler di Windows in modo
   RAW con `stampa-windows.ps1`: la carta esce uguale a quella della PIZZERIA, e il 2Bit può continuare a
   usarla (lo spooler mette in fila). Niente da installare e nessuna impostazione cambiata.
 - Edoardo, 30/10/2026: **la stessa comanda su tutte e due**, una doppia copia. È già così: le due copie sono
