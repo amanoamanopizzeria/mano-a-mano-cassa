@@ -128,7 +128,21 @@ verificare con `-Prova`:
 
 ## 32.5 AppServer (porta 9000) e il flusso web-app.it / Deliverect → 2Bit — *in corso sul PC*
 
+`ComandaService.InserisciComanda` dell'AppServer è il metodo che scrive le testate in `PIZ_tabTestateComande`: gli
+ordini da fuori passano tutti da lì. Chi lo chiama, e da quale indirizzo, si vede solo col decompilatore.
+
 ## 32.6 Lo scontrino fiscale (Epson FP-81 II RT, 192.168.1.200) e la chiusura giornaliera — *in corso, solo studio*
+
+Dai testi dentro i metodi dell'AppServer: solo metadati, senza decompilatore e senza eseguire niente.
+- **Il canale è confermato.** Il 2Bit fa una `POST` a `http://{ip}/cgi-bin/fpmate.cgi`, `text/xml`, in SOAP. Il corpo è
+  uno di tre: `printerFiscalReceipt` (scontrino), `printerFiscalReport` (rapporti X/Z), `printerNonFiscal`.
+- **Prima di ogni stampa** chiede `queryPrinterStatus` e si ferma se la stampante è «in periodo inattivo».
+- **L'annullo** controlla prima con il comando `directIO` 9205.
+- Nel metodo dell'annullo c'è un valore fisso per l'accesso alla stampante: è un segreto, non si riporta.
+- **Chi fa partire la Z non è nell'AppServer.** L'AppServer ha solo la strada del totem; la Z parte quasi certamente
+  dal programma di cassa (VB6). Da capire con il decompilatore (scelta di Edoardo del 30/10).
+- **La capacità per quarto d'ora** nel 2Bit la calcolano due stored procedure: `Speedy_ElencoFasceInfornataConZoneECarico`
+  e `Speedy_ElencoFasceInfornataConCarico`.
 
 ## 32.7 Le comande (PIZZERIA 192.168.1.12:9100 e ASP USB «EPSON TM-T88V Receipt5») — *in corso sul PC*
 
