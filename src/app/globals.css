@@ -1394,7 +1394,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 
 /* Home della cassa (/): il quarto d'ora con le prossime comande, «Nuovo ordine» sempre in vista (30/10/2026). */
 .dash-torna { margin-bottom: 8px; }
-.home-cassa { max-width: 980px; margin: 0 auto; }
+.home-cassa { max-width: none; margin: 0; min-width: 0; }
 .home-cassa .hq-testa { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-bottom: 12px; }
 .home-cassa .hq-adesso { background: var(--vino, #6b1e2e); color: #fff; border-radius: 14px; padding: 14px 16px; }
 .home-cassa .hq-adesso small { opacity: .85; font-size: 15px; letter-spacing: .02em; }
@@ -1416,7 +1416,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .home-cassa .hq-quarto.pieno .hq-ora { background: #fbe3df; }
 .home-cassa .hq-vuoto { padding: 6px 12px; color: #9a8f80; }
 .home-cassa .hq-comande { list-style: none; margin: 0; padding: 0; }
-.home-cassa .hq-comande li { display: grid; grid-template-columns: 56px 92px minmax(0, 1fr) 56px; gap: 8px; padding: 8px 12px;
+.home-cassa .hq-comande li { display: grid; grid-template-columns: 56px 92px minmax(0, 1fr) 56px minmax(120px, auto); gap: 8px; padding: 8px 12px;
   border-top: 1px solid #f0e8dc; align-items: center; border-left: 5px solid transparent; }
 .home-cassa .hq-comande li .chi { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .home-cassa .hq-comande li .pz { text-align: right; font-weight: 700; }
@@ -1424,8 +1424,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .home-cassa .hq-comande li.t-ritiro { border-left-color: #6b1e2e; }
 .home-cassa .hq-comande li.t-tavolo { border-left-color: #3b7d4f; }
 .home-cassa .hq-comande li.t-banco { border-left-color: #8a7a66; }
-.home-cassa .hq-comande li.uscita { opacity: .45; text-decoration: line-through; }
 @media (max-width: 640px) {
   .home-cassa .hq-testa { grid-template-columns: 1fr; }
   .home-cassa .hq-comande li { grid-template-columns: 48px 76px minmax(0, 1fr) 48px; }
+  .home-cassa .hq-comande li .st { grid-column: 2 / -1; }
 }
+.home-cassa .hq-comande li .st { font-size: 14px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: #f4efe6; text-align: center; white-space: nowrap; }
+.home-cassa .hq-comande li .st-in-consegna, .home-cassa .hq-comande li .st-assegnato { background: #fff3b0; }
+.home-cassa .hq-comande li .st-consegnato, .home-cassa .hq-comande li .st-ritirato { background: #dff0e2; }
+.home-cassa .hq-comande li.uscita { opacity: .55; }
+.home-cassa .hq-comande li.uscita .chi { text-decoration: line-through; }
+.home-cassa .hq-ritardo-titolo { color: #c0392b; font-size: 16px; margin: 6px 0; text-transform: uppercase; letter-spacing: .04em; }
+.dash-esporta { margin: 0 0 16px; } .dash-esporta button { min-height: 52px; font-size: 17px; }

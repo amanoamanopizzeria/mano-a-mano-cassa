@@ -1,4 +1,5 @@
 import Link from "next/link";
+import EsportaOrdini from "@/components/EsportaOrdini";
 
 export default function Dashboard() {
   return (
@@ -8,6 +9,7 @@ export default function Dashboard() {
         <div className="sabbia"><img src="/brand/logo-amanoamano.png" alt="A Mano a Mano" className="logo" /><img src="/brand/bollino.png" alt="" className="bollino" /></div>
         <div className="vino"><h1>Dashboard</h1><span>Riepiloghi, rider, conti, clienti, menù</span></div>
       </div>
+      <EsportaOrdini className="dash-esporta" />
       <div className="griglia">
         <Link href="/cassa/nuovo" className="carta principale">
           <strong>Nuovo ordine</strong>

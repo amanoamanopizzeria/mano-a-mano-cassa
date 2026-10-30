@@ -2,14 +2,17 @@
 
 // La Home è la cassa dei ragazzi (Edoardo, 30/10/2026): «la cassa deve sapere quello che sta uscendo, quindi la
 // schermata home è il quarto d'ora con le prossime comande, sempre lì, poi nuovo ordine, poi la mappa rider, e a
-// fine serata i conti solo col CSV». In alto il quarto d'ora di adesso (pizze e consegne sui posti), il tasto
+// fine serata i conti solo col CSV» (il CSV sta nella Dashboard, 03:28Z). In alto il quarto d'ora di adesso (pizze e consegne sui posti), il tasto
 // grande «Nuovo ordine», sotto i prossimi quarti d'ora con le comande dentro. Riepiloghi e il resto: /dashboard.
-// I numeri sono gli stessi del planner (capacita_giorno, ordini_per_fascia).
+// I numeri sono gli stessi del planner (capacita_giorno, ordini_per_fascia). 03:26Z: «noi lavoriamo molto più sulla
+// schermata di quarto d'ora, quella che trovi in tutti gli ordini: quella è la parte principale» → a sinistra c'è la
+// stessa colonna dei quarti d'ora di /cassa (Nuovo ordine, l'ultima chiamata, i posti, i −/+ della serata).
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 import type { CapacitaFascia } from "@/lib/types";
+import ColonnaCassa from "./cassa/ColonnaCassa";
 
 interface OrdineFascia {
   fascia: string; id: string; numero: number; tipo: string; canale: string; stato: string;
@@ -19,12 +22,22 @@ interface OrdineFascia {
 
 const TIPO: Record<string, string> = { domicilio: "Domicilio", ritiro: "Ritiro", tavolo: "Tavolo", banco: "Banco" };
 const CHIUSI = ["consegnato", "ritirato", "annullato"];
-const QUARTI_AVANTI = 8;   // due ore di quarti d'ora dopo quello di adesso
+// Il giro del domicilio (Edoardo, 03:27Z): in uscita → il rider se lo prende = «In consegna», col suo nome →
+// «Consegnato». Lo stato lo scrive l'app rider (consegna), la Home lo legge in tempo reale.
+interface Giro { stato: "da_assegnare" | "assegnata" | "ritirata" | "consegnata" | string; rider: { nome: string } | null }
+const STATO: Record<string, string> = {
+  ricevuto: "Ricevuto", in_preparazione: "In preparazione", pronto: "Pronto", in_consegna: "In consegna",
+  consegnato: "Consegnato", ritirato: "Ritirato",
+};
+function statoDi(o: { tipo: string; stato: string }, g?: Giro): string {
+  if (o.stato === "consegnato" || g?.stato === "consegnata") return "Consegnato";
+  if (o.tipo === "domicilio" && g?.rider) return g.stato === "assegnata" ? "Assegnato" : "In consegna";
+  return STATO[o.stato] ?? o.stato;
+}
+const QUARTI_AVANTI = 16;  // quattro ore di quarti d'ora dopo quello di adesso (Edoardo, 03:27Z)
 
 const oggi = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
 const adessoRoma = () => new Date().toLocaleTimeString("sv-SE", { timeZone: "Europe/Rome" }).slice(0, 5);
-// La serata finisce alle 06: dopo mezzanotte il CSV è ancora quello della sera prima (come la dashboard).
-const serataDi = (t: number) => new Date(t - 6 * 3_600_000).toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
 const quartoDi = (hhmm: string) => {
   const [h, m] = hhmm.split(":").map(Number);
   return `${String(h).padStart(2, "0")}:${String(m - (m % 15)).padStart(2, "0")}`;
@@ -43,6 +56,7 @@ function Home() {
   const [ordini, setOrdini] = useState<OrdineFascia[]>([]);
   const [adesso, setAdesso] = useState(adessoRoma());
   const [errore, setErrore] = useState<string | null>(null);
+  const [giri, setGiri] = useState<Map<string, Giro>>(new Map());
   const giorno = oggi();
 
   const carica = useCallback(async () => {
@@ -56,6 +70,11 @@ function Home() {
     ]);
     if (c.error) setErrore(c.error.message); else if (o.error) setErrore(o.error.message);
     else { setErrore(null); setFasce((c.data ?? []) as CapacitaFascia[]); setOrdini((o.data ?? []) as OrdineFascia[]); }
+    const domicili = ((o.data ?? []) as OrdineFascia[]).filter((x) => x.tipo === "domicilio").map((x) => x.id);
+    if (domicili.length > 0) {
+      const { data: g } = await supabase.from("consegna").select("id_ordine, stato, rider(nome)").in("id_ordine", domicili);
+      setGiri(new Map(((g ?? []) as unknown as (Giro & { id_ordine: string })[]).map((x) => [x.id_ordine, x])));
+    } else setGiri(new Map());
   }, [giorno]);
 
   useEffect(() => {
@@ -64,6 +83,7 @@ function Home() {
     const canale = supabase
       .channel("home-" + giorno)
       .on("postgres_changes", { event: "*", schema: "public", table: "ordine" }, () => carica())
+      .on("postgres_changes", { event: "*", schema: "public", table: "consegna" }, () => carica())
       .on("postgres_changes", { event: "*", schema: "public", table: "turno_giorno" }, () => carica())
       .on("postgres_changes", { event: "*", schema: "public", table: "fascia_capacita" }, () => carica())
       .on("postgres_changes", { event: "*", schema: "public", table: "fascia_bloccata" }, () => carica())
@@ -82,19 +102,6 @@ function Home() {
     return m;
   }, [ordini]);
 
-  // Fine serata: il CSV a 40 colonne per mano-a-mano-os, lo stesso che legge l'OS (/api/ordini/csv).
-  async function scaricaCsv() {
-    const serata = serataDi(Date.now());
-    const { data } = await supabaseBrowser().auth.getSession();
-    const r = await fetch(`/api/ordini/csv?giornata=${serata}`, { headers: { authorization: `Bearer ${data.session?.access_token ?? ""}` } });
-    if (!r.ok) { setErrore(`CSV non scaricato (${r.status}).`); return; }
-    const el = document.createElement("a");
-    el.href = URL.createObjectURL(await r.blob());
-    const [a, m, g] = serata.split("-");
-    el.download = `export_${g}-${m}-${a}.csv`;
-    el.click(); URL.revokeObjectURL(el.href);
-  }
-
   const quartoOra = quartoDi(adesso);
   const attuale = fasce.find((f) => f.ora.slice(0, 5) === quartoOra) ?? null;
   // I prossimi quarti d'ora, più quelli già passati che hanno ancora comande non uscite (in ritardo).
@@ -104,7 +111,8 @@ function Home() {
 
   const riga = (f: CapacitaFascia, ritardo = false) => {
     const k = f.ora.slice(0, 5);
-    const comande = perFascia.get(k) ?? [];
+    // nei quarti già passati restano solo le comande che non sono uscite: quelle sono il ritardo
+    const comande = (perFascia.get(k) ?? []).filter((o) => !ritardo || !CHIUSI.includes(o.stato));
     const pieno = f.pizze_occupate >= f.pizze_max || f.bloccata_produzione;
     return (
       <section key={k} className={"hq-quarto" + (ritardo ? " ritardo" : "") + (pieno ? " pieno" : "")}>
@@ -123,6 +131,9 @@ function Home() {
                   <span className="tipo">{TIPO[o.tipo] ?? o.tipo}</span>
                   <span className="chi">{o.cliente ?? ""}{o.tipo === "domicilio" && o.indirizzo ? ` · ${o.indirizzo}` : ""}</span>
                   <span className="pz">{o.pizze} pz</span>
+                  <span className={"st st-" + statoDi(o, giri.get(o.id)).toLowerCase().replace(/\s+/g, "-")}>
+                    {statoDi(o, giri.get(o.id))}{o.tipo === "domicilio" && giri.get(o.id)?.rider ? ` · ${giri.get(o.id)?.rider?.nome}` : ""}
+                  </span>
                 </li>
               ))}
             </ul>}
@@ -131,33 +142,24 @@ function Home() {
   };
 
   return (
+    <div className="cassa-casa">
+    <ColonnaCassa />
     <main className="home-cassa">
       {errore && <p className="errore">{errore}</p>}
-
-      <div className="hq-testa">
-        <div className="hq-adesso">
-          <small>Adesso · {quartoOra}</small>
-          {attuale
-            ? <div className="hq-numeri">
-                <span><b>{attuale.pizze_occupate}</b>/{attuale.pizze_max} <em>pizze</em></span>
-                <span><b>{attuale.consegne_occupate}</b>/{attuale.consegne_max} <em>consegne</em></span>
-              </div>
-            : <div className="hq-numeri muto">Fuori orario</div>}
-        </div>
-        <Link href="/cassa/nuovo" className="hq-nuovo">＋ Nuovo ordine</Link>
-      </div>
 
       <nav className="hq-tasti">
         <Link href="/cassa/tavoli">Tavoli</Link>
         <Link href="/cassa/mappa">Mappa rider</Link>
         <Link href="/cassa">Tutti gli ordini</Link>
-        <a href="#" onClick={(e) => { e.preventDefault(); scaricaCsv(); }}>Fine serata · CSV</a>
+        <Link href="/dashboard">Fine serata · Dashboard</Link>
       </nav>
 
+      <h2 className="hq-titolo">Le prossime comande, quarto d&apos;ora per quarto d&apos;ora</h2>
+      {indietro.length > 0 && <h3 className="hq-ritardo-titolo">In ritardo</h3>}
       {indietro.map((f) => riga(f, true))}
       {attuale && riga(attuale)}
-      <h2 className="hq-titolo">Prossimi quarti d&apos;ora</h2>
       {prossimi.length === 0 ? <p className="muto">Nessun altro quarto d&apos;ora oggi.</p> : prossimi.map((f) => riga(f))}
     </main>
+    </div>
   );
 }
