@@ -34,7 +34,6 @@ function statoDi(o: { tipo: string; stato: string }, g?: Giro): string {
   if (o.tipo === "domicilio" && g?.rider) return g.stato === "assegnata" ? "Assegnato" : "In consegna";
   return STATO[o.stato] ?? o.stato;
 }
-const QUARTI_AVANTI = 16;  // quattro ore di quarti d'ora dopo quello di adesso (Edoardo, 03:27Z)
 
 const oggi = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
 const adessoRoma = () => new Date().toLocaleTimeString("sv-SE", { timeZone: "Europe/Rome" }).slice(0, 5);
@@ -105,7 +104,8 @@ function Home() {
   const quartoOra = quartoDi(adesso);
   const attuale = fasce.find((f) => f.ora.slice(0, 5) === quartoOra) ?? null;
   // I prossimi quarti d'ora, più quelli già passati che hanno ancora comande non uscite (in ritardo).
-  const prossimi = fasce.filter((f) => f.ora.slice(0, 5) > quartoOra).slice(0, QUARTI_AVANTI);
+  // tutti i quarti d'ora della serata da adesso in poi, uno dopo l'altro (Edoardo, 03:29Z: «19:30, 19:45, 20:00…»)
+  const prossimi = fasce.filter((f) => f.ora.slice(0, 5) > quartoOra);
   const indietro = fasce.filter((f) => f.ora.slice(0, 5) < quartoOra
     && (perFascia.get(f.ora.slice(0, 5)) ?? []).some((o) => !CHIUSI.includes(o.stato)));
 
