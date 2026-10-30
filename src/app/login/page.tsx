@@ -13,7 +13,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [messaggio, setMessaggio] = useState<string | null>(null);
   const [inCorso, setInCorso] = useState(false);
-  const [conPin, setConPin] = useState(true);
+  const [conPin, setConPin] = useState(false);   // col PIN acceso si può partire da lì
   const [nome, setNome] = useState("");
   const [pin, setPin] = useState("");
 
