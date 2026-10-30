@@ -1304,3 +1304,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
   .cc-colonna.in-ordine .cc-fasce { display: flex; flex-direction: column; overflow: visible; }
   .cc-colonna.in-ordine .cc-fasce .cc-riga { grid-template-columns: 1fr; min-width: 0; gap: 0; padding: 4px; }
 }
+
+/* /cassa/chiamate: l'elenco delle chiamate di una sera (REA 30 C3) */
+.ch-lista { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.ch-riga { display: grid; grid-template-columns: 56px 1fr auto; grid-template-areas: "ora chi stato" "ora azioni azioni"; gap: 4px 12px; align-items: center; padding: 10px 14px; }
+.ch-ora { grid-area: ora; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ch-chi { grid-area: chi; display: flex; flex-direction: column; min-width: 0; }
+.ch-chi .muto { overflow-wrap: anywhere; }
+.ch-stato { grid-area: stato; font-size: 13px; padding: 2px 8px; border-radius: 999px; background: #fdecea; color: #a12a1e; }
+.ch-presa .ch-stato { background: #e7f4ec; color: #1f6b3a; }
+.ch-azioni { grid-area: azioni; display: flex; gap: 8px; }
+.ch-azioni a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px; border: 1px solid var(--bordo); border-radius: 10px; text-decoration: none; color: inherit; background: #fff; }
+.ch-azioni a.primario { background: var(--vino); color: #fff; border-color: var(--vino); }

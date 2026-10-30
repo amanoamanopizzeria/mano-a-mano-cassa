@@ -59,6 +59,10 @@ export default function Home() {
           <strong>Conti e cruscotto</strong>
           <p className="muto">Venduto, origini, pagamenti, rider e tutti gli ordini, con il CSV.</p>
         </Link>
+        <Link href="/cassa/chiamate" className="carta">
+          <strong>Chiamate</strong>
+          <p className="muto">Chi ha chiamato stasera o in una sera passata: ora, numero, cliente, se è stata presa.</p>
+        </Link>
         <Link href="/cassa/riepilogo" className="carta">
           <strong>Riepilogo</strong>
           <p className="muto">Ordini di oggi per canale, pizze, consegne e incasso.</p>
