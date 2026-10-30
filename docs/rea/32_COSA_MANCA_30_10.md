@@ -372,3 +372,10 @@ nuovo: si legge con l'utente Windows, solo SELECT, e nessun dato dei clienti è 
 - il copiatore ora segna «chiuso» banco e ritiro con il documento emesso;
 - il domicilio resta «aperto» finché non c'è `OraArrivo`, perché il documento può uscire prima della consegna;
 - le colonne del Backup righe sono tutte presenti. Il ramo Backup è verificato sui nomi delle colonne, non ancora sui dati.
+- Conteggio con la query a39d8eb, ultime 48 ore (V):
+  - 69 ordini, senza doppioni;
+  - 3 aperti, tutti domicili di oggi;
+  - 40 chiusi: 32 ritiri e 8 banco;
+  - 23 consegnati, tutti domicili;
+  - 3 eliminati, tutti banco.
+  Tornano tutti.
