@@ -1436,3 +1436,21 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .home-cassa .hq-comande li.uscita .chi { text-decoration: line-through; }
 .home-cassa .hq-ritardo-titolo { color: #c0392b; font-size: 16px; margin: 6px 0; text-transform: uppercase; letter-spacing: .04em; }
 .dash-esporta { margin: 0 0 16px; } .dash-esporta button { min-height: 52px; font-size: 17px; }
+.home-cassa .hq-passo { display: inline-flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.home-cassa .hq-passo button { min-width: 40px; min-height: 40px; padding: 0; font-size: 20px; font-weight: 700; border-radius: 8px; }
+.home-cassa .hq-passo b { min-width: 52px; text-align: center; font-size: 16px; }
+.home-cassa .hq-passo b.in-attesa { color: var(--vino, #8a1538); text-decoration: underline dotted; }
+/* Tavoli uniti (mig. 0081): un tavolone solo «1+2», con le sedie lungo i lati lunghi. */
+.sala .piantina .tavolo.unito { border-width: 2.5px; background: #fff6e6; }
+.sala .p-griglia .tavolo.unito::before, .sala .p-griglia .tavolo.unito::after {
+  top: 14%; bottom: 14%; left: auto; right: auto; width: 9px; height: auto;
+  background: repeating-linear-gradient(to bottom, #c9a77a 0 34px, transparent 34px 52px); box-shadow: none; }
+.sala .p-griglia .tavolo.unito::before { left: -14px; }
+.sala .p-griglia .tavolo.unito::after { right: -14px; }
+.sala .p-fila .tavolo.unito::before, .sala .p-fila .tavolo.unito::after {
+  left: 10%; right: 10%; background: repeating-linear-gradient(to right, #c9a77a 0 34px, transparent 34px 52px); box-shadow: none; }
+.sala .piantina .tavolo.unisce { outline: 3px solid var(--vino, #8a1538); outline-offset: 2px; }
+.sala .piantina .tavolo.compagno { cursor: pointer; outline: 3px dashed #3b7d4f; outline-offset: 2px; }
+.sala .s-unisci { background: #eef6ef; border: 1px solid #3b7d4f; border-radius: 10px; padding: 10px 12px; }
+.fasce-pagina .f-nuovo { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 22px; border-radius: 12px;
+  background: var(--vino, #8a1538); color: #fff; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 20px; text-decoration: none; }
