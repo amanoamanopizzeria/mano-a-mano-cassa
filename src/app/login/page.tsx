@@ -31,7 +31,7 @@ export default function Login() {
       setMessaggio(error.message);
       return;
     }
-    router.push("/cassa");
+    router.push("/");
     router.refresh();
   }
 

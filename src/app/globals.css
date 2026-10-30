@@ -1391,3 +1391,41 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .sala .piantina .tavolo .s-intesta { justify-content: center; gap: 6px; }
 .sala .p-banco { background: repeating-linear-gradient(45deg, #efe2c8 0 10px, #e8d7b7 10px 20px); border: 2px solid #c9ab7c; color: #7a6040; }
 .sala .p-passaggio { background: transparent; border-color: #d7c3a3; }
+
+/* Home della cassa (/): il quarto d'ora con le prossime comande, «Nuovo ordine» sempre in vista (30/10/2026). */
+.dash-torna { margin-bottom: 8px; }
+.home-cassa { max-width: 980px; margin: 0 auto; }
+.home-cassa .hq-testa { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin-bottom: 12px; }
+.home-cassa .hq-adesso { background: var(--vino, #6b1e2e); color: #fff; border-radius: 14px; padding: 14px 16px; }
+.home-cassa .hq-adesso small { opacity: .85; font-size: 15px; letter-spacing: .02em; }
+.home-cassa .hq-numeri { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 4px; font-size: 20px; }
+.home-cassa .hq-numeri b { font-size: 40px; line-height: 1; }
+.home-cassa .hq-numeri em { font-style: normal; font-size: 15px; opacity: .85; }
+.home-cassa .hq-nuovo { display: flex; align-items: center; justify-content: center; border-radius: 14px; background: #c9a981; color: #2b1a10;
+  font-size: 28px; font-weight: 700; text-decoration: none; min-height: 96px; text-align: center; padding: 8px; }
+.home-cassa .hq-tasti { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.home-cassa .hq-tasti a { flex: 1 1 140px; text-align: center; padding: 12px 10px; border-radius: 10px; border: 1px solid #d9cbb7;
+  background: #fff; color: inherit; text-decoration: none; font-weight: 600; }
+.home-cassa .hq-titolo { font-size: 16px; margin: 18px 0 8px; }
+.home-cassa .hq-quarto { border: 1px solid #e3d8c8; border-radius: 12px; background: #fff; margin-bottom: 8px; overflow: hidden; }
+.home-cassa .hq-quarto.ritardo { border-color: #c0392b; }
+.home-cassa .hq-ora { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 12px; background: #f6efe5; }
+.home-cassa .hq-ora b { font-size: 20px; }
+.home-cassa .hq-posti { font-size: 15px; }
+.home-cassa .hq-tag { font-size: 13px; font-weight: 700; color: #fff; background: #c0392b; border-radius: 6px; padding: 2px 8px; }
+.home-cassa .hq-quarto.pieno .hq-ora { background: #fbe3df; }
+.home-cassa .hq-vuoto { padding: 6px 12px; color: #9a8f80; }
+.home-cassa .hq-comande { list-style: none; margin: 0; padding: 0; }
+.home-cassa .hq-comande li { display: grid; grid-template-columns: 56px 92px minmax(0, 1fr) 56px; gap: 8px; padding: 8px 12px;
+  border-top: 1px solid #f0e8dc; align-items: center; border-left: 5px solid transparent; }
+.home-cassa .hq-comande li .chi { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-cassa .hq-comande li .pz { text-align: right; font-weight: 700; }
+.home-cassa .hq-comande li.t-domicilio { border-left-color: #e2b93b; }
+.home-cassa .hq-comande li.t-ritiro { border-left-color: #6b1e2e; }
+.home-cassa .hq-comande li.t-tavolo { border-left-color: #3b7d4f; }
+.home-cassa .hq-comande li.t-banco { border-left-color: #8a7a66; }
+.home-cassa .hq-comande li.uscita { opacity: .45; text-decoration: line-through; }
+@media (max-width: 640px) {
+  .home-cassa .hq-testa { grid-template-columns: 1fr; }
+  .home-cassa .hq-comande li { grid-template-columns: 48px 76px minmax(0, 1fr) 48px; }
+}

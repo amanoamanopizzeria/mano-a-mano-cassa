@@ -38,10 +38,13 @@ export default function AuthGate({ children, barra = true }: { children: React.R
   return (
     <>
       {barra && <div className="muto ag-barra">
-        {pagina !== "/" && <span className="ag-nav">
-          <button type="button" onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))}>‹ Indietro</button>
-          <button type="button" onClick={() => router.push("/")}>⌂ Home</button>
-        </span>}
+        {/* La Home (/) è la cassa dei ragazzi: il quarto d'ora con le prossime comande e «Nuovo ordine». Tutto il
+            resto (riepilogo, rider, conti, menù…) sta nella Dashboard (Edoardo, 30/10/2026). */}
+        <span className="ag-nav">
+          {pagina !== "/" && <button type="button" onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))}>‹ Indietro</button>}
+          {pagina !== "/" && <button type="button" onClick={() => router.push("/")}>⌂ Home</button>}
+          {pagina !== "/dashboard" && <button type="button" onClick={() => router.push("/dashboard")}>☰ Dashboard</button>}
+        </span>
         <span>{email}</span>
         <button onClick={esci}>Esci</button>
       </div>}
