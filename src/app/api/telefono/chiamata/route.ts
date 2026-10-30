@@ -1,7 +1,8 @@
 // POST /api/telefono/chiamata — una telefonata in arrivo. La scrive in `chiamata`; la cassa
 // la vede in tempo reale e apre la scheda del cliente (riconoscimento del chiamante).
 // Chi la chiama: il centralino / l'apparecchio di identificazione, con la chiave TELEFONO_KEY
-// nell'intestazione x-api-key. Accetta due forme:
+// nell'intestazione x-api-key; oppure l'agente delle chiamate sul PC di cassa con la chiave del PC, che non
+// esce dal PC: la controlla segna_chiamata_pc con la sua impronta (mig. 0083). Accetta due forme:
 //   { "numero": "+39333…" }                      — generica
 //   il webhook voce di Telnyx (call.initiated)  — data.payload.from
 import { NextResponse } from "next/server";
@@ -19,7 +20,10 @@ function chiaveValida(ricevuta: string | null): boolean {
 
 export async function POST(req: Request) {
   const url = new URL(req.url);
-  if (!chiaveValida(req.headers.get("x-api-key") ?? url.searchParams.get("k"))) {
+  const ricevuta = req.headers.get("x-api-key") ?? url.searchParams.get("k");
+  // senza TELEFONO_KEY può essere la chiave del PC: la prova il database, qui sotto
+  const delPc = !chiaveValida(ricevuta);
+  if (delPc && (!ricevuta || ricevuta.length < 32)) {
     return NextResponse.json({ errore: "non autorizzato" }, { status: 401 });
   }
   let body: { numero?: string; data?: { event_type?: string; payload?: { from?: string; direction?: string } } };
@@ -41,7 +45,12 @@ export async function POST(req: Request) {
   // Scrive tramite segna_chiamata_api: la funzione confronta l'impronta della chiave, così non
   // serve la service_role sul server. La chiave è già stata controllata qui sopra.
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } });
-  const { data, error } = await supabase.rpc("segna_chiamata_api", { p_numero: pulito, p_origine: origine, p_chiave: process.env.TELEFONO_KEY });
-  if (error) return NextResponse.json({ errore: error.message }, { status: 500 });
+  const { data, error } = delPc
+    ? await supabase.rpc("segna_chiamata_pc", { p_numero: pulito, p_chiave: ricevuta })
+    : await supabase.rpc("segna_chiamata_api", { p_numero: pulito, p_origine: origine, p_chiave: process.env.TELEFONO_KEY });
+  if (error) {
+    const rifiutata = /chiave non valida/.test(error.message);
+    return NextResponse.json({ errore: rifiutata ? "non autorizzato" : error.message }, { status: rifiutata ? 401 : 500 });
+  }
   return NextResponse.json({ esito: "segnata", id: data });
 }

@@ -19,6 +19,7 @@ $ogni = [Math]::Max(1000, [int]($config.ogniMillisecondi, 1500 | Where-Object { 
 $connessione = $config.connessione
 if (-not $connessione) { Write-Host "Manca «connessione» in config.json."; exit 1 }
 $fileChiave = Join-Path $qui "chiave.txt"
+# chiave.txt: TELEFONO_KEY oppure la chiave del PC creata da agente-copiatore/nuova-chiave.ps1 (la stessa del copiatore)
 $chiave = if ($env:TELEFONO_KEY) { $env:TELEFONO_KEY } elseif (Test-Path $fileChiave) { (Get-Content $fileChiave -Raw).Trim() } else { "" }
 if (-not $chiave -and -not $Prova) { Write-Host "Manca la chiave: variabile TELEFONO_KEY o file chiave.txt accanto all'agente."; exit 1 }
 

@@ -30,7 +30,8 @@ L'agente:
 
 2. Copiare la cartella `agente-chiamate` sul PC.
 3. Copiare `config.esempio.json` in `config.json` e scrivere la password vera **solo lì**.
-4. Scrivere la chiave in `chiave.txt`: è la stessa di `TELEFONO_KEY` su Vercel. Mai in chat, mai su GitHub.
+4. In `chiave.txt` va la chiave del PC, la stessa del copiatore (`agente-copiatore/nuova-chiave.ps1`, mig. 0083):
+   non serve copiare `TELEFONO_KEY` da Vercel. Va bene anche `TELEFONO_KEY`. Mai in chat, mai su GitHub.
 5. **Prova** (non manda niente): `powershell -ExecutionPolicy Bypass -File chiamate.ps1 -Prova`. Deve dire quante chiamate ci sono e qual è l'ultima.
 6. **Acceso**: `powershell -ExecutionPolicy Bypass -File chiamate.ps1`. Per farlo partire da solo: Utilità di pianificazione di Windows, «All'accesso», con lo stesso comando.
 

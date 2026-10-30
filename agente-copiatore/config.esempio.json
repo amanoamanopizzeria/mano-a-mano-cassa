@@ -1,0 +1,9 @@
+{
+  "server": "https://mano-a-mano-cassa.vercel.app",
+  "ogniSecondi": 5,
+  "oreIndietro": 12,
+  "connessione": "Server=localhost\\DUEBIT;Database=DD_AMANOAMANOPUGLIESE;User Id=LETTORE_ORDINI;Password=SCRIVILA_SOLO_SUL_PC;Encrypt=False;Connect Timeout=5",
+  "queryOrdini": "SELECT t.ID AS id_2bit, t.DataInserimento AS creato, t.OrigineComanda AS origine, t.TipoComanda AS tipo, t.Numero AS numero, t.Stato AS stato, t.Totale AS totale, t.Cliente AS cliente, t.Telefono AS telefono, t.Indirizzo AS indirizzo, t.OraConsegna AS ora_consegna FROM dbo.PIZ_tabTestateComande t WHERE t.DataInserimento >= @dal ORDER BY t.ID",
+  "queryRighe": "SELECT r.Descrizione, r.Quantita, r.Prezzo FROM dbo.PIZ_tabComande r WHERE r.IDTestata = @id ORDER BY r.ID",
+  "_nota": "I nomi delle colonne sopra sono da sistemare con lo schema vero del 2Bit (REA del PC): contano solo gli alias (AS id_2bit, AS creato…)."
+}
