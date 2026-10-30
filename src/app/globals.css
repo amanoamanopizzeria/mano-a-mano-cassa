@@ -242,6 +242,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .accesso.app input { width: 100%; min-width: 0; box-sizing: border-box; min-height: 52px; padding: 12px 14px; font-size: 17px; }
 .accesso.app .a-entra { min-height: 56px; padding: 0 16px; font-size: 18px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .06em; }
 .accesso.app .a-msg { margin-top: 12px; padding: 10px 14px; border-radius: 12px; background: var(--errore-chiaro); color: var(--errore); font-weight: 600; font-size: 15px; }
+.accesso .a-modi { display: flex; gap: 8px; margin-bottom: 12px; }
+.accesso .a-modi button { flex: 1; min-height: 44px; }
+.accesso .a-pin { display: grid; gap: 14px; }
+.accesso .a-pin input { min-height: 48px; font-size: 18px; }
+.accesso .a-puntini { display: flex; justify-content: center; gap: 14px; }
+.accesso .a-puntini span { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--vino, #6b1e2e); }
+.accesso .a-puntini span.pieno { background: var(--vino, #6b1e2e); }
+.accesso .a-tastierino { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.accesso .a-tastierino button { min-height: 64px; font-size: 26px; font-weight: 600; }
 
 /* ===== giro 3 del grafico (23/10/2026): i minori del critico 4b ===== */
 .mappa-link { display: inline-block; margin-left: 8px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--vino); color: var(--vino); font-weight: 600; font-size: 14px; text-decoration: none; white-space: nowrap; }
@@ -1331,3 +1340,6 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .sala .conto .diviso-aggiungi { min-height: 44px; }
 .sala .conto .diviso-stato { font-weight: 600; }
 .sala .conto .diviso-stato.manca { color: #a12a1e; }
+.pin-scheda { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
+.pin-scheda input { min-height: 44px; font-size: 16px; flex: 1 1 140px; }
+.pin-scheda button { min-height: 44px; }
