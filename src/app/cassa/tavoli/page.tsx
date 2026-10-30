@@ -153,10 +153,12 @@ function Tavoli() {
     "3": { riga: 4, colonna: 1 }, "2": { riga: 5, colonna: 1 }, "1": { riga: 6, colonna: 1 },
     "10": { riga: 1, colonna: 3 }, "9": { riga: 2, colonna: 3 }, "8": { riga: 3, colonna: 3 }, "7": { riga: 5, colonna: 3 },
   };
+  // nel database i tavoli si chiamano D1…D10 e F1…F5: il posto si cerca dalle cifre
+  const postoDi = (t: Tavolo) => POSTO[t.numero.replace(/\D/g, "")];
   const perNumero = (a: Tavolo, b: Tavolo) => a.numero.localeCompare(b.numero, "it", { numeric: true });
   const fuori = tavoli.filter((t) => t.zona === "fuori").sort(perNumero);
-  const dentro = tavoli.filter((t) => t.zona === "dentro" && POSTO[t.numero]);
-  const altri = tavoli.filter((t) => t.zona === "dentro" && !POSTO[t.numero]).sort(perNumero);
+  const dentro = tavoli.filter((t) => t.zona === "dentro" && postoDi(t));
+  const altri = tavoli.filter((t) => t.zona === "dentro" && !postoDi(t)).sort(perNumero);
   const scheda = (t: Tavolo, posto?: { riga: number; colonna: number }) => {
         const min = minutiDa(t.aperto_il);
         const allarme = t.stato !== "libero" && min >= ALERT_MINUTI;
@@ -197,7 +199,7 @@ function Tavoli() {
         <section className="s-zona p-dentro">
           <h2>Dentro</h2>
           <div className="p-griglia">
-            {dentro.map((t) => scheda(t, POSTO[t.numero]))}
+            {dentro.map((t) => scheda(t, postoDi(t)))}
             <div className="p-passaggio" style={{ gridRow: 4, gridColumn: 3 }} aria-hidden="true">passaggio</div>
             <div className="p-parete" style={{ gridRow: "1 / span 5", gridColumn: 4 }} aria-hidden="true" />
             <div className="p-banco" style={{ gridRow: "6 / span 1", gridColumn: "3 / span 2" }} aria-hidden="true">banco</div>
