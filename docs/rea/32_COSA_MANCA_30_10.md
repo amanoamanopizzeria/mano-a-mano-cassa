@@ -95,6 +95,37 @@ Windows `Utente` (sysadmin), `BUILTIN\Users`, `lettore_chiamate`. Le tabelle deg
 aperte**: con l'utente Windows (sysadmin) la sola lettura sarebbe una promessa, non un blocco. Si aspetta la scelta
 di Edoardo.
 
+Dal **modello dati** dentro `AppServer\bin\DueBit.ORM.dll` (nomi ed enum, non il database vivo, nessuna riga letta):
+- `PIZ_tabTestateComande`: la testata degli ordini da asporto, domicilio e banco. Chiave `idConsegna`, numero
+  `idComanda`, `DataCreaz`, `OrigineComanda`, `tipoConsegna`, `importoComanda`, `ragioneSociale`, `oraConsegna`,
+  `idPony` (il rider). Gli stati si leggono da `IsEliminata`, `Consegnata`, `isSospesa`; c'è anche `StatoConsegna`,
+  da capire.
+- `PIZ_tabComande`: le righe. Chiave `ID`, legate per `idComanda`; telefono e indirizzo sono qui
+  (`telefonoAsporto`, `indirizzoAsporto`, `CivicoAsporto`). **I tavoli** sembrano stare solo qui (`idTipoComanda=0`,
+  `idTavolo`).
+- **OrigineComanda:**
+
+  | Codice | Origine |
+  |---|---|
+  | 0 | FrontendSpeedy (la cassa) |
+  | 1 | App |
+  | 2 | Web |
+  | 3 | Just Eat |
+  | 4 | Telefono |
+  | 5 | Totem |
+  | 100 | Deliveroo |
+  | 101 | Uber Eats |
+  | 199 | Glovo |
+
+  **Deliverect non compare** come origine: da capire.
+- **tipoConsegna:** 0 ritiro, 1 domicilio, 2 banco.
+
+Le due `SELECT` del copiatore sono in `agente-copiatore/config.esempio.json`. **Non sono ancora provate**. Da
+verificare con `-Prova`:
+- se `idComanda` si riusa nel tempo;
+- cosa vuol dire `StatoConsegna`;
+- come prendere anche i tavoli.
+
 ## 32.5 AppServer (porta 9000) e il flusso web-app.it / Deliverect → 2Bit — *in corso sul PC*
 
 ## 32.6 Lo scontrino fiscale (Epson FP-81 II RT, 192.168.1.200) e la chiusura giornaliera — *in corso, solo studio*
@@ -102,6 +133,11 @@ di Edoardo.
 ## 32.7 Le comande (PIZZERIA 192.168.1.12:9100 e ASP USB «EPSON TM-T88V Receipt5») — *in corso sul PC*
 
 ## 32.8 Velocissimo: CSV del Sales Export Tool, dashboard web, rider — *in corso sul PC*
+
+**Correzione importante:** il «Velocissimo Sales Export Tool» **non fa un CSV**. Manda le vendite in JSON a
+`service.web-app.it` (sync-speedy-sales), ogni 5 minuti e una volta al giorno. La dashboard di Velocissimo sta su
+web-app.it, non sul PC. Per confrontare il formato del CSV di fine serata serve un CSV d'esempio scaricato da
+Edoardo. Il nostro export a 40 colonne è stato fatto sull'export «/weborder» di Velocissimo (REA 15).
 
 ## 32.9 L'ordine dei lavori, per step
 
