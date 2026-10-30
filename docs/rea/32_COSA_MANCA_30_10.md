@@ -321,3 +321,41 @@ Per il copiatore la chiave forte di un ordine esterno è id esterno + origine.
 - quel programma, `EscPosPrinterWatcher.exe` e `HotelConnector.exe` non sono .NET, quindi non si decompilano;
 - reparti, copie, doppia stampa, pulsante Z e Z programmata si leggono solo nel database (`PIZ_tabCentriProduzione`,
   `PIZ_tabStampanti`, `PIZ_Messaggi`, le opzioni), con l'utente di sola lettura.
+
+## 32.12 Letto sul database vivo, 30/10 sera
+
+Edoardo, 17:12Z: «rimaniamo solo in lettura, senza scrivere niente sul loro server». Per questo non c'è nessun utente
+nuovo: si legge con l'utente Windows, solo SELECT, e nessun dato dei clienti è passato in chat. V = visto.
+
+**Copiatore:**
+- la SELECT gira sui dati veri: 3 ordini nelle ultime 12 ore, dall'app, a domicilio, aperti (V);
+- la prova completa `-Prova` l'ha bloccata il sistema di permessi del PC: va lanciata a mano;
+- correzioni portate nel repo:
+  - il numero è `numeroComanda`, che sta in `PIZ_tabComande` e riparte ogni giorno (V);
+  - negli ordini dall'app il telefono sta in `TelefonoAsporto2` (V);
+  - gli ordini chiusi escono da `PIZ_tabTestateComande` (81 righe) e vanno in `PIZ_tabTestateComandeBackup`
+    (51.660): ora si leggono tutte e due (V);
+- `idComanda` non si riusa: 51.660 distinti su 51.660 (V).
+
+**Stati, ultimi 30 giorni (V):**
+- `StatoConsegna` è sempre 0/NULL e `Consegnata` sempre 0;
+- 1.420 ordini, di cui 490 con `OraArrivo`;
+- nessuno eliminato o sospeso nel Backup.
+
+**Origini, ultimi 30 giorni (V):**
+- App 1.219, cassa 132, telefono 69;
+- Web, Just Eat, Deliveroo e Glovo: 0. Nello storico Just Eat 798, Deliveroo 76, Glovo 6;
+- le piattaforme oggi non entrano nel 2Bit.
+
+**Tipi, ultimi 30 giorni (V):** ritiro 758, domicilio 498, banco 164.
+
+**Stampanti (V):**
+- PIZZERIA 192.168.1.12:9100 per le comande;
+- la fiscale FP81/90 su 192.168.1.200, LAN;
+- ASP locale, per comande e preconti;
+- nei centri di produzione (Asporto, Pizzeria) stampante e copie sono vuote: l'instradamento non passa da lì,
+  e la doppia stampa non è confermata.
+
+**Opzioni (V):**
+- chiusura del locale alle 23:30, `NonEffettuareChiusuraComande=1`;
+- nessuna opzione di Z programmata.
