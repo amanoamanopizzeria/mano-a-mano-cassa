@@ -262,3 +262,43 @@ Questo è quello che la scansione dell'IL ha letto. Può sfuggire qualche chiama
 - i reparti e le copie delle comande;
 - cosa controlla la Z prima di partire.
 
+
+## 32.11 Dal decompilatore, 30/10 sera
+
+Fonti: ilspycmd 9.1, installato da Edoardo, su EpsonRT, Service, WebServices e TotemService. La cassa di tutti i giorni è
+VB6 e non si decompila: il flusso fiscale qui sotto è quello .NET (Totem/AppServer), che potrebbe differire nei dettagli.
+
+**Stati dell'ordine (V)**, già corretti nella SELECT del copiatore:
+- **consegnato:** `OraArrivo` valorizzata. `Consegnata` si copia solo alla creazione e `StatoConsegna` non si usa;
+- **in consegna:** `idPony > 0` e non il pony con `UsaPerBanco=1`, perché il pony banco vale come «non assegnato».
+  `oraInvio` è la partenza;
+- **ordine dei passi:** `OrdineInConsegna` vale solo per la consegna a domicilio, senza pony già assegnato e con la zona
+  coperta (`PIZ_tabPony_ZoneCoperte`). Imposta pony, `oraInvio`, `durataConsegna`, e mette il rider in stato operativo 2;
+- **rientro:** `OrdineConsegnato` scrive `OraArrivo`. Senza altri ordini nelle ultime 3 ore, il rider passa allo stato 3
+  con `OraRientro`;
+- **sospesi:** `isSospesa` toglie l'ordine dagli attivi. Chi mette `IsEliminata=1` non è stato trovato;
+- **altre copie:** dopo il documento fiscale il programma aggiorna anche `PIZ_tabTestateComandeBackup` e
+  `PIZ_tabMiniComande`.
+
+**Numeri (V/D):**
+- `idComanda` è un progressivo del DB (`GetNewId`), e il tavolo aperto riusa la stessa (V);
+- il numero che si vede è `numeroComanda` (`NuovoNumeroComanda`), ed è quello che può ripartire (D);
+- chiave sicura per ora: `idConsegna`, con `DataCreaz` come controllo.
+
+**Scontrino (V, .NET):**
+- **i passi, in un'unica busta:** stato (blocco su «periodo inattivo», tranne che per la Z) → inizio, operatore 1 →
+  lotteria (directIO 1135) → una riga per articolo, con le varianti sommate al prezzo e alla descrizione → sconto di riga
+  `printRecItemAdjustment` → sconto convenzione, fidelity, manuale o promo `printRecSubtotalAdjustment` →
+  arrotondamento → righe di testo (numero comanda) → totale → fine;
+- **pagamenti:** contanti = Cash; POS e carta = Credit, indice 1, «Pagamento Elettronico». Nel .NET non ci sono né
+  Satispay né buoni;
+- **reparto:** si ricava da pietanza, codice IVA e cassa.
+
+**Annullo e Z (V):**
+- **annullo:** directIO 9205 con matricola, data, numero del documento e numero della chiusura, poi «DOCUMENTO DI ANNULLO»;
+- **Z, i passi:** cerca la stampante fiscale della cassa → stato → `printZReport`, operatore 1, attesa 60 s → esito →
+  chiusura gestionale → chiusura del POS, in background;
+- **non letti:** il pulsante e la Z programmata, che stanno nel VB6.
+
+I nostri messaggi in `src/lib/fiscale/epson-xml.ts` seguono già lo stesso ordine: niente da cambiare finché non c'è la
+prova in negozio.
