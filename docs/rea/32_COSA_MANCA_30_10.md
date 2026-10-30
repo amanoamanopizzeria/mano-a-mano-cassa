@@ -366,3 +366,9 @@ nuovo: si legge con l'utente Windows, solo SELECT, e nessun dato dei clienti è 
 - le righe degli ordini chiusi stanno in `PIZ_tabComandeBackup`: la query ora le cerca anche lì;
 - tra gli «aperti» ci sono banco e ritiri già evasi, che non hanno uno stato finale. Il segnale di chiusura è da trovare
   (D: `isDocumentoEmesso`).
+
+**La chiusura di banco e ritiro (V):**
+- il segnale è `isDocumentoEmesso=1`: nelle ultime 48 ore vale 63 su 69, e nel Backup di 30 giorni 1.419 su 1.420;
+- il copiatore ora segna «chiuso» banco e ritiro con il documento emesso;
+- il domicilio resta «aperto» finché non c'è `OraArrivo`, perché il documento può uscire prima della consegna;
+- le colonne del Backup righe sono tutte presenti. Il ramo Backup è verificato sui nomi delle colonne, non ancora sui dati.
