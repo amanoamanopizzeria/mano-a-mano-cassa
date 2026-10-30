@@ -93,7 +93,7 @@ function Riepilogo() {
   // così il riepilogo e l'export non dicono due cifre per la stessa cosa. «Incassato» = dove stanno i
   // soldi: in cassa (contanti, POS), ai rider (contanti, POS), online nostro, piattaforme; e quanto
   // è ancora aperto. In più i contanti ancora in mano a ogni rider (rider_borsello).
-  type Incassato = { contantiInCassa: number; posInCassa: number; contantiAiRider: number; posAiRider: number; onlineNostro: number; piattaforme: number; ancoraAperti: number };
+  type Incassato = { contantiInCassa: number; posInCassa: number; contantiAiRider: number; posAiRider: number; onlineNostro: number; piattaforme: number; ancoraAperti: number; buoniPasto?: number; satispay?: number };
   const [incassato, setIncassato] = useState<Incassato | null>(null);
   const [riderDaSaldare, setRiderDaSaldare] = useState<{ nome: string; da_saldare: number }[]>([]);
   // al cambio di sera si svuota; a ogni ordine nuovo si rilegge senza far sparire i numeri (M5)
@@ -146,6 +146,8 @@ function Riepilogo() {
             <div className="carta numero"><div className="eti">Ai rider · contanti</div><strong>{eur(Number(incassato.contantiAiRider))}</strong></div>
             <div className="carta numero"><div className="eti">Ai rider · POS</div><strong>{eur(Number(incassato.posAiRider))}</strong></div>
             <div className="carta numero"><div className="eti">Online nostro</div><strong>{eur(Number(incassato.onlineNostro))}</strong></div>
+            {Number(incassato.buoniPasto ?? 0) > 0 && <div className="carta numero"><div className="eti">Buoni pasto</div><strong>{eur(Number(incassato.buoniPasto))}</strong></div>}
+            {Number(incassato.satispay ?? 0) > 0 && <div className="carta numero"><div className="eti">Satispay</div><strong>{eur(Number(incassato.satispay))}</strong></div>}
             {Number(incassato.piattaforme) > 0 && <div className="carta numero"><div className="eti">Piattaforme</div><strong>{eur(Number(incassato.piattaforme))}</strong></div>}
             <div className={"carta numero" + (Number(incassato.ancoraAperti) > 0 ? " aperti" : "")}><div className="eti">Ancora aperti</div><strong>{eur(Number(incassato.ancoraAperti))}</strong></div>
           </div>
