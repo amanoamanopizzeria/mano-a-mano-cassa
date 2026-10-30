@@ -955,12 +955,17 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .cc-cella.usata { background: #fff3b0; }
 .cc-cella.piena { background: #c62828; color: #fff; }
 .cc-serata { display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 12px; background: #f4efe6; }
-.cc-passo { display: grid; grid-template-columns: 1fr 48px 44px 48px; gap: 6px; align-items: center; }
+.cc-passo { display: grid; grid-template-columns: minmax(0, 1fr) 44px 40px 44px; gap: 4px; align-items: center; }
+/* nella colonna stretta (dentro l'ordine, 190–230 px) il nome va sopra e i −/+ restano in riga, senza sbordare */
+.cc-colonna.in-ordine .cc-passo { grid-template-columns: 44px minmax(0, 1fr) 44px; }
+.cc-colonna.in-ordine .cc-passo-nome { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 6px; }
 .cc-passo-nome { display: flex; flex-direction: column; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .04em; font-size: 15px; }
 .cc-passo-nome small { font-family: "Figtree", sans-serif; text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--muto, #6b6259); }
 .cc-passo button { min-height: 48px; border-radius: 10px; border: 1px solid var(--vino, #8a1538); background: #fff; color: var(--vino, #8a1538); font-size: 26px; font-weight: 700; }
 .cc-passo button:disabled { opacity: .4; }
 .cc-passo b { text-align: center; font-size: 22px; font-variant-numeric: tabular-nums; }
+.cc-passo b.in-attesa { color: var(--vino, #8a1538); text-decoration: underline dotted; }
+.cc-passo-nome, .cc-serata .cc-etichetta { overflow-wrap: anywhere; }
 .cc-annulla { min-height: 44px; border-radius: 10px; border: 0; background: #1a1715; color: #fff; font-weight: 700; font-size: 15px; }
 .cc-errore { font-size: 13px; color: #c62828; }
 .cc-vuoto { font-size: 14px; color: var(--muto, #6b6259); }
