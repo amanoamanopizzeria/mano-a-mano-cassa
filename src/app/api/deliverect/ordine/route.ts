@@ -1,17 +1,32 @@
-// Ordini da Deliverect (Glovo, Deliveroo, Just Eat) verso la cassa.
+// Ordini da Deliverect (Glovo, Deliveroo, Just Eat) verso la cassa, per quando saremo noi il POS.
 // Deliverect chiama questo URL (Locations > Generic POS Settings > Orders webhook URL).
-// STATO: scaffolding. Da verificare in test: firma HMAC, mappa dei canali (codici numerici),
-// e la conferma ACCEPTED verso Deliverect (serve OAuth). Finché la mappa dei canali è vuota
-// le richieste vengono rifiutate, così nessun ordine finisce con il canale sbagliato.
-import { NextResponse } from "next/server";
+// STATO: spento. Nel mese in parallelo il POS resta Velocissimo e questo URL non sta su Deliverect (le copie
+// arrivano a /api/deliverect/copia). Senza DELIVERECT_WEBHOOK_SECRET risponde 401 a tutto.
+// Regole (documentazione Deliverect letta il 27/10/2026, REA 26):
+// - un ordine pagato non si rifiuta mai: entra anche a quarto pieno (0073), con un PLU che non conosciamo
+//   (ordine.ts) o da un canale che non conosciamo (la nota lo dice);
+// - l'annullo arriva qui con status 100 e lo stesso _id: si annulla l'ordine e si risponde 110;
+// - gli stati (20 accettato, 110 annullato) partono solo se il client API è acceso (src/lib/deliverect/api.ts).
+import { NextResponse, after } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { traduciArticoli, type ArticoloDx, type VariazioneCatalogo } from "@/lib/deliverect/ordine";
+import { aggiornaStato, acceso, STATO } from "@/lib/deliverect/api";
 
 export const dynamic = "force-dynamic";
 
-// Codice canale di Deliverect -> canale nostro. DA COMPILARE dopo il primo test con Deliverect.
-const CANALI_DELIVERECT: Record<number, "glovo" | "deliveroo" | "justeat"> = {};
+// Codice canale di Deliverect -> canale nostro. Deliveroo 2 e Just Eat 9 sono nell'esempio di /allChannels
+// della documentazione; Glovo lì non c'è: il numero vero si legge in staging (/allChannels) e si scrive su
+// Vercel in DELIVERECT_CANALI, per esempio {"2":"deliveroo","9":"justeat","27":"glovo"}.
+type CanalePiattaforma = "glovo" | "deliveroo" | "justeat";
+function canali(): Record<number, CanalePiattaforma> {
+  const base: Record<number, CanalePiattaforma> = { 2: "deliveroo", 9: "justeat" };
+  try {
+    return { ...base, ...(JSON.parse(process.env.DELIVERECT_CANALI || "{}") as Record<number, CanalePiattaforma>) };
+  } catch {
+    return base;
+  }
+}
 
 // orderType di Deliverect -> tipo nostro (1 pickup, 2 delivery, 3 eat-in, 4 curbside)
 const TIPI: Record<number, "domicilio" | "ritiro" | "tavolo" | "banco"> = {
@@ -35,6 +50,8 @@ interface OrdineDeliverect {
   items: ArticoloDeliverect[];
   status?: number;
   testOrder?: boolean;
+  pickupTime?: string;                 // UTC, sempre presente: quando il cibo deve essere pronto
+  deliveryTime?: string;
   payment?: { amount?: number };       // centesimi, quello che ha pagato il cliente
   deliveryCost?: number; serviceCharge?: number; tip?: number; bagFee?: number; discountTotal?: number;
 }
@@ -61,20 +78,34 @@ export async function POST(req: Request) {
     return NextResponse.json({ errore: "JSON non valido" }, { status: 400 });
   }
 
-  // Annullo: lo gestiremo quando avremo la mappa dei canali e i test
-  if (ordine.status === 100) return NextResponse.json({ result: "OK" });
+  const admin = supabaseAdmin();
+  const idEsterno = ordine._id ?? ordine.channelOrderId;
 
-  const canale = CANALI_DELIVERECT[ordine.channel];
-  if (!canale) {
-    return NextResponse.json({ errore: `canale Deliverect ${ordine.channel} non mappato` }, { status: 422 });
+  // annullo: l'ordine resta una riga, annullato (come la 0062), e si conferma 110 a Deliverect
+  if (ordine.status === 100) {
+    const { data: trovati, error } = await admin.from("ordine")
+      .select("id, numero, stato, note").eq("id_esterno", idEsterno).in("canale", ["glovo", "deliveroo", "justeat"]);
+    if (error) return NextResponse.json({ errore: error.message }, { status: 500 });
+    for (const o of (trovati ?? []) as { id: string; numero: number; stato: string; note: string | null }[]) {
+      if (o.stato === "annullato") continue;
+      const nota = ["ANNULLATO DALLA PIATTAFORMA", o.note].filter(Boolean).join(" · ");
+      const { error: e2 } = await admin.from("ordine")
+        .update({ stato: "annullato", annullato_il: new Date().toISOString(), note: nota }).eq("id", o.id);
+      if (e2) return NextResponse.json({ errore: e2.message }, { status: 500 });
+      if (ordine._id && acceso()) after(() => aggiornaStato(ordine._id!, STATO.annullato, String(o.numero)).then(() => undefined));
+    }
+    return NextResponse.json({ result: "OK", annullati: trovati?.length ?? 0 });
   }
+
+  const mappa = canali();
+  const canale: CanalePiattaforma = mappa[ordine.channel] ?? "glovo";
+  const canaleIgnoto = !mappa[ordine.channel];
   const tipo = TIPI[ordine.orderType] ?? "ritiro";
   const negozio = process.env.DELIVERECT_ID_NEGOZIO;
   if (!negozio) return NextResponse.json({ errore: "negozio non configurato" }, { status: 500 });
 
   // il prodotto si riconosce dal PLU (src/lib/deliverect/ordine.ts); quello che non conosciamo entra col
   // suo nome e il suo prezzo, e la nota lo dice alla cassa
-  const admin = supabaseAdmin();
   const [pr, va, pg] = await Promise.all([
     admin.from("prodotto").select("id, nome, codice, id_velocissimo, attivo, categoria(destinazione)"),
     admin.from("variazione").select("nome, id_velocissimo, tipo"),
@@ -92,6 +123,8 @@ export async function POST(req: Request) {
     : (pagato - cent(ordine.deliveryCost) - cent(ordine.serviceCharge) - cent(ordine.tip) - cent(ordine.bagFee) + Math.abs(cent(ordine.discountTotal))) / 100;
   const scarto = atteso == null ? 0 : Math.round((atteso - totale) * 100) / 100;
   const note = [
+    canaleIgnoto && `CANALE DELIVERECT ${ordine.channel} NON RICONOSCIUTO (segnato Glovo)`,
+    ordine.testOrder && "ORDINE DI PROVA DI DELIVERECT",
     sconosciuti.length && `NON IN MENÙ: ${sconosciuti.join(", ")}`,
     Math.abs(scarto) >= 0.01 && `TOTALE DIVERSO: Deliverect ${atteso!.toFixed(2)} €, righe ${totale.toFixed(2)} €`,
     ordine.note, ordine.customer?.name && `Cliente: ${ordine.customer.name}`, ordine.customer?.phoneNumber && `Tel: ${ordine.customer.phoneNumber}`,
@@ -101,20 +134,21 @@ export async function POST(req: Request) {
     p_negozio: negozio,
     p_canale: canale,
     p_tipo: tipo,
-    p_id_esterno: ordine._id ?? ordine.channelOrderId,
-    p_ora: null,
+    p_id_esterno: idEsterno,
+    // il quarto d'ora è quello in cui il cibo deve essere pronto (prima si passava null: tutto «adesso»)
+    p_ora: ordine.pickupTime ?? ordine.deliveryTime ?? null,
     p_note: note,
     p_righe: righe,
   });
   if (error) return NextResponse.json({ errore: error.message }, { status: 500 });
-  // un ordine che la cassa non ha preso non è «OK» (critico giro 36, G2: per Glovo arrivava, in cassa no).
-  // Deliverect lo segna fallito e il ristorante lo vede: meglio che un ordine pagato e perso.
-  const esito = (data as { esito: string; motivo?: string }).esito;
-  if (esito !== "accettato" && esito !== "duplicato") {
-    return NextResponse.json({ errore: `ordine non accettato: ${esito}`, dettaglio: data }, { status: 409 });
+  // dalla 0073 un ordine di piattaforma entra sempre; resta fuori solo un ordine senza righe
+  const esito = data as { esito: string; motivo?: string; numero?: number };
+  if (esito.esito !== "accettato" && esito.esito !== "duplicato") {
+    return NextResponse.json({ errore: `ordine non accettato: ${esito.esito}`, dettaglio: data }, { status: 500 });
   }
-
-  // Risposta a Deliverect: 200 = ricevuto. L'accettazione (ACCEPTED 20) verso Deliverect
-  // non è ancora implementata: va fatta con OAuth una volta che le credenziali sono pronte.
-  return NextResponse.json({ result: "OK", esito: (data as { esito: string }).esito }, { status: 200 });
+  // 2xx subito, lo stato dopo (Deliverect: «return a 2xx, then send statuses asynchronously»)
+  if (esito.esito === "accettato" && ordine._id && acceso()) {
+    after(() => aggiornaStato(ordine._id!, STATO.accettato, String(esito.numero ?? "")).then(() => undefined));
+  }
+  return NextResponse.json({ result: "OK", esito: esito.esito }, { status: 200 });
 }

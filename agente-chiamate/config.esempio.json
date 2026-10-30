@@ -1,0 +1,5 @@
+{
+  "server": "https://mano-a-mano-cassa.vercel.app",
+  "ogniMillisecondi": 1500,
+  "connessione": "Server=localhost\\DUEBIT;Database=DD_AMANOAMANOPUGLIESE;User Id=LETTORE_CHIAMATE;Password=SCRIVILA_SOLO_SUL_PC;Encrypt=False;Connect Timeout=5"
+}
