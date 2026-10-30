@@ -131,6 +131,19 @@ verificare con `-Prova`:
 `ComandaService.InserisciComanda` dell'AppServer è il metodo che scrive le testate in `PIZ_tabTestateComande`: gli
 ordini da fuori passano tutti da lì. Chi lo chiama, e da quale indirizzo, si vede solo col decompilatore.
 
+In uscita e in entrata (da metadati e stringhe; V = visto nei file, D = dedotto):
+- **Uscita (V):**
+  - verso `pluto-server/public/api/out` vanno solo push e coupon, niente ordini;
+  - le vendite partono ogni 5 minuti con `sync-speedy-sales`;
+  - la chiusura parte una volta al giorno, con `?isFullDay=1`.
+- **Ingresso (V):**
+  - c'è `ComandaService.PServerArrivatoOrdineWeb`;
+  - poi `RestClientInvioComandaService`, `MarketPlaceService`, `JustEatService` ed `EliminaConsegnaDeliveryPartner`;
+  - un host, `InvioComande.duebit.com`.
+- **Deliverect (V):** la parola non compare in nessun programma.
+- **D:** gli ordini delle piattaforme entrano dal lato web-app.it come ordini web. Chi chiama l'AppServer
+  dall'esterno resta da dimostrare.
+
 ## 32.6 Lo scontrino fiscale (Epson FP-81 II RT, 192.168.1.200) e la chiusura giornaliera — *in corso, solo studio*
 
 Dai testi dentro i metodi dell'AppServer: solo metadati, senza decompilatore e senza eseguire niente.
@@ -144,7 +157,27 @@ Dai testi dentro i metodi dell'AppServer: solo metadati, senza decompilatore e s
 - **La capacità per quarto d'ora** nel 2Bit la calcolano due stored procedure: `Speedy_ElencoFasceInfornataConZoneECarico`
   e `Speedy_ElencoFasceInfornataConCarico`.
 
+**La chiusura Z (V):**
+- sta nel programma di cassa `easyPOS_PuntoTavoli10.exe`: maschera `frmChiusura`, tasto `cmdChiusuraFiscale_ECR`
+  con conferma, poi una mail di chiusura;
+- c'è anche una **chiusura programmata** sulla stampante, con l'opzione «senza intervento dell'utente»
+  (`Due_EPCGestionali.dll`);
+- serve il permesso `kPermPuntoCassaChiusuraFiscale`, e un controllo sull'ultima chiusura
+  (`PuntoCassa_UltimaChiusuraFiscale_Check`).
+
+Quale delle due è accesa qui è un'opzione nel database. Il trasporto verso la Epson è lo stesso
+(`printerFiscalReport` / `printZReport`), e i nostri messaggi sono in `src/lib/fiscale/epson-xml.ts`, mai mandati.
+
 ## 32.7 Le comande (PIZZERIA 192.168.1.12:9100 e ASP USB «EPSON TM-T88V Receipt5») — *in corso sul PC*
+
+**Come funzionano (V):**
+- `ComandaService` ha `StampaComanda`, `PServerStampaComanda`, `PServerStampaConsegna` e `PServerEliminaComanda`.
+  La stampa la fa un server di stampa a parte (D: `EasyposPrinterServer.exe`).
+- **Le stampanti** sono in `PIZ_tabStampanti` (`isStampaComande=1`).
+- **L'instradamento per reparto** è in `PIZ_tabCentriProduzione.idStampante` più `_C1…_C3` (D: le copie e la doppia
+  stampa).
+- **Il registro** delle comande stampate è in `PIZ_tabLogStampaComande_Testate`.
+- Nomi dei reparti e numero delle copie stanno nel database: si leggono con l'utente di sola lettura.
 
 ## 32.8 Velocissimo: CSV del Sales Export Tool, dashboard web, rider — *in corso sul PC*
 
@@ -152,6 +185,30 @@ Dai testi dentro i metodi dell'AppServer: solo metadati, senza decompilatore e s
 `service.web-app.it` (sync-speedy-sales), ogni 5 minuti e una volta al giorno. La dashboard di Velocissimo sta su
 web-app.it, non sul PC. Per confrontare il formato del CSV di fine serata serve un CSV d'esempio scaricato da
 Edoardo. Il nostro export a 40 colonne è stato fatto sull'export «/weborder» di Velocissimo (REA 15).
+
+**Rider (V):**
+- metodi: `OrdiniDaConsegnare`, `OrdineInConsegna`, `OrdineConsegnato`, `DissociaOrdineDaPony`,
+  `PonyService.SetStatusOperativo`;
+- tabella `PIZ_tabPony`, con lo stato operativo e l'ora di rientro;
+- sulla testata: `idPony`, `StatoConsegna`, `ChiaveGruppoConsegna` (gli ordini raggruppati in un giro);
+- l'app Velocissimo Rider non è sul PC.
+
+**Chiamate (V):**
+- il modem U.S. Robotics su COM4, con `TAPIExCt.dll`, `GestoreChiamate.ocx` e `Data_Read.exe` («Modem - TAPI»);
+- `Speedy_InserisciChiamata` scrive in `PIZ_tabChiamateRicevute` (id, Ora, idCliente, telefono, Processed, Utente).
+
+**Tavoli e pagamenti (V):**
+- `PIZ_tabTavoli` e `PIZ_tabTavoliUniti`, con le funzioni unisci, separa, blocca, sposta e chiedi il conto;
+- `PIZ_tabPagamentiConti`: più pagamenti per conto (`idConto`, `tipoPagamento`, `importoPagamento`).
+
+Utile quando rifacciamo la sala e il conto diviso.
+
+**Da chiudere con l'utente di sola lettura o col decompilatore:**
+- `StatoConsegna` e il ciclo di vita dell'ordine;
+- se `idComanda` si riusa;
+- da dove entra Deliverect;
+- i reparti e le copie;
+- quale chiusura Z è accesa.
 
 ## 32.9 L'ordine dei lavori, per step
 
