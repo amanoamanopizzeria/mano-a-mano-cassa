@@ -1,7 +1,9 @@
 import Link from "next/link";
+import SoloAdmin from "./SoloAdmin";
 
 export default function Home() {
   return (
+    <SoloAdmin>
     <main className="home">
       <div className="testa">
         <div className="sabbia"><img src="/brand/logo-amanoamano.png" alt="A Mano a Mano" className="logo" /><img src="/brand/bollino.png" alt="" className="bollino" /></div>
@@ -73,5 +75,6 @@ export default function Home() {
         </Link>
       </div>
     </main>
+    </SoloAdmin>
   );
 }

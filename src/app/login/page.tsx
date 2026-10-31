@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { homeDel, ruoloMio } from "@/lib/home";
 
 export default function Login() {
   const router = useRouter();
@@ -17,9 +18,9 @@ export default function Login() {
   const [nome, setNome] = useState("");
   const [pin, setPin] = useState("");
 
-  // Chi è già dentro non deve rivedere il modulo (critico giro 4b): si va alla home.
+  // Chi è già dentro non deve rivedere il modulo (critico giro 4b): si va alla home, «Cassa — ordini».
   useEffect(() => {
-    supabaseBrowser().auth.getSession().then(({ data }) => { if (data.session) router.replace("/"); });
+    supabaseBrowser().auth.getSession().then(({ data }) => { if (data.session) ruoloMio().then((r) => router.replace(homeDel(r))); });
   }, [router]);
 
   async function accedi() {
@@ -31,7 +32,7 @@ export default function Login() {
       setMessaggio(error.message);
       return;
     }
-    router.push("/cassa");
+    router.push(homeDel(await ruoloMio()));
     router.refresh();
   }
 
@@ -44,7 +45,7 @@ export default function Login() {
     const { error } = await supabaseBrowser().auth.verifyOtp({ token_hash: j.token, type: "magiclink" });
     setInCorso(false);
     if (error) { setPin(""); setMessaggio(error.message); return; }
-    router.push("/");
+    router.push(homeDel(await ruoloMio()));
     router.refresh();
   }
   function tasto(c: string) {
