@@ -432,3 +432,26 @@ il 6 (20,00 €) e il 12 (59,50 €), coperti compresi (V).
 
 **Il copiatore** ora prende anche i tavoli e sulla stessa serata dà 55 voci per 1.356,80 €. Restano da provare un tavolo
 ancora aperto, i conti separati e il tempo della query.
+
+## 32.15 Correzione: le piattaforme ci sono, ma il 2Bit le segna «App»
+
+Il CSV di Velocissimo della serata (mandato da Edoardo, 31/10 00:11Z, non nel repo perché ha dati dei clienti) ha
+54 righe per 1.356,80 €: torna al centesimo. Le origini però non sono quelle di `OrigineComanda`:
+
+| CSV | ordini | € |
+|---|---|---|
+| Da app | 15 | 392,28 |
+| Da Deliverect, cioè Glovo 13, Deliveroo 7 e Just Eat 4 (dalle note) | 24 | 524,02 |
+| Da PC (banco, telefono, tavoli) | 12 | 265,00 |
+| Da sito web | 3 | 175,50 |
+
+Per tipo: domicilio 22 (614,88 €), ritiro 23 (544,22 €), banco 7 (118,20 €), tavolo 2 (79,50 €).
+
+Il «#» del CSV ha i prefissi `APP-`, `WEB-` e `C-` più `idComanda`, e `C-` vale sia per la cassa sia per Deliverect.
+
+Nel database Deliverect e sito web risultano `OrigineComanda=1` (App): la frase «piattaforme 0» del §32.12 e del §32.13
+è **sbagliata**. Va trovata la colonna che le distingue, perché il copiatore deve dare gli stessi numeri del CSV.
+
+Il CSV ha le stesse 40 colonne del nostro `src/lib/export-ordini.ts`, con due nomi diversi: noi scriviamo
+«Cliente » (con lo spazio) e «Coperti», loro «Cliente» e «Coperti asporto». Da controllare col parser dell'OS
+prima di cambiare.
