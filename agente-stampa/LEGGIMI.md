@@ -25,7 +25,9 @@ toccare il PC del negozio.
   (`queryPrinterStatus`) **senza stampare niente**: nessun foglio, nessuno scontrino.
 - `node agente.mjs --prova` stampa una pagina PROVA su ogni stampante comande, mai sulla fiscale.
 
-Nessuno dei due chiede la chiave né parla col server.
+Nessuno dei due chiede la chiave né parla col server. In `windows` va il **nome della stampante** in Windows
+(«ASP»), non quello del driver («EPSON TM-T88V Receipt5»). Se la fiscale risponde 401, utente e password
+vanno in `"fiscale": { "ip": …, "utente": …, "password": … }`, solo nel `config.json` del PC.
 
 ## Le stampanti (Edoardo, 24/10/2026)
 

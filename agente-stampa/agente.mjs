@@ -138,7 +138,11 @@ async function statoFiscale(f) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 8000);
   try {
-    const r = await fetch(`http://${f.ip}/cgi-bin/fpmate.cgi`, { method: "POST", headers: { "content-type": "text/xml; charset=utf-8" }, body: xml, signal: ctrl.signal });
+    // se la stampante chiede l'accesso, utente e password stanno SOLO nel config.json del PC (mai nel repo)
+    const headers = { "content-type": "text/xml; charset=utf-8" };
+    if (f.utente) headers.authorization = "Basic " + Buffer.from(`${f.utente}:${f.password ?? ""}`).toString("base64");
+    const r = await fetch(`http://${f.ip}/cgi-bin/fpmate.cgi`, { method: "POST", headers, body: xml, signal: ctrl.signal });
+    if (r.status === 401) return "chiede l'accesso (401): utente e password della stampante in config.json, «fiscale»";
     const testo = await r.text();
     const esito = /success="true"/i.test(testo) ? "risponde: success" : `risponde ma non success (HTTP ${r.status})`;
     const info = [...testo.matchAll(/<([A-Za-z]+)>([^<]{1,40})<\/\1>/g)].map((m) => `${m[1]}=${m[2]}`).join(" ");
