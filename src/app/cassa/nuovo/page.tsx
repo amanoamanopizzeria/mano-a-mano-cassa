@@ -102,6 +102,10 @@ function Cassa() {
   // La comanda battuta resta anche se si va a Dati cliente e si torna (critico giro 5: «cancella la comanda»).
   const BOZZA = "cassa:bozza";
   useEffect(() => {
+    // Dalla Sala si arriva con ?tavolo=<id> (Edoardo, 31/10/2026: «una volta unisco devo già poter prendere
+    // l'ordine, è un cameriere che sta facendo quello»): la comanda parte vuota, al tavolo, col suo listino.
+    const tavoloVoluto = new URLSearchParams(window.location.search).get("tavolo");
+    if (tavoloVoluto) { setTipo("tavolo"); setIdTavolo(tavoloVoluto); try { sessionStorage.removeItem(BOZZA); } catch {} return; }
     try {
       const b = JSON.parse(sessionStorage.getItem(BOZZA) ?? "null") as { righe: RigaOrdine[]; tipo: Tipo; note: string; quando: number } | null;
       if (b && b.righe.length > 0 && Date.now() - b.quando < 30 * 60_000) { setRighe(b.righe); setTipo(b.tipo); setNote(b.note); }

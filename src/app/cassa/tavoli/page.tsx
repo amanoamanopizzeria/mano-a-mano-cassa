@@ -57,7 +57,10 @@ function Tavoli() {
   const [divisi, setDivisi] = useState<RigaPagamento[] | null>(null);
   // Il tastierino dei coperti sulla pagina (critico giro 29: la finestrella del browser bloccava la pagina).
   // «apri» un tavolo libero, «correggi» uno già occupato (anche aperto da /cassa/nuovo, che non li chiede).
-  const [coperti, setCoperti] = useState<{ tavolo: Tavolo; scopo: "apri" | "correggi" } | null>(null);
+  // poi: "ordine" = scelti i coperti si va subito a prendere l'ordine di quel tavolo (Edoardo, 31/10/2026: «una
+  // volta unisco devo già poter prendere ordine, perché è un cameriere che sta facendo quello»).
+  const [coperti, setCoperti] = useState<{ tavolo: Tavolo; scopo: "apri" | "correggi"; poi?: "ordine" } | null>(null);
+  const vaiAllOrdine = (t: Tavolo) => { window.location.href = "/cassa/nuovo?tavolo=" + encodeURIComponent(t.id); };
   // «Unisci» (Edoardo, 30/10/2026: «voglio unire 1 e 2, o 11 e 12»): si tocca Unisci su un tavolo, poi i tavoli
   // liberi da mettergli accanto. Il gruppo diventa un tavolone «1+2»: ordini, coperti e conto stanno sul primo.
   const [unisco, setUnisco] = useState<Tavolo | null>(null);
@@ -96,6 +99,7 @@ function Tavoli() {
     if ((data as { esito: string }).esito !== "ok") { setErrore("Coperti non validi."); return; }
     setErrore(null);
     setConto((c) => (c && c.tavolo.id === t.id ? { ...c, tavolo: { ...c.tavolo, coperti: n } } : c));
+    if (coperti.poi === "ordine") { vaiAllOrdine(t); return; }
     carica();
   }
 
@@ -123,7 +127,7 @@ function Tavoli() {
     }
     const [principale, altro] = b.stato !== "libero" || (a.stato === "libero" && !conGruppo(a)) ? [b, a] : [a, b];
     if (conGruppo(altro)) { setErrore(`Il ${nomeDi(altro)} è già un gruppo: trascina sopra di lui gli altri tavoli.`); return; }
-    if (await unisciA(principale, altro)) setCoperti({ tavolo: principale, scopo: principale.stato === "libero" ? "apri" : "correggi" });
+    if (await unisciA(principale, altro)) setCoperti({ tavolo: principale, scopo: principale.stato === "libero" ? "apri" : "correggi", poi: "ordine" });
   }
 
   function prendi(e: React.PointerEvent, t: Tavolo) {
@@ -303,11 +307,12 @@ function Tavoli() {
             )}
             {scegliCompagno ? <div className="azioni"><button className="primario">+ Unisci a {nomeDi(unisco)}</button></div> :
             <div className="azioni">
-              {t.stato === "libero" && <button className="primario" onClick={() => setCoperti({ tavolo: t, scopo: "apri" })}>Apri</button>}
+              {t.stato === "libero" && <button className="primario" onClick={() => setCoperti({ tavolo: t, scopo: "apri", poi: "ordine" })}>Apri</button>}
+              {t.stato !== "libero" && !unisco && <button className={t.stato === "occupato" ? "primario" : ""} onClick={() => vaiAllOrdine(t)}>Ordine</button>}
               {!unisco && <button onClick={() => setUnisco(t)}>Unisci</button>}
               {unisco?.id === t.id && <button className="primario" onClick={() => {
                 setUnisco(null);
-                if (gruppo.length > 0) setCoperti({ tavolo: t, scopo: t.stato === "libero" ? "apri" : "correggi" });
+                if (gruppo.length > 0) setCoperti({ tavolo: t, scopo: t.stato === "libero" ? "apri" : "correggi", poi: "ordine" });
               }}>Fatto</button>}
               {gruppo.length > 0 && <button onClick={() => separa(t)}>Separa</button>}
               {t.stato !== "libero" && <button className={t.stato === "conto" ? "primario" : ""} onClick={() => passaAlConto(t)}>Conto</button>}
