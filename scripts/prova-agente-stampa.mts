@@ -173,7 +173,31 @@ ok(z2.codice === 2 && z2.testo.includes("nessuna Z per il 31/10/2026"), "5) «--
 ok(comandiAllaFiscale === 0, "5) alla fiscale sono arrivate solo GET: nessun comando");
 fiscaleFinta.close();
 
-agente.kill(); api.close();
+// 6) la stampante di riserva (REA 36.5): la cucina si spegne, dopo «riservaDopoSecondi» la sua copia esce sulla
+//    cassa col cartello «RISERVA», la comanda si segna, e la cucina riaccesa non la ristampa.
+agente.kill();
+await aspetta(300);
+writeFileSync(join(dir, "config-riserva.json"), JSON.stringify({ server: `http://127.0.0.1:${portaApi}`, ogniSecondi: 1, riservaDopoSecondi: 1, stampanti: [
+  { nome: "cucina", ruolo: "cucina", ip: "127.0.0.1", porta: pCucina, colonne: 48, riserva: "cassa" },
+  { nome: "cassa", ruolo: "cassa", ip: "127.0.0.1", porta: pCassa, colonne: 42 },
+] }));
+const agente2 = spawn(process.execPath, ["agente-stampa/agente.mjs"], { env: { ...process.env, STAMPA_KEY: CHIAVE, STAMPA_CONFIG: join(dir, "config-riserva.json") }, stdio: ["ignore", "pipe", "pipe"] });
+let uscita2 = ""; agente2.stdout.on("data", (d) => (uscita2 += d)); agente2.stderr.on("data", (d) => (uscita2 += d));
+const ID4 = "00000000-0000-0000-0000-000000000004";
+const [cucinaPrima, cassaPrima] = [ricevute.cucina.length, ricevute.cassa.length];
+await spegni("cucina");
+coda = [base(ID4, 104)];
+ok(await finché(() => segnate.includes(ID4)), "6) cucina spenta con la riserva: la comanda si segna lo stesso");
+const suCassa = ricevute.cassa.slice(cassaPrima).map((b) => anteprimaTesto(new Uint8Array(b)));
+ok(ricevute.cassa.length === cassaPrima + 2 && suCassa.some((t) => t.includes("RISERVA: COPIA CUCINA") && t.includes("copia cucina") && t.includes("C-104")), "6) sulla cassa escono la sua copia e quella della cucina col cartello RISERVA");
+ok(uscita2.includes("C-104 → cassa (riserva di cucina, ferma)"), "6) il registro dice che è uscita sulla riserva");
+await accendi("cucina");
+await aspetta(2500);
+ok(ricevute.cucina.length === cucinaPrima, "6) la cucina riaccesa non la ristampa");
+agente2.kill();
+uscita += "\n--- con la riserva ---\n" + uscita2;
+
+api.close();
 console.log("\n--- registro dell'agente ---\n" + uscita.trim());
 console.log(errori ? `\n${errori} prove NON passate` : "\ntutte le prove passate");
 process.exit(errori ? 1 : 0);

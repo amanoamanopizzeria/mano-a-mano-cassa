@@ -92,3 +92,18 @@ il testo è in `zreport.mjs`, provato in `scripts/prova-agente-stampa.mts` con l
 
 ⚠️ La stampante risponde a queste letture **anche senza utente e password**: chiunque in LAN legge i
 corrispettivi. Non è un problema dell'agente ma della rete del negozio: da tenere a mente.
+
+## La stampante di riserva (31/10/2026)
+
+Nel 2Bit ogni centro di produzione ha il posto per una stampante di riserva, ma non è configurato: se la
+PIZZERIA si ferma, la comanda non esce da nessuna parte (REA 36.5). Qui basta scrivere in `config.json`, sulla
+stampante da coprire, quale le fa da riserva:
+
+```json
+{ "nome": "pizzeria", "ruolo": "cucina", "ip": "192.168.1.12", "porta": 9100, "colonne": 48, "riserva": "asp" }
+```
+
+Se la PIZZERIA è ferma (spenta, senza carta, coperchio aperto, non risponde) per più di `riservaDopoSecondi`
+(60 di base, si scrive in cima al file), la sua copia esce sulla ASP con in testa «RISERVA: COPIA PIZZERIA
+(FERMA)», la comanda si segna e quando la PIZZERIA torna non la ristampa. Senza `riserva` l'agente fa come prima:
+aspetta che torni. Provato in `scripts/prova-agente-stampa.mts` (caso 6). Si accende solo quando lo decide Edoardo.

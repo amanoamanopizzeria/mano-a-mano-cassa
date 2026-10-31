@@ -80,6 +80,24 @@ async function comeSta(s) {
   }
 }
 
+// La stampante di riserva (REA 36.5, 31/10/2026): il 2Bit ha il campo per la riserva di ogni centro ma non è
+// configurato, e se la PIZZERIA si ferma la comanda non esce da nessuna parte. Da noi in config.json una stampante
+// può dire «riserva»: "asp". Se resta ferma più di «riservaDopoSecondi» (60 di base), la sua copia esce sulla
+// riserva con in testa la scritta di chi è, e la comanda si segna. Senza «riserva» non cambia niente.
+const attesaRiserva = Math.max(1, Number(config.riservaDopoSecondi || 60)) * 1000;
+const fermaDa = new Map();   // nome → quando ha smesso di stampare
+const cartello = (s) => Buffer.concat([Buffer.from([0x1b, 0x40, 0x1b, 0x61, 1, 0x1d, 0x42, 1, 0x1b, 0x45, 1]),
+  Buffer.from(` RISERVA: COPIA ${String(s.nome).toUpperCase()} (FERMA) `, "latin1"), Buffer.from([0x0a, 0x1d, 0x42, 0, 0x1b, 0x45, 0, 0x1b, 0x61, 0])]);
+async function suRiserva(c, s, ferme) {
+  const r = s.riserva && stampanti.find((x) => x.nome === s.riserva);
+  if (!r || r.nome === s.nome || ferme.has(r.nome) || Date.now() - (fermaDa.get(s.nome) ?? Date.now()) < attesaRiserva) return false;
+  try {
+    await manda(r, Buffer.concat([cartello(s), Buffer.from(c.stampe[s.nome], "base64")]));
+    log(`${c.numero} → ${r.nome} (riserva di ${s.nome}, ferma)`);
+    return true;
+  } catch { return false; }
+}
+
 async function giro() {
   const r = await fetch(`${server}/api/stampa/coda?stampanti=${encodeURIComponent(elenco)}`, { headers: { "x-api-key": chiave } });
   if (r.status === 401) throw new Error("chiave sbagliata (401): controlla STAMPA_KEY");
@@ -102,15 +120,23 @@ async function giro() {
     const fatte = prese.get(k) || new Set();
     prese.set(k, fatte);
     for (const s of stampanti) {
-      if (fatte.has(s.nome) || ferme.has(s.nome)) continue;
+      if (fatte.has(s.nome)) continue;
+      if (ferme.has(s.nome)) {
+        if (!fermaDa.has(s.nome)) fermaDa.set(s.nome, Date.now());
+        if (await suRiserva(c, s, ferme)) fatte.add(s.nome);
+        continue;
+      }
       try {
         await manda(s, Buffer.from(c.stampe[s.nome], "base64"));
         fatte.add(s.nome);
         giuSegnalate.delete(s.nome);
+        fermaDa.delete(s.nome);
         log(`${c.numero} → ${s.nome}`);
       } catch (e) {
         if (!giuSegnalate.has(s.nome)) log(`!! ${s.nome} (${dove(s)}) non stampa: ${e.message}. Riprovo da sola.`);
         giuSegnalate.add(s.nome);
+        if (!fermaDa.has(s.nome)) fermaDa.set(s.nome, Date.now());
+        if (await suRiserva(c, s, ferme)) fatte.add(s.nome);
       }
     }
     if (stampanti.every((s) => fatte.has(s.nome))) {
