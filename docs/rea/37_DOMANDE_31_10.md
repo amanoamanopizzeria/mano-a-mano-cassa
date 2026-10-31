@@ -49,6 +49,9 @@ restano sue; qui non si decide niente.
     da troppo senza ordine». Solo colori, nessun passo in più per il cameriere. Li vuoi?
 20. **La chiusura serata avvisa se ci sono tavoli o ordini aperti** prima di scaricare il CSV. Il 30/10 il
     primo CSV (23:27) era senza il tavolo da 59,50 € chiuso alle 23:33, e l'hanno riscaricato. Lo metto?
+21. **I prezzi delle piattaforme**: su Glovo, Deliveroo e Just Eat la Margherita costa 8,40 e non 7,90 come nel
+    listino 3 di Velocissimo. Rifaccio il nostro listino piattaforme dai prezzi veri degli ordini (stessi su tutte
+    e tre)? E i doppioni del menù (stessa pizza due volte, una a 0 €) li tolgo dalla vista della cassa?
 
 ## D. Cose che non servono a Edoardo ma vanno dette
 
