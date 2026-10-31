@@ -1416,3 +1416,26 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .c-coperti span { display: block; font-weight: 700; margin-bottom: 6px; }
 .c-coperti div { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
 .c-coperti button { min-height: 44px; font-size: 18px; font-weight: 700; }
+
+/* Specchio 2Bit (/cassa/specchio, solo admin): le copie degli ordini del 2Bit, in diretta */
+.specchio .sp-vivo { margin-left: auto; font-size: 14px; }
+.sp-lista { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.sp-riga { padding: 0; overflow: hidden; }
+.sp-riga.sp-eliminata { opacity: .55; }
+.sp-testa { display: grid; grid-template-columns: 56px 1fr auto auto; gap: 4px 12px; align-items: center; width: 100%; padding: 10px 14px; border: 0; background: transparent; font: inherit; text-align: left; color: inherit; cursor: pointer; }
+.sp-ora { font-weight: 700; font-variant-numeric: tabular-nums; }
+.sp-chi { display: flex; flex-direction: column; min-width: 0; }
+.sp-chi .muto { overflow-wrap: anywhere; }
+.sp-stato { font-size: 13px; padding: 2px 8px; border-radius: 999px; background: var(--oro-velo); color: #7a5410; white-space: nowrap; }
+.sp-stato.chiuso, .sp-stato.consegnato { background: #e7f4ec; color: #1f6b3a; }
+.sp-stato.in_consegna { background: #e3eefb; color: #1565c0; }
+.sp-stato.eliminato { background: #fdecea; color: #a12a1e; }
+.sp-tot { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 20px; font-variant-numeric: tabular-nums; color: var(--vino); }
+.sp-dentro { padding: 0 14px 12px 82px; border-top: 1px solid var(--bordo); }
+.sp-dentro ul { list-style: none; margin: 8px 0; padding: 0; }
+.sp-dentro li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) {
+  .sp-testa { grid-template-columns: 48px 1fr auto; grid-template-areas: "ora chi tot" "ora chi stato"; }
+  .sp-ora { grid-area: ora; } .sp-chi { grid-area: chi; } .sp-tot { grid-area: tot; } .sp-stato { grid-area: stato; justify-self: end; }
+  .sp-dentro { padding-left: 14px; }
+}

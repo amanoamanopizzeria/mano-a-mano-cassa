@@ -61,6 +61,10 @@ export default function Home() {
           <strong>Conti e cruscotto</strong>
           <p className="muto">Venduto, origini, pagamenti, rider e tutti gli ordini, con il CSV.</p>
         </Link>
+        <Link href="/cassa/specchio" className="carta">
+          <strong>Specchio 2Bit</strong>
+          <p className="muto">Gli ordini che entrano nel 2Bit, copiati da soli qui: canale, stato, totale, dopo quanti secondi.</p>
+        </Link>
         <Link href="/cassa/chiamate" className="carta">
           <strong>Chiamate</strong>
           <p className="muto">Chi ha chiamato stasera o in una sera passata: ora, numero, cliente, se è stata presa.</p>
