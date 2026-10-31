@@ -19,6 +19,14 @@ si accende solo il giorno della prova in parallelo, deciso da Edoardo.
 Il disegno della carta sta in `src/lib/stampa/escpos.ts`: si cambia lì e arriva col deploy, senza
 toccare il PC del negozio.
 
+## Provare senza la coda
+
+- `node agente.mjs --stato` legge lo stato di ogni stampante (ESC/POS «DLE EOT») e della fiscale
+  (`queryPrinterStatus`) **senza stampare niente**: nessun foglio, nessuno scontrino.
+- `node agente.mjs --prova` stampa una pagina PROVA su ogni stampante comande, mai sulla fiscale.
+
+Nessuno dei due chiede la chiave né parla col server.
+
 ## Le stampanti (Edoardo, 24/10/2026)
 
 Due stampanti comande (una Epson, l'altra forse Ditron) e una fiscale Epson, **tutte in LAN**. La

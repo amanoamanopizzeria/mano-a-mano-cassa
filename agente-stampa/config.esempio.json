@@ -4,5 +4,6 @@
   "stampanti": [
     { "nome": "pizzeria", "ruolo": "cucina", "ip": "192.168.1.12", "porta": 9100, "colonne": 48 },
     { "nome": "asp",      "ruolo": "cassa",  "windows": "EPSON TM-T88V Receipt5", "colonne": 48 }
-  ]
+  ],
+  "fiscale": { "ip": "192.168.1.200" }
 }
