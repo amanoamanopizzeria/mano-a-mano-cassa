@@ -15,7 +15,7 @@ $fileConfig = Join-Path $qui "config.json"
 if (-not (Test-Path $fileConfig)) { Write-Host "Manca config.json: copia config.esempio.json in config.json."; exit 1 }
 $config = Get-Content $fileConfig -Raw | ConvertFrom-Json
 $server = ($config.server, "https://mano-a-mano-cassa.vercel.app" | Where-Object { $_ } | Select-Object -First 1).TrimEnd("/")
-$ogni = [Math]::Max(3, [int]($config.ogniSecondi, 5 | Where-Object { $_ } | Select-Object -First 1))
+$ogni = [Math]::Max(5, [int]($config.ogniSecondi, 10 | Where-Object { $_ } | Select-Object -First 1))
 $ore = [Math]::Max(1, [int]($config.oreIndietro, 12 | Where-Object { $_ } | Select-Object -First 1))
 # la stringa di connessione sta solo in config.json sul PC: l'utente di sola lettura, mai «sa»
 $connessione = $config.connessione
@@ -65,7 +65,7 @@ function Riga($r) {
   return $h
 }
 
-$CAMPI = "origine", "tipo", "numero", "stato", "totale", "cliente", "telefono", "indirizzo", "ora_consegna", "creato"
+$CAMPI = "origine", "canale", "tipo", "numero", "stato", "totale", "cliente", "telefono", "indirizzo", "ora_consegna", "creato"
 function Copia($r) {
   $corpo = Riga $r
   $o = [ordered]@{ id_2bit = [string]$corpo["id_2bit"] }
@@ -98,24 +98,40 @@ if ($Prova) {
 }
 
 Log ("Copio gli ordini del 2Bit (ultime {0} ore) a {1} ogni {2} s. Ctrl+C per fermare." -f $ore, $server, $ogni)
+# Il 2Bit non si deve mai rallentare (Edoardo, 31/10/2026): le righe di un ordine si rileggono solo quando la sua
+# testata cambia (più un giro completo ogni 5 minuti, per le note cambiate senza toccare il totale), e se la
+# lettura delle testate diventa lenta il copiatore si dirada da solo fino a una volta al minuto.
+$giaTestata = @{}   # id_2bit → impronta della testata letta l'ultima volta
+$giroCompleto = [DateTime]::Now.AddMinutes(5)
+$pausa = $ogni
 $giuSegnalato = $false
+$primo = $true
 while ($true) {
   try {
+    if ([DateTime]::Now -ge $giroCompleto) { $giaTestata = @{}; $giroCompleto = [DateTime]::Now.AddMinutes(5) }
+    $orologio = [Diagnostics.Stopwatch]::StartNew()
     $t = Leggi $queryOrdini "@dal" (Get-Date).AddHours(-$ore)
+    $ms = $orologio.ElapsedMilliseconds
+    if ($primo) { Log ("Prima lettura: {0} ordini in {1} ms." -f $t.Rows.Count, $ms); $primo = $false }
+    if ($ms -gt 2000 -and $pausa -lt 60) { $pausa = [Math]::Min(60, $pausa * 2); Log ("Lettura lenta ({0} ms): ora leggo ogni {1} s." -f $ms, $pausa) }
+    elseif ($ms -lt 500 -and $pausa -gt $ogni) { $pausa = $ogni }
     $da = New-Object System.Collections.ArrayList
     foreach ($r in $t.Rows) {
       $id = [string](Valore $r["id_2bit"])
       if (-not $id) { continue }
+      $impT = Impronta ((Riga $r) | ConvertTo-Json -Compress -Depth 4)
+      if ($giaTestata[$id] -eq $impT) { continue }
       $c = Copia $r
       $impronta = Impronta ($c | ConvertTo-Json -Compress -Depth 8)
-      if ($giaMandate[$id] -ne $impronta) { [void]$da.Add(@{ id = $id; copia = $c; impronta = $impronta }) }
+      if ($giaMandate[$id] -ne $impronta) { [void]$da.Add(@{ id = $id; copia = $c; impronta = $impronta; testata = $impT }) }
+      else { $giaTestata[$id] = $impT }
     }
     for ($i = 0; $i -lt $da.Count; $i += 100) {
       $pezzo = $da[$i..([Math]::Min($i + 99, $da.Count - 1))]
       $corpo = @{ ordini = @($pezzo | ForEach-Object { $_.copia }) } | ConvertTo-Json -Compress -Depth 8
       $esito = Invoke-RestMethod -Method Post -Uri "$server/api/copia-2bit" -Headers @{ "x-api-key" = $chiave } `
         -ContentType "application/json; charset=utf-8" -Body ([Text.Encoding]::UTF8.GetBytes($corpo)) -TimeoutSec 15
-      foreach ($x in $pezzo) { $giaMandate[$x.id] = $x.impronta }
+      foreach ($x in $pezzo) { $giaMandate[$x.id] = $x.impronta; $giaTestata[$x.id] = $x.testata }
       Log ("Copiati: {0} nuovi, {1} cambiati." -f $esito.nuove, $esito.cambiate)
     }
     if ($giuSegnalato) { Log "Di nuovo collegato."; $giuSegnalato = $false }
@@ -123,5 +139,5 @@ while ($true) {
     # i dati dei clienti non si scrivono nel registro: solo l'errore, una volta
     if (-not $giuSegnalato) { Log ("Problema: {0}. Riprovo da solo." -f $_.Exception.Message); $giuSegnalato = $true }
   }
-  Start-Sleep -Seconds $ogni
+  Start-Sleep -Seconds $pausa
 }
