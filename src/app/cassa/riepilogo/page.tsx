@@ -127,6 +127,8 @@ function Riepilogo() {
         <input type="date" value={giornata} max={stasera} onChange={(e) => e.target.value && vaiA(e.target.value)} aria-label="Serata" />
         <button type="button" disabled={giornata >= stasera} onClick={() => vaiA(domani(giornata))}>Dopo ›</button>
         {!inCorso && <button type="button" onClick={() => setGiornata(stasera)}>Stasera</button>}
+        {/* il CSV della serata uguale a quello di Velocissimo: allo staff serve per la chiusura (Edoardo, 31/10/2026) */}
+        <a href={`/api/ordini/csv-serata?giornata=${giornata}`} download><button type="button">Scarica il CSV della serata</button></a>
       </div>
       {errore && <p className="r-errore">{errore}</p>}
 
