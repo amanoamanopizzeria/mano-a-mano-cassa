@@ -379,3 +379,25 @@ nuovo: si legge con l'utente Windows, solo SELECT, e nessun dato dei clienti è 
   - 23 consegnati, tutti domicili;
   - 3 eliminati, tutti banco.
   Tornano tutti.
+
+## 32.13 La serata del 30/10, letta dopo (sola SELECT)
+
+Il copiatore era spento: questo è il conto, fatto a serata finita, di quello che avrebbe preso.
+
+**Ordini:**
+- 52 ordini, per 1.277,30 €, più 1 annullato;
+- dall'app 42 (1.091,80 €; 23 ritiri e 19 domicili), dalla cassa 7 (118,20 €), dal telefono 3 domicili (67,30 €);
+- dalle piattaforme nessuno;
+- i tavoli erano 2 e non sono in questo conto: il copiatore non li prende ancora.
+
+**Ritmo e consegne:**
+- gli ordini vanno dalle 19:00 alle 22:45, con il picco alle 20:45 (9 ordini nel quarto d'ora);
+- i 22 domicili sono tutti consegnati;
+- in media sono arrivati 16 minuti oltre l'ora promessa, il peggiore 48, con un viaggio medio di 12 minuti
+  (ora segnata dal rider, quindi indicativa).
+
+**Chiamate:** 6 tra le 18:53 e le 20:22, di cui 4 da clienti già noti.
+
+**La query:** ha letto tutti e 53 gli ordini, con lo stato giusto.
+
+**Ancora da provare:** l'invio alla cassa nuova, lo stato «in consegna» seguito dal vivo e i tavoli.
