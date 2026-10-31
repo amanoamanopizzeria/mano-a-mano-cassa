@@ -414,3 +414,21 @@ Il copiatore era spento: questo è il conto, fatto a serata finita, di quello ch
   telefono (D: Processed = chiamata aperta in cassa per fare l'ordine).
 - **Tavoli:** 2 comande, 13 righe, solo in `PIZ_tabComande` con `idTipoComanda=0`. La prossima query da scrivere
   è quella per i tavoli.
+
+## 32.14 Il conto della serata torna: 1.356,80 €
+
+Edoardo ha visto sul 2Bit 1.356,80 € e la nostra lettura dava 1.277,30 €. La differenza di 79,50 € sono i 2 tavoli,
+il 6 (20,00 €) e il 12 (59,50 €), coperti compresi (V).
+
+**Come è stato pagato (V):**
+- carta 757,23 €: gli ordini già pagati online (`isPagata=1`);
+- POS 237,30 €;
+- contanti 362,27 €: 81,20 € da scontrino e 281,07 € dai preconti dei 10 domicili pagati alla consegna. Il tipo è quello
+  registrato sul precontro: se il rider ha preso il POS, da qui non si vede;
+- in documenti: 44 scontrini e 10 preconti.
+
+**La fonte del totale (V):** la vista `webappFoodStats`, deduplicata per documento, su `TotaleNettoSconto`.
+`PIZ_tabPagamentiConti` non torna, perché mancano 69,93 €: non va usata per il totale.
+
+**Il copiatore** ora prende anche i tavoli e sulla stessa serata dà 55 voci per 1.356,80 €. Restano da provare un tavolo
+ancora aperto, i conti separati e il tempo della query.
