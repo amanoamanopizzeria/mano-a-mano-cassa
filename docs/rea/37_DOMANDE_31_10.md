@@ -47,6 +47,8 @@ restano sue; qui non si decide niente.
     (app, Glovo, telefono). La nostra lo stampa piccolo sotto l'ora. Serve ai pizzaioli o si toglie?
 19. **Tre stati dei tavoli sulla piantina** (come il 2Bit): «preconto portato», «conto chiesto» e «seduti
     da troppo senza ordine». Solo colori, nessun passo in più per il cameriere. Li vuoi?
+20. **La chiusura serata avvisa se ci sono tavoli o ordini aperti** prima di scaricare il CSV. Il 30/10 il
+    primo CSV (23:27) era senza il tavolo da 59,50 € chiuso alle 23:33, e l'hanno riscaricato. Lo metto?
 
 ## D. Cose che non servono a Edoardo ma vanno dette
 
