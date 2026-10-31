@@ -31,7 +31,10 @@ tutto quello che vede il 2Bit, e possiamo confrontare sera per sera. I ragazzi c
    anche nella cartella dell'agente delle chiamate.
 4. **Prova** (non manda niente): `powershell -ExecutionPolicy Bypass -File copiatore.ps1 -Prova`. Deve dire quanti
    ordini ci sono nelle ultime ore e mostrare l'ultimo come partirebbe, senza nomi né telefoni.
-5. **Acceso**: `powershell -ExecutionPolicy Bypass -File copiatore.ps1`. Per farlo partire da solo: Utilità di
+5. **I dati dei clienti** (nome, telefono, indirizzo e le note) restano sul PC finché in `config.json` non c'è
+   `"datiClienti": true`: lo decide Edoardo. Senza, la copia porta solo l'ordine: canale, tipo, stato, totale,
+   ore e righe, che bastano per il confronto sera per sera.
+6. **Acceso**: `powershell -ExecutionPolicy Bypass -File copiatore.ps1`. Per farlo partire da solo: Utilità di
    pianificazione di Windows, «All'accesso», con lo stesso comando.
 
 ## Spegnerlo

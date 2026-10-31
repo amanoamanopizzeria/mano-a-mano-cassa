@@ -65,9 +65,14 @@ function Riga($r) {
   return $h
 }
 
+# I dati dei clienti (nome, telefono, indirizzo e le note, che possono contenerli) escono dal PC solo se Edoardo lo
+# decide: «datiClienti»: true in config.json. Senza, la copia porta solo l'ordine (canale, tipo, stato, totale, ore, righe).
+$datiClienti = $config.datiClienti -eq $true
+$PERSONALI = "cliente", "telefono", "indirizzo", "notaCanale", "note", "NoteComanda"
 $CAMPI = "origine", "canale", "tipo", "numero", "stato", "totale", "cliente", "telefono", "indirizzo", "ora_consegna", "creato"
 function Copia($r) {
   $corpo = Riga $r
+  if (-not $datiClienti) { foreach ($k in @($corpo.Keys)) { if ($PERSONALI -contains $k) { $corpo.Remove($k) } } }
   $o = [ordered]@{ id_2bit = [string]$corpo["id_2bit"] }
   foreach ($k in $CAMPI) { if ($corpo.Contains($k)) { $o[$k] = $corpo[$k] } }
   if ($queryRighe) {
@@ -97,7 +102,7 @@ if ($Prova) {
   exit 0
 }
 
-Log ("Copio gli ordini del 2Bit (ultime {0} ore) a {1} ogni {2} s. Ctrl+C per fermare." -f $ore, $server, $ogni)
+Log ("Copio gli ordini del 2Bit (ultime {0} ore) a {1} ogni {2} s, {3}. Ctrl+C per fermare." -f $ore, $server, $ogni, $(if ($datiClienti) { "CON nome, telefono e indirizzo dei clienti" } else { "senza i dati dei clienti" }))
 # Il 2Bit non si deve mai rallentare (Edoardo, 31/10/2026): le righe di un ordine si rileggono solo quando la sua
 # testata cambia (più un giro completo ogni 5 minuti, per le note cambiate senza toccare il totale), e se la
 # lettura delle testate diventa lenta il copiatore si dirada da solo fino a una volta al minuto.

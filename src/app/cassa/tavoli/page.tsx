@@ -64,7 +64,8 @@ function Tavoli() {
   // Il trascinamento: col mouse parte subito, col dito dopo un attimo fermo (così la pagina scorre ancora col dito).
   const [trascino, setTrascino] = useState<{ tavolo: Tavolo; x: number; y: number } | null>(null);
   const [sopra, setSopra] = useState<string | null>(null);
-  const presa = useRef<{ tavolo: Tavolo; x0: number; y0: number; tocco: boolean; pronto: boolean; timer?: number } | null>(null);
+  // pronto: si può trascinare (mouse subito, dito dopo l'attimo fermo); mosso: si sta trascinando davvero
+  const presa = useRef<{ tavolo: Tavolo; x0: number; y0: number; pronto: boolean; mosso: boolean; timer?: number } | null>(null);
 
   const carica = useCallback(async () => {
     const { data, error } = await supabaseBrowser()
@@ -128,9 +129,10 @@ function Tavoli() {
   function prendi(e: React.PointerEvent, t: Tavolo) {
     if (e.button > 0 || (e.target as HTMLElement).closest("button")) return;
     const tocco = e.pointerType !== "mouse";
-    presa.current = { tavolo: t, x0: e.clientX, y0: e.clientY, tocco, pronto: !tocco };
+    presa.current = { tavolo: t, x0: e.clientX, y0: e.clientY, pronto: !tocco, mosso: false };
     if (tocco) presa.current.timer = window.setTimeout(() => {
-      if (presa.current) { presa.current.pronto = true; setTrascino({ tavolo: t, x: presa.current.x0, y: presa.current.y0 }); }
+      const p = presa.current;
+      if (p) { p.pronto = true; p.mosso = true; setTrascino({ tavolo: t, x: p.x0, y: p.y0 }); }
     }, 280);
   }
 
@@ -142,7 +144,8 @@ function Tavoli() {
       if (!p) return;
       const lontano = Math.hypot(e.clientX - p.x0, e.clientY - p.y0) > 10;
       if (!p.pronto) { if (lontano) { clearTimeout(p.timer); presa.current = null; } return; }   // il dito scorre la pagina
-      if (!lontano && !trascino) return;
+      if (!lontano && !p.mosso) return;
+      p.mosso = true;
       setTrascino({ tavolo: p.tavolo, x: e.clientX, y: e.clientY });
       const id = sotto(e.clientX, e.clientY);
       setSopra(id && id !== p.tavolo.id ? id : null);
@@ -152,7 +155,7 @@ function Tavoli() {
       presa.current = null;
       if (!p) return;
       clearTimeout(p.timer);
-      const id = trascino ? sotto(e.clientX, e.clientY) : null;
+      const id = p.mosso ? sotto(e.clientX, e.clientY) : null;
       setTrascino(null); setSopra(null);
       const bersaglio = id ? tavoli.find((x) => x.id === id) : undefined;
       if (bersaglio && bersaglio.id !== p.tavolo.id) unisciTrascinando(p.tavolo, bersaglio);
