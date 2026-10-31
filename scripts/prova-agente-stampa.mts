@@ -167,7 +167,7 @@ const lanciaZ = (giorno: string) => new Promise<{ codice: number; testo: string 
   execFile(process.execPath, ["agente-stampa/agente.mjs", "--z", giorno], { env: { ...process.env, STAMPA_CONFIG: join(dir, "config-z.json") } },
     (e, out, err) => fine({ codice: (e as { code?: number } | null)?.code ?? 0, testo: String(out) + String(err) })));
 const z1 = await lanciaZ("20261030");
-ok(z1.codice === 0 && z1.testo.includes("2 Z per il 30/10/2026") && z1.testo.includes("esito Agenzia OK") && z1.testo.includes("una chiusura lanciata due volte"), "5) «--z 20261030» legge le due Z dalla stampante finta e lo racconta");
+ok(z1.codice === 0 && z1.testo.includes("2 Z per il 30/10/2026") && z1.testo.includes("esito Agenzia OK") && z1.testo.includes("seconda Z vuota"), "5) «--z 20261030» legge le due Z dalla stampante finta e lo racconta");
 const z2 = await lanciaZ("20261031");
 ok(z2.codice === 2 && z2.testo.includes("nessuna Z per il 31/10/2026"), "5) «--z» su un giorno senza cartella esce con 2 e lo dice");
 ok(comandiAllaFiscale === 0, "5) alla fiscale sono arrivate solo GET: nessun comando");

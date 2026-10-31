@@ -109,7 +109,7 @@ export function raccontaZ(giorno, zete) {
   const piene = zete.filter((z) => z.report && !z.report.vuota);
   for (let i = 1; i < zete.length; i++) {
     const prima = zete[i - 1], z = zete[i];
-    if (z.report?.vuota) righe.push(`  → la Z n. ${z.numero} è vuota ed è arrivata ${secondi(prima.ora, z.ora)} s dopo la n. ${prima.numero}: una chiusura lanciata due volte, non sono vendite in più`);
+    if (z.report?.vuota) righe.push(`  → la Z n. ${z.numero} è vuota ed è arrivata ${secondi(prima.ora, z.ora)} s dopo la n. ${prima.numero}: seconda Z vuota (probabile chiusura lanciata due volte), non sono vendite in più`);
   }
   if (piene.length > 1) righe.push(`  → ${piene.length} Z con vendite nello stesso giorno: il totale della giornata è la somma, ${euro(piene.reduce((s, z) => s + (z.report.vendite || 0), 0))}`);
   const totale = piene.reduce((s, z) => s + (z.report.vendite || 0), 0);
