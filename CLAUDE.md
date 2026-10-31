@@ -68,6 +68,8 @@ Roma): sostituisce Velocissimo/2Bit, clean-room. Il cervello gestionale resta
 - `.claude/agents/grafico.md` — porta ogni pagina al marchio (vino, oro,
   bollino, Oswald/Figtree), una pagina per commit, misura prima/dopo, in
   `docs/grafico/`.
+- `.claude/agents/edoardo.md` — il critico che parla come Edoardo (31/10/2026): legge REA e codice e chiede
+  la prova sulle cinque cose vere (ordini dalle app, comande, scontrino, Z, conti). Non ripara, in `docs/critico/edoardo/`.
 - La chat principale sviluppa e decide con Edoardo. Le decisioni restano sue.
 
 ## Regole
