@@ -63,6 +63,17 @@ export function xmlScontrino(s: Scontrino): { xml: string; totale: number; resto
   return { xml: busta(corpo), totale, resto: Math.round((pagato - totale) * 100) / 100 };
 }
 
+/**
+ * Un documento NON fiscale (testo libero: «PROVA CASSA NUOVA», un preconto): non tocca i corrispettivi.
+ * È la prima prova in negozio (REA 36.5/37): si vede che la fiscale ci risponde e stampa, senza fare
+ * uno scontrino. Righe al massimo di 46 caratteri come la Z (REA 34); il testo fuori ASCII si pulisce.
+ */
+export function xmlNonFiscale(righe: string[], operatore = 1): string {
+  if (righe.length === 0) throw new Error("documento senza righe");
+  const corpo = righe.map((r) => `<printNormal operator="${operatore}" font="1" data="${corta(r, 46)}" />`).join("");
+  return busta(`<printerNonFiscal><beginNonFiscal operator="${operatore}" />${corpo}<endNonFiscal operator="${operatore}" /></printerNonFiscal>`);
+}
+
 /** Rapporto X (lettura, non azzera) o Z (chiusura giornaliera: azzera e manda i corrispettivi). */
 export function xmlRapporto(tipo: "X" | "Z", operatore = 1): string {
   const comando = tipo === "Z" ? "printZReport" : "printXReport";

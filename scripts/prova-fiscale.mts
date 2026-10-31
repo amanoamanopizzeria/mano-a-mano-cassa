@@ -2,7 +2,16 @@
 // manda a nessuna stampante (Edoardo, 30/10/2026: niente scontrini, X o Z veri senza prova in negozio e suo ok).
 //   npx --yes tsx scripts/prova-fiscale.mts
 import assert from "node:assert/strict";
-import { xmlScontrino, xmlRapporto, xmlStato, xmlCassetto, leggiRisposta, importo } from "../src/lib/fiscale/epson-xml.ts";
+import { xmlScontrino, xmlRapporto, xmlStato, xmlCassetto, xmlNonFiscale, leggiRisposta, importo } from "../src/lib/fiscale/epson-xml.ts";
+
+// il documento non fiscale della prima prova in negozio: niente corrispettivi, solo testo
+const nf = xmlNonFiscale(["PROVA CASSA NUOVA", "31/10/2026 — nessun corrispettivo", "x".repeat(60)]);
+assert.match(nf, /<beginNonFiscal operator="1" \/>/);
+assert.match(nf, /data="PROVA CASSA NUOVA"/);
+assert.match(nf, /data="31\/10\/2026  nessun corrispettivo"/);   // il trattino lungo non è ASCII: via
+assert.match(nf, new RegExp(`data="${"x".repeat(46)}"`));          // tagliata a 46
+assert.doesNotMatch(nf, /Fiscal(Receipt|Report)/);                  // mai uno scontrino o una Z per sbaglio
+assert.throws(() => xmlNonFiscale([]), /senza righe/);
 
 const s = xmlScontrino({
   righe: [
