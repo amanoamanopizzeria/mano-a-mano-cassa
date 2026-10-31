@@ -1349,3 +1349,70 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--oro); outli
 .pin-scheda { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; }
 .pin-scheda input { min-height: 44px; font-size: 16px; flex: 1 1 140px; }
 .pin-scheda button { min-height: 44px; }
+
+/* Sala: la piantina di Edoardo (30/10/2026, docs/sala/PIANTINA.md) */
+.sala .piantina { display: flex; flex-direction: column; gap: 10px; max-width: 900px; }
+.sala .p-fila { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.sala .p-muro { height: 6px; border-radius: 3px; background: var(--vino); opacity: .75; }
+.sala .p-griglia { display: grid; grid-template-columns: minmax(0, 1fr) minmax(12px, .5fr) minmax(0, 1fr) minmax(40px, .6fr); grid-auto-rows: minmax(110px, auto); gap: 8px; }
+.sala .p-griglia .tavolo, .sala .p-fila .tavolo { padding: 10px 10px 8px; min-height: 104px; display: flex; flex-direction: column; border-width: 1.5px; }
+.sala .piantina .tavolo .num { font-size: 28px; line-height: 1; }
+.sala .piantina .tavolo .badge { font-size: 12px; padding: 2px 6px; }
+.sala .piantina .tavolo .riga-min { font-size: 13px; white-space: nowrap; margin-top: 2px; }
+.sala .piantina .tavolo .azioni { margin-top: auto; padding-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+.sala .piantina .tavolo .azioni button { flex: 1; padding: 6px 6px; font-size: 14px; white-space: nowrap; min-height: 40px; }
+.sala .p-passaggio { display: flex; align-items: center; justify-content: center; border: 2px dashed var(--bordo); border-radius: 12px; color: var(--muto); font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 13px; }
+.sala .p-parete { border-left: 4px solid var(--vino); opacity: .5; }
+.sala .p-banco { display: flex; align-items: center; justify-content: center; border-radius: 12px; background: var(--oro-velo); border: 1px solid var(--oro-chiaro); color: var(--muto); font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 14px; }
+@media (max-width: 640px) {
+  .sala .p-fila { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sala .p-griglia { grid-template-columns: minmax(0, 1fr) 8px minmax(0, 1fr) 0; gap: 6px; }
+  .sala .p-banco { grid-column: 3 / span 1 !important; }
+}
+
+/* Sala disegnata (Edoardo, 30/10/2026: «può essere più carino, disegna dei tavoli dentro e fuori»):
+   il pavimento dentro, il dehors fuori, ogni tavolo è un tavolo con le sedie sopra e sotto. */
+.sala .p-dentro, .sala .p-fuori { border-radius: 18px; padding: 12px 12px 14px; }
+.sala .p-dentro { background: repeating-linear-gradient(90deg, #f6ecdc 0 46px, #f1e4cf 46px 48px); border: 2px solid #e2cfae; }
+.sala .p-fuori { background: radial-gradient(circle at 10% 20%, #e3f1df 0 30%, transparent 31%), radial-gradient(circle at 90% 80%, #e3f1df 0 25%, transparent 26%), #eef6ea; border: 2px dashed #9cc49a; }
+.sala .p-dentro h2, .sala .p-fuori h2 { display: inline-block; padding: 2px 10px; border-radius: 999px; background: #fff; box-shadow: var(--ombra); }
+.sala .p-muro { height: 10px; border-radius: 5px; background: repeating-linear-gradient(90deg, var(--vino) 0 30px, #b8475f 30px 34px); opacity: .9; }
+.sala .piantina .tavolo { position: relative; margin: 14px 4px; border-radius: 18px; border: 2px solid #b08a5a; background: #fffaf2; box-shadow: 0 3px 0 #d8c3a2, var(--ombra); }
+.sala .piantina .tavolo::before, .sala .piantina .tavolo::after { content: ""; position: absolute; left: 22%; right: 22%; height: 9px; border-radius: 6px; background: #c9a77a; box-shadow: inset 0 -2px 0 rgba(0,0,0,.12); }
+.sala .piantina .tavolo::before { top: -14px; }
+.sala .piantina .tavolo::after { bottom: -14px; }
+.sala .p-fuori .tavolo { border-radius: 50% / 38%; border-color: #6f9a6c; box-shadow: 0 3px 0 #b9d4b6, var(--ombra); }
+.sala .p-fuori .tavolo::before, .sala .p-fuori .tavolo::after { background: #8fb88b; }
+.sala .piantina .tavolo.occupato { background: #fff1c9; border-color: var(--oro); }
+.sala .piantina .tavolo.occupato::before, .sala .piantina .tavolo.occupato::after { background: var(--oro); }
+.sala .piantina .tavolo.conto { background: var(--vino-chiaro); border-color: var(--vino); }
+.sala .piantina .tavolo.conto::before, .sala .piantina .tavolo.conto::after { background: var(--vino); }
+.sala .piantina .tavolo.allarme { box-shadow: 0 0 0 3px var(--vino), var(--ombra); }
+.sala .piantina .tavolo .s-intesta { justify-content: center; gap: 6px; }
+.sala .p-banco { background: repeating-linear-gradient(45deg, #efe2c8 0 10px, #e8d7b7 10px 20px); border: 2px solid #c9ab7c; color: #7a6040; }
+.sala .p-passaggio { background: transparent; border-color: #d7c3a3; }
+
+/* Tavoli uniti (mig. 0081): un tavolone solo «1+2», con le sedie lungo i lati lunghi. */
+.sala .piantina .tavolo.unito { border-width: 2.5px; background: #fff6e6; }
+.sala .p-griglia .tavolo.unito::before, .sala .p-griglia .tavolo.unito::after {
+  top: 14%; bottom: 14%; left: auto; right: auto; width: 9px; height: auto;
+  background: repeating-linear-gradient(to bottom, #c9a77a 0 34px, transparent 34px 52px); box-shadow: none; }
+.sala .p-griglia .tavolo.unito::before { left: -14px; }
+.sala .p-griglia .tavolo.unito::after { right: -14px; }
+.sala .p-fila .tavolo.unito::before, .sala .p-fila .tavolo.unito::after {
+  left: 10%; right: 10%; background: repeating-linear-gradient(to right, #c9a77a 0 34px, transparent 34px 52px); box-shadow: none; }
+.sala .piantina .tavolo.unisce { outline: 3px solid var(--vino, #8a1538); outline-offset: 2px; }
+.sala .piantina .tavolo.compagno { cursor: pointer; outline: 3px dashed #3b7d4f; outline-offset: 2px; }
+.sala .s-unisci { background: #eef6ef; border: 1px solid #3b7d4f; border-radius: 10px; padding: 10px 12px; }
+/* Unire trascinando (31/10/2026): il tavolo preso resta sbiadito, quello sotto il dito si accende, il nome segue il dito. */
+.sala .piantina .tavolo { cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.sala .piantina .tavolo.preso { opacity: .45; }
+.sala .piantina .tavolo.sopra { outline: 4px solid #3b7d4f; outline-offset: 3px; background: #eef6ef; }
+.sala .p-fantasma { position: fixed; z-index: 50; transform: translate(-50%, -120%); pointer-events: none; padding: 8px 16px;
+  border-radius: 14px; background: var(--vino, #8a1538); color: #fff; font-family: "Oswald", sans-serif; font-size: 26px; box-shadow: var(--ombra); }
+.sala .s-aiuto { margin: 0 0 8px; font-size: 14px; }
+/* /cassa/nuovo: i coperti del tavolo che si apre da qui (31/10/2026) */
+.c-coperti { margin: 0 6px 6px; padding: 8px; border-radius: 12px; background: #fff3d6; border: 1px solid var(--oro, #c9a24a); }
+.c-coperti span { display: block; font-weight: 700; margin-bottom: 6px; }
+.c-coperti div { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.c-coperti button { min-height: 44px; font-size: 18px; font-weight: 700; }

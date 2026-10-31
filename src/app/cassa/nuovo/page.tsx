@@ -18,7 +18,8 @@ import type { Variazione } from "@/lib/types";
 import MiniMappa from "@/components/MiniMappa";
 import ColonnaCassa from "../ColonnaCassa";
 
-interface Tavolo { id: string; numero: string; stato: string }
+// unito_a: il tavolo è dentro un gruppo «1+2+3» (mig. 0081/0086) e gli ordini vanno sul primo del gruppo
+interface Tavolo { id: string; numero: string; stato: string; coperti: number; unito_a: string | null }
 type Tipo = "banco" | "tavolo" | "ritiro" | "domicilio";
 const TIPI: { v: Tipo; t: string }[] = [
   { v: "banco", t: "Banco" }, { v: "tavolo", t: "Tavolo" }, { v: "ritiro", t: "Asporto" }, { v: "domicilio", t: "Domicilio" },
@@ -44,6 +45,7 @@ function Cassa() {
   const [figliaSel, setFigliaSel] = useState<number | null>(null);
   const [tavoli, setTavoli] = useState<Tavolo[]>([]);
   const [categoria, setCategoria] = useState<string | null>(null);
+  const nomeTavolo = (t: Tavolo) => [t, ...tavoli.filter((x) => x.unito_a === t.id)].map((x) => x.numero).join("+");
   const [righe, setRighe] = useState<RigaOrdine[]>([]);
   const [selezionata, setSelezionata] = useState<string | null>(null);   // chiave della riga
   const [scorsa, setScorsa] = useState<string | null>(null);   // la riga scorsa a sinistra, che mostra «Elimina»
@@ -53,6 +55,8 @@ function Cassa() {
   const [digitato, setDigitato] = useState("");
   const [tipo, setTipo] = useState<Tipo>("banco");
   const [idTavolo, setIdTavolo] = useState<string | null>(null);
+  // Edoardo, 31/10/2026: i coperti si chiedono sempre, anche quando il tavolo si apre da qui e non dalla Sala.
+  const [copertiNuovi, setCopertiNuovi] = useState<number | null>(null);
   const [note, setNote] = useState("");
   // Il cliente che ha chiamato (da /cassa/cliente, «Prendi l'ordine»): si lega all'ordine.
   const [cliente, setCliente] = useState<{ id: string; nome: string | null; telefono: string; indirizzo: string | null } | null>(null);
@@ -175,7 +179,7 @@ function Cassa() {
     (async () => {
       const [m, t, z] = await Promise.all([
         leggiMenu(),
-        supabaseBrowser().from("tavolo").select("id, numero, stato").eq("attivo", true).order("numero"),
+        supabaseBrowser().from("tavolo").select("id, numero, stato, coperti, unito_a").eq("attivo", true).order("numero"),
         supabaseBrowser().from("zona").select("id, nome, costo_consegna, minimo_ordine").eq("attiva", true),
       ]);
       if (m.errore) setErrore(m.errore);
@@ -320,6 +324,8 @@ function Cassa() {
   const quartiOggi = useMemo(() => quartiDel(oggiISO()), [orarioTipo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const listino = tipo === "tavolo" ? "tavolo" : "asporto";
+  const tavoloScelto = tipo === "tavolo" && idTavolo ? tavoli.find((t) => t.id === idTavolo) : undefined;
+  const mancanoCoperti = !modifica && !!tavoloScelto && !(tavoloScelto.coperti > 0);
   const catCorrente = categorie.find((c) => c.id === categoria);
   const rigaSel = righe.find((r) => r.chiave === selezionata) ?? null;
   const figlie = rigaSel?.figlie ?? [];
@@ -520,11 +526,20 @@ function Cassa() {
       const x = sc as { esito: string } | null;
       if (x?.esito !== "applicato") setErroreCoupon(`Ordine inviato ma sconto NON applicato (${x?.esito ?? "errore"}).`);
     }
+    if (r.esito === "accettato" && tipo === "tavolo" && idTavolo && copertiNuovi) {
+      const { data: tc } = await supabaseBrowser().rpc("tavolo_coperti", { p_id_tavolo: idTavolo, p_coperti: copertiNuovi });
+      if ((tc as { esito: string } | null)?.esito !== "ok") setErroreCoupon("Ordine inviato ma coperti NON segnati: segnali dalla Sala.");
+    }
+    if (r.esito === "accettato" && tipo === "tavolo") {
+      const { data: tv } = await supabaseBrowser().from("tavolo").select("id, numero, stato, coperti, unito_a").eq("attivo", true);
+      if (tv) setTavoli(((tv ?? []) as Tavolo[]).sort((a, b) => a.numero.localeCompare(b.numero, "it", { numeric: true })));
+      setCopertiNuovi(null);
+    }
     if (r.esito === "accettato" && r.id && (pagamento || pagaCon)) {
       const pc = Number(pagaCon.replace(",", "."));
       await supabaseBrowser().rpc("ordine_pagamento", { p_id: r.id, p_pagamento: pagamento === "online" ? null : pagamento, p_paga_con: pc > 0 ? pc : null, p_pagato_online: pagamento === "online" });
     }
-    if (r.esito === "accettato") { svuota(); setCliente(null); setIndirizzi([]); setIdIndirizzo(null); setGiorno(""); setOra(""); setPagamento(null); setPagaCon(""); setEsito(`Ordine n. ${r.numero}${tipo === "tavolo" ? ` · tavolo ${tavoli.find((t) => t.id === idTavolo)?.numero ?? ""}` : tipo === "ritiro" && (cliente?.nome || nomeCliente.trim()) ? ` · ${cliente?.nome ?? nomeCliente.trim()}` : ""} inviato in cucina${quando} · ${euro(Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - scontoManuale))}${pagamento ? (pagamento === "pos" ? " POS" : pagamento === "online" ? " già pagato" : " contanti") : ""}${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
+    if (r.esito === "accettato") { svuota(); setCliente(null); setIndirizzi([]); setIdIndirizzo(null); setGiorno(""); setOra(""); setPagamento(null); setPagaCon(""); setEsito(`Ordine n. ${r.numero}${tipo === "tavolo" ? ` · tavolo ${tavoloScelto ? nomeTavolo(tavoloScelto) : ""}` : tipo === "ritiro" && (cliente?.nome || nomeCliente.trim()) ? ` · ${cliente?.nome ?? nomeCliente.trim()}` : ""} inviato in cucina${quando} · ${euro(Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - scontoManuale))}${pagamento ? (pagamento === "pos" ? " POS" : pagamento === "online" ? " già pagato" : " contanti") : ""}${r.zona ? ` · ${r.zona}, consegna ${euro(Number(r.costo_consegna))}` : ""}.`); }
     else if (r.esito === "pieno" && r.motivo === "consegne") setErrore(`Quarto d'ora pieno per le consegne${pOra ? ` alle ${ora}` : ""}: scegli un altro orario o un rider in più.`);
     else if (r.esito === "pieno" && r.massimo === 0) setErrore(`Per ${pOra ? (giorniScelta.find((g) => g.v === giorno)?.t.toLowerCase() ?? giorno) : "oggi"} non sono impostati i pizzaioli (0 posti): aprì Capacità e metti quanti sono.`);
     else if (r.esito === "pieno") setErrore(`Quarto d'ora pieno in cucina${pOra ? ` alle ${ora}` : ""}${r.libere ? `: ci stanno ancora ${r.libere} pizze` : ""}. Scegli un altro orario.`);
@@ -697,10 +712,18 @@ function Cassa() {
           </div>
         )}
         {tipo === "tavolo" && (
-          <select value={idTavolo ?? ""} onChange={(e) => setIdTavolo(e.target.value || null)} style={{ margin: "0 6px 6px", padding: 8, fontSize: 15 }}>
+          <select value={idTavolo ?? ""} onChange={(e) => { setIdTavolo(e.target.value || null); setCopertiNuovi(null); }} style={{ margin: "0 6px 6px", padding: 8, fontSize: 15 }}>
             <option value="">Scegli il tavolo</option>
-            {tavoli.map((t) => <option key={t.id} value={t.id}>{t.numero} · {t.stato}</option>)}
+            {tavoli.filter((t) => !t.unito_a).map((t) => <option key={t.id} value={t.id}>{nomeTavolo(t)} · {t.stato}{t.coperti > 0 ? ` · ${t.coperti} cop.` : ""}</option>)}
           </select>
+        )}
+        {mancanoCoperti && (
+          <div className="c-coperti" role="group" aria-label="Coperti">
+            <span>Quanti coperti al {nomeTavolo(tavoloScelto!)}?</span>
+            <div>{Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+              <button key={n} className={n === copertiNuovi ? "primario" : ""} onClick={() => setCopertiNuovi(n)}>{n}</button>
+            ))}</div>
+          </div>
         )}
 
         <div className="scorri" style={{ flex: 1, minHeight: 160, borderTop: "1px solid var(--bordo)", borderBottom: "1px solid var(--bordo)" }}>
@@ -895,7 +918,7 @@ function Cassa() {
             <span style={{ fontSize: 30, fontWeight: 800, color: "var(--vino)", fontFamily: "Oswald, sans-serif", lineHeight: 1.1 }}>{euro(righe.length === 0 ? 0 : modifica ? Math.max(0, totale + (modifica.costo_consegna ?? 0) - (modifica.sconto ?? 0)) : Math.max(0, totale + costoConsegna - (coupon?.sconto ?? 0) - scontoManuale))}</span>
           </span>
         </div>
-        <button onClick={invia} className="primario c-invia" disabled={invio || righe.length === 0 || !!modifica?.bloccata || (!modifica && ((tipo === "tavolo" && !idTavolo) || (tipo === "banco" && !pagamento) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)))} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
+        <button onClick={invia} className="primario c-invia" disabled={invio || righe.length === 0 || !!modifica?.bloccata || (!modifica && ((tipo === "tavolo" && (!idTavolo || (mancanoCoperti && !copertiNuovi))) || (tipo === "banco" && !pagamento) || (tipo === "domicilio" && (!idIndirizzo || fuoriZona || sottoMinimo)) || (!!giorno && !ora)))} style={{ margin: 6, padding: 16, fontSize: 19, fontFamily: "Oswald, sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: ".06em", borderRadius: 999, boxShadow: "0 8px 22px rgba(138,21,56,.28)" }}>
           {invio ? (modifica ? "Salvo…" : "Invio…") : modifica ? "Salva e ristampa" : "Invia in cucina"}
         </button>
         </div>

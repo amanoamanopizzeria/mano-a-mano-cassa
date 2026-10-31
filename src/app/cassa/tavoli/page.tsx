@@ -1,8 +1,10 @@
 "use client";
 
-// Sala: 20 tavoli dentro e 15 fuori. Si apre un tavolo con i coperti, si chiude quando paga.
+// Sala: 10 tavoli dentro e 5 fuori, sulla piantina di Edoardo. Si apre un tavolo con i coperti, si chiude quando paga.
 // Il colore cambia dopo 60 minuti dall'apertura (alert per proporre il dessert o un altro giro).
-import { useCallback, useEffect, useState } from "react";
+// I tavoli si uniscono trascinandone uno sull'altro, o con «Unisci» (Edoardo, 31/10/2026: «tipo trascini i tavoli, li
+// unisci… un tavolo a 6 prende il tavolo 1, 2 e 3 e li unisce, e deve sempre mettere quanti sono i coperti»).
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
 import type { Variazione } from "@/lib/types";
@@ -27,6 +29,7 @@ interface Tavolo {
   stato: "libero" | "occupato" | "conto";
   aperto_il: string | null;
   coperti: number;
+  unito_a?: string | null;   // mig. 0081: il tavolo principale del gruppo («1+2»)
 }
 
 const ALERT_MINUTI = 60;
@@ -55,6 +58,13 @@ function Tavoli() {
   // Il tastierino dei coperti sulla pagina (critico giro 29: la finestrella del browser bloccava la pagina).
   // «apri» un tavolo libero, «correggi» uno già occupato (anche aperto da /cassa/nuovo, che non li chiede).
   const [coperti, setCoperti] = useState<{ tavolo: Tavolo; scopo: "apri" | "correggi" } | null>(null);
+  // «Unisci» (Edoardo, 30/10/2026: «voglio unire 1 e 2, o 11 e 12»): si tocca Unisci su un tavolo, poi i tavoli
+  // liberi da mettergli accanto. Il gruppo diventa un tavolone «1+2»: ordini, coperti e conto stanno sul primo.
+  const [unisco, setUnisco] = useState<Tavolo | null>(null);
+  // Il trascinamento: col mouse parte subito, col dito dopo un attimo fermo (così la pagina scorre ancora col dito).
+  const [trascino, setTrascino] = useState<{ tavolo: Tavolo; x: number; y: number } | null>(null);
+  const [sopra, setSopra] = useState<string | null>(null);
+  const presa = useRef<{ tavolo: Tavolo; x0: number; y0: number; tocco: boolean; pronto: boolean; timer?: number } | null>(null);
 
   const carica = useCallback(async () => {
     const { data, error } = await supabaseBrowser()
@@ -85,6 +95,85 @@ function Tavoli() {
     if ((data as { esito: string }).esito !== "ok") { setErrore("Coperti non validi."); return; }
     setErrore(null);
     setConto((c) => (c && c.tavolo.id === t.id ? { ...c, tavolo: { ...c.tavolo, coperti: n } } : c));
+    carica();
+  }
+
+  async function unisciA(principale: Tavolo, altro: Tavolo): Promise<boolean> {
+    const { data, error } = await supabaseBrowser().rpc("tavolo_unisci", { p_principale: principale.id, p_altro: altro.id });
+    if (error) { setErrore(error.message); return false; }
+    const r = data as { esito: string; messaggio?: string };
+    const ok = r.esito === "ok";
+    if (!ok) setErrore(r.messaggio ?? "Non si possono unire (" + r.esito + ")."); else setErrore(null);
+    await carica();
+    return ok;
+  }
+
+  // Un tavolo lasciato sopra un altro: il gruppo resta su quello già aperto (lì ci sono ordini e coperti); se sono
+  // liberi tutti e due, su quello sotto. Poi si chiedono subito i coperti di tutto il gruppo.
+  async function unisciTrascinando(preso: Tavolo, bersaglio: Tavolo) {
+    const capo = (t: Tavolo) => tavoli.find((x) => x.id === t.unito_a) ?? t;
+    const a = capo(preso), b = capo(bersaglio);
+    if (a.id === b.id) return;
+    if (a.zona !== b.zona) { setErrore("Un tavolo di dentro e uno di fuori non si uniscono."); return; }
+    const conGruppo = (t: Tavolo) => tavoli.some((x) => x.unito_a === t.id);
+    if (a.stato !== "libero" && b.stato !== "libero") {
+      setErrore(`Il ${nomeDi(a)} e il ${nomeDi(b)} sono aperti tutti e due: incassa o libera uno dei due prima di unirli.`);
+      return;
+    }
+    const [principale, altro] = b.stato !== "libero" || (a.stato === "libero" && !conGruppo(a)) ? [b, a] : [a, b];
+    if (conGruppo(altro)) { setErrore(`Il ${nomeDi(altro)} è già un gruppo: trascina sopra di lui gli altri tavoli.`); return; }
+    if (await unisciA(principale, altro)) setCoperti({ tavolo: principale, scopo: principale.stato === "libero" ? "apri" : "correggi" });
+  }
+
+  function prendi(e: React.PointerEvent, t: Tavolo) {
+    if (e.button > 0 || (e.target as HTMLElement).closest("button")) return;
+    const tocco = e.pointerType !== "mouse";
+    presa.current = { tavolo: t, x0: e.clientX, y0: e.clientY, tocco, pronto: !tocco };
+    if (tocco) presa.current.timer = window.setTimeout(() => {
+      if (presa.current) { presa.current.pronto = true; setTrascino({ tavolo: t, x: presa.current.x0, y: presa.current.y0 }); }
+    }, 280);
+  }
+
+  useEffect(() => {
+    const sotto = (x: number, y: number) =>
+      (document.elementFromPoint(x, y)?.closest("[data-tavolo]") as HTMLElement | null)?.dataset.tavolo ?? null;
+    const muovi = (e: PointerEvent) => {
+      const p = presa.current;
+      if (!p) return;
+      const lontano = Math.hypot(e.clientX - p.x0, e.clientY - p.y0) > 10;
+      if (!p.pronto) { if (lontano) { clearTimeout(p.timer); presa.current = null; } return; }   // il dito scorre la pagina
+      if (!lontano && !trascino) return;
+      setTrascino({ tavolo: p.tavolo, x: e.clientX, y: e.clientY });
+      const id = sotto(e.clientX, e.clientY);
+      setSopra(id && id !== p.tavolo.id ? id : null);
+    };
+    const lascia = (e: PointerEvent) => {
+      const p = presa.current;
+      presa.current = null;
+      if (!p) return;
+      clearTimeout(p.timer);
+      const id = trascino ? sotto(e.clientX, e.clientY) : null;
+      setTrascino(null); setSopra(null);
+      const bersaglio = id ? tavoli.find((x) => x.id === id) : undefined;
+      if (bersaglio && bersaglio.id !== p.tavolo.id) unisciTrascinando(p.tavolo, bersaglio);
+    };
+    // mentre si trascina col dito la pagina sta ferma
+    const fermaScorrimento = (e: TouchEvent) => { if (presa.current?.pronto) e.preventDefault(); };
+    window.addEventListener("pointermove", muovi);
+    window.addEventListener("pointerup", lascia);
+    window.addEventListener("pointercancel", lascia);
+    window.addEventListener("touchmove", fermaScorrimento, { passive: false });
+    return () => {
+      window.removeEventListener("pointermove", muovi);
+      window.removeEventListener("pointerup", lascia);
+      window.removeEventListener("pointercancel", lascia);
+      window.removeEventListener("touchmove", fermaScorrimento);
+    };
+  });
+  async function separa(t: Tavolo) {
+    const { error } = await supabaseBrowser().rpc("tavolo_separa", { p_principale: t.id });
+    if (error) setErrore(error.message); else setErrore(null);
+    setUnisco(null);
     carica();
   }
 
@@ -145,47 +234,110 @@ function Tavoli() {
     setConto(null);
   }
 
-  const sezioni: { titolo: string; zona: "dentro" | "fuori" }[] = [
-    { titolo: "Dentro", zona: "dentro" },
-    { titolo: "Fuori", zona: "fuori" },
-  ];
+  // La piantina disegnata da Edoardo (30/10/2026, docs/sala/PIANTINA.md): fuori 11–15 in fila in alto; dentro la
+  // colonna sinistra dal basso 1–6 e la colonna centrale dal basso 7–10, con il passaggio fra 7 e 8; in basso a
+  // destra il banco. Il 2Bit non ha una piantina: questa è nostra. Un tavolo che non è nel disegno va in fondo.
+  const POSTO: Record<string, { riga: number; colonna: number }> = {
+    "6": { riga: 1, colonna: 1 }, "5": { riga: 2, colonna: 1 }, "4": { riga: 3, colonna: 1 },
+    "3": { riga: 4, colonna: 1 }, "2": { riga: 5, colonna: 1 }, "1": { riga: 6, colonna: 1 },
+    "10": { riga: 1, colonna: 3 }, "9": { riga: 2, colonna: 3 }, "8": { riga: 3, colonna: 3 }, "7": { riga: 5, colonna: 3 },
+  };
+  // dal 30/10 (mig. 0081) i tavoli si chiamano 1…10 dentro e 11…15 fuori; il posto si cerca dalle cifre
+  const postoDi = (t: Tavolo) => POSTO[t.numero.replace(/\D/g, "")];
+  const perNumero = (a: Tavolo, b: Tavolo) => a.numero.localeCompare(b.numero, "it", { numeric: true });
+  // i tavoli uniti a un principale non si disegnano da soli: il principale li disegna come un tavolone
+  const uniti = (t: Tavolo) => tavoli.filter((x) => x.unito_a === t.id).sort(perNumero);
+  const nomeDi = (t: Tavolo) => [t, ...uniti(t)].map((x) => x.numero).join("+");
+  // il tavolone occupa i posti di tutti i suoi tavoli sulla piantina (1+2 = due righe della colonna)
+  const rettangolo = (t: Tavolo) => {
+    const membri = [t, ...uniti(t)];
+    const posti = membri.map(postoDi).filter(Boolean) as { riga: number; colonna: number }[];
+    if (posti.length === 0) return undefined;
+    const r = { r0: Math.min(...posti.map((p) => p.riga)), r1: Math.max(...posti.map((p) => p.riga)),
+      c0: Math.min(...posti.map((p) => p.colonna)), c1: Math.max(...posti.map((p) => p.colonna)) };
+    // se in mezzo c'è un tavolo che non è del gruppo (1+3 senza il 2), il tavolone resta al posto del primo
+    const inMezzo = tavoli.some((x) => !membri.includes(x) && x.zona === "dentro" && !x.unito_a && (() => {
+      const p = postoDi(x); return !!p && p.riga >= r.r0 && p.riga <= r.r1 && p.colonna >= r.c0 && p.colonna <= r.c1;
+    })());
+    if (inMezzo) { const p = postoDi(t); return p ? { r0: p.riga, r1: p.riga, c0: p.colonna, c1: p.colonna } : undefined; }
+    return r;
+  };
+  const postoGruppo = (t: Tavolo) => {
+    const r = rettangolo(t);
+    return r ? { gridRow: `${r.r0} / ${r.r1 + 1}`, gridColumn: `${r.c0} / ${r.c1 + 1}` } : undefined;
+  };
+  const principali = tavoli.filter((t) => !t.unito_a);
+  const fuori = principali.filter((t) => t.zona === "fuori").sort(perNumero);
+  const dentro = principali.filter((t) => t.zona === "dentro" && postoDi(t));
+  const altri = principali.filter((t) => t.zona === "dentro" && !postoDi(t)).sort(perNumero);
+  // il passaggio fra 7 e 8 (riga 4 della colonna centrale) sparisce sotto un tavolone 7+8
+  const passaggioCoperto = dentro.some((t) => { const r = rettangolo(t); return !!r && r.r0 <= 4 && r.r1 >= 4 && r.c0 <= 3 && r.c1 >= 3; });
+  const scheda = (t: Tavolo, inPiantina = false) => {
+        const min = minutiDa(t.aperto_il);
+        const allarme = t.stato !== "libero" && min >= ALERT_MINUTI;
+        const gruppo = uniti(t);
+        const scegliCompagno = unisco && unisco.id !== t.id && t.stato === "libero" && gruppo.length === 0;
+        return (
+          <div
+            key={t.id}
+            data-tavolo={t.id}
+            style={inPiantina ? postoGruppo(t) : (gruppo.length > 0 ? { gridColumn: `span ${1 + gruppo.length}` } : undefined)}
+            className={"carta tavolo " + t.stato + (allarme ? " allarme" : "") + (gruppo.length > 0 ? " unito" : "")
+              + (unisco?.id === t.id ? " unisce" : "") + (scegliCompagno ? " compagno" : "")
+              + (sopra === t.id ? " sopra" : "") + (trascino?.tavolo.id === t.id ? " preso" : "")}
+            onClick={scegliCompagno ? () => unisciA(unisco, t) : undefined}
+            onPointerDown={(e) => prendi(e, t)}
+            onContextMenu={(e) => e.preventDefault()}
+          >
+            <div className="s-intesta">
+              <strong className="num">{nomeDi(t)}</strong>
+              <span className={`badge stato-${t.stato}`}>{t.stato === "occupato" ? "occ." : t.stato}</span>
+            </div>
+            {t.stato !== "libero" && (
+              <div className="muto riga-min">
+                <button className="link-coperti" onClick={() => setCoperti({ tavolo: t, scopo: "correggi" })} aria-label="Correggi i coperti">{t.coperti} cop.</button> · <b className={allarme ? "da-troppo" : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
+              </div>
+            )}
+            {scegliCompagno ? <div className="azioni"><button className="primario">+ Unisci a {nomeDi(unisco)}</button></div> :
+            <div className="azioni">
+              {t.stato === "libero" && <button className="primario" onClick={() => setCoperti({ tavolo: t, scopo: "apri" })}>Apri</button>}
+              {!unisco && <button onClick={() => setUnisco(t)}>Unisci</button>}
+              {unisco?.id === t.id && <button className="primario" onClick={() => {
+                setUnisco(null);
+                if (gruppo.length > 0) setCoperti({ tavolo: t, scopo: t.stato === "libero" ? "apri" : "correggi" });
+              }}>Fatto</button>}
+              {gruppo.length > 0 && <button onClick={() => separa(t)}>Separa</button>}
+              {t.stato !== "libero" && <button className={t.stato === "conto" ? "primario" : ""} onClick={() => passaAlConto(t)}>Conto</button>}
+              {t.stato !== "libero" && <button onClick={() => chiudi(t)}>Libera</button>}
+            </div>}
+          </div>
+        );
+  };
 
   return (
     <main className="sala">
       <h1>Sala</h1>
       {errore && <p className="s-errore">{errore}</p>}
-      {sezioni.map((s) => (
-        <section key={s.zona} className="s-zona">
-          <h2>{s.titolo}</h2>
-          <div className="griglia sala-griglia">
-            {tavoli.filter((t) => t.zona === s.zona).sort((a, b) => a.numero.localeCompare(b.numero, "it", { numeric: true })).map((t) => {
-              const min = minutiDa(t.aperto_il);
-              const allarme = t.stato !== "libero" && min >= ALERT_MINUTI;
-              return (
-                <div
-                  key={t.id}
-                  className={"carta tavolo " + t.stato + (allarme ? " allarme" : "")}
-                >
-                  <div className="s-intesta">
-                    <strong className="num">{t.numero}</strong>
-                    <span className={`badge stato-${t.stato}`}>{t.stato === "occupato" ? "occ." : t.stato}</span>
-                  </div>
-                  {t.stato !== "libero" && (
-                    <div className="muto riga-min">
-                      <button className="link-coperti" onClick={() => setCoperti({ tavolo: t, scopo: "correggi" })} aria-label="Correggi i coperti">{t.coperti} cop.</button> · <b className={allarme ? "da-troppo" : undefined}>{min} min</b>{allarme ? " · da troppo" : ""}
-                    </div>
-                  )}
-                  <div className="azioni">
-                    {t.stato === "libero" && <button className="primario" onClick={() => setCoperti({ tavolo: t, scopo: "apri" })}>Apri</button>}
-                    {t.stato !== "libero" && <button className={t.stato === "conto" ? "primario" : ""} onClick={() => passaAlConto(t)}>Conto</button>}
-                    {t.stato !== "libero" && <button onClick={() => chiudi(t)}>Libera</button>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {unisco ? <p className="s-unisci">Tocca i tavoli liberi da unire al <b>{nomeDi(unisco)}</b>, poi <b>Fatto</b>.</p>
+        : <p className="muto s-aiuto">Per unire i tavoli trascinane uno sopra l&apos;altro (col dito: tienilo premuto un attimo), oppure tocca <b>Unisci</b>.</p>}
+      {trascino && <div className="p-fantasma" style={{ left: trascino.x, top: trascino.y }} aria-hidden="true">{nomeDi(trascino.tavolo)}</div>}
+      <div className="piantina">
+        <section className="s-zona p-fuori">
+          <h2>Fuori</h2>
+          <div className="p-fila">{fuori.map((t) => scheda(t))}</div>
         </section>
-      ))}
+        <div className="p-muro" aria-hidden="true" />
+        <section className="s-zona p-dentro">
+          <h2>Dentro</h2>
+          <div className="p-griglia">
+            {dentro.map((t) => scheda(t, true))}
+            {!passaggioCoperto && <div className="p-passaggio" style={{ gridRow: 4, gridColumn: 3 }} aria-hidden="true">passaggio</div>}
+            <div className="p-parete" style={{ gridRow: "1 / span 5", gridColumn: 4 }} aria-hidden="true" />
+            <div className="p-banco" style={{ gridRow: "6 / span 1", gridColumn: "3 / span 2" }} aria-hidden="true">banco</div>
+          </div>
+          {altri.length > 0 && <div className="griglia sala-griglia">{altri.map((t) => scheda(t))}</div>}
+        </section>
+      </div>
 
       {conto && (() => {
         const righe = conto.ordini.flatMap((o) => o.ordine_riga);
@@ -197,7 +349,7 @@ function Tavoli() {
           <div className="conto-velo" onClick={() => { setConto(null); setDivisi(null); }}>
             <section className="carta conto" onClick={(e) => e.stopPropagation()}>
               <header>
-                <strong className="num">Tavolo {conto.tavolo.numero}</strong>
+                <strong className="num">Tavolo {nomeDi(conto.tavolo)}</strong>
                 <span className="muto">{conto.tavolo.coperti} {conto.tavolo.coperti === 1 ? "coperto" : "coperti"} · {minutiDa(conto.tavolo.aperto_il)} min</span>
                 <button className="chiudi-conto" onClick={() => { setConto(null); setDivisi(null); }}>✕</button>
               </header>
@@ -285,7 +437,7 @@ function Tavoli() {
         <div className="conto-velo coperti-velo" onClick={() => setCoperti(null)}>
           <section className="carta tastierino-coperti" role="dialog" aria-label="Coperti" onClick={(e) => e.stopPropagation()}>
             <header>
-              <strong>Tavolo {coperti.tavolo.numero}: quanti coperti?</strong>
+              <strong>Tavolo {nomeDi(coperti.tavolo)}: quanti coperti?</strong>
               <button className="chiudi-conto" onClick={() => setCoperti(null)}>✕</button>
             </header>
             <div className="numeri">
