@@ -7,6 +7,7 @@
 //   node agente.mjs            stampa le comande man mano che arrivano
 //   node agente.mjs --prova    una pagina di prova su ogni stampante, poi esce
 //   node agente.mjs --stato    legge lo stato di ogni stampante e della fiscale SENZA stampare niente, poi esce
+//   node agente.mjs --z [AAAAMMGG]  legge dalla fiscale la Z del giorno (di ieri sera fino alle 6), solo in lettura
 import { readFileSync, existsSync, writeFileSync, rmSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -14,6 +15,7 @@ import { createHash } from "node:crypto";
 import net from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { fileZ, leggiZReport, esitoDa, raccontaZ, giornoSerata } from "./zreport.mjs";
 
 const qui = dirname(fileURLToPath(import.meta.url));
 const percorsoConfig = process.env.STAMPA_CONFIG || join(qui, "config.json");
@@ -176,16 +178,21 @@ function leggiStatoRT(c) {
   return righe.length ? "\n    → " + righe.join("\n    → ") : "";
 }
 
+// la fiscale risponde in HTTP sulla porta 80; «porta» nel config serve solo alle prove con una stampante finta
+const baseFiscale = (f) => `http://${f.ip}${f.porta ? ":" + f.porta : ""}`;
+// se la stampante chiede l'accesso, utente e password stanno SOLO nel config.json del PC (mai nel repo)
+function accessoFiscale(f) {
+  return f.utente ? { authorization: "Basic " + Buffer.from(`${f.utente}:${f.password ?? ""}`).toString("base64") } : {};
+}
+
 async function statoFiscale(f) {
   const xml = '<?xml version="1.0" encoding="utf-8"?>\n<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body>'
     + '<printerCommand><queryPrinterStatus operator="1" statusType="1" /></printerCommand></s:Body></s:Envelope>';
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 8000);
   try {
-    // se la stampante chiede l'accesso, utente e password stanno SOLO nel config.json del PC (mai nel repo)
-    const headers = { "content-type": "text/xml; charset=utf-8" };
-    if (f.utente) headers.authorization = "Basic " + Buffer.from(`${f.utente}:${f.password ?? ""}`).toString("base64");
-    const r = await fetch(`http://${f.ip}/cgi-bin/fpmate.cgi`, { method: "POST", headers, body: xml, signal: ctrl.signal });
+    const headers = { "content-type": "text/xml; charset=utf-8", ...accessoFiscale(f) };
+    const r = await fetch(`${baseFiscale(f)}/cgi-bin/fpmate.cgi`, { method: "POST", headers, body: xml, signal: ctrl.signal });
     if (r.status === 401) return "chiede l'accesso (401): utente e password della stampante in config.json, «fiscale»";
     const testo = await r.text();
     const esito = /success="true"/i.test(testo) ? "risponde: success" : `risponde ma non success (HTTP ${r.status})`;
@@ -215,6 +222,49 @@ if (process.argv.includes("--prova")) {
     catch (e) { errori++; log(`!! ${s.nome} (${dove(s)}): ${e.message}`); }
   }
   process.exit(errori ? 1 : 0);
+}
+
+// ── La Z, letta e basta ──────────────────────────────────────────────────────────────────────────────
+// La fiscale pubblica in HTTP (GET) quello che ha mandato all'Agenzia: www/dati-rt/<AAAAMMGG>/ con, per ogni
+// chiusura, CORRISP.xml, ESITO-<id>.xml e ZREPORT.txt (REA 34, 31/10/2026). Qui si leggono e si raccontano:
+// nessun comando alla stampante, mai. Serve a far tornare ogni sera il conto della cassa con la fiscale, e a
+// vedere la Z doppia del 2Bit (due chiusure a un minuto, la seconda vuota).
+async function prendiFiscale(f, percorso) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const r = await fetch(`${baseFiscale(f)}${percorso}`, { headers: accessoFiscale(f), signal: ctrl.signal });
+    if (r.status === 401) throw new Error("chiede l'accesso (401): utente e password della stampante in config.json, «fiscale»");
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error(`risponde ${r.status} su ${percorso}`);
+    return await r.text();
+  } finally { clearTimeout(t); }
+}
+
+async function zDelGiorno(f, giorno) {
+  const elenco = await prendiFiscale(f, `/www/dati-rt/${giorno}/`);
+  if (elenco === null) return [];
+  const zete = fileZ(elenco);
+  for (const z of zete) {
+    if (z.zreport) { const t = await prendiFiscale(f, `/www/dati-rt/${giorno}/${z.zreport}`); if (t) z.report = leggiZReport(t); }
+    if (z.esito) { const x = await prendiFiscale(f, `/www/dati-rt/${giorno}/${z.esito}`); z.esito = x ? esitoDa(x) : null; }
+    else delete z.esito;
+  }
+  return zete;
+}
+
+if (process.argv.includes("--z")) {
+  if (!config.fiscale?.ip) { console.error("Manca «fiscale» in config.json."); process.exit(1); }
+  const dato = process.argv[process.argv.indexOf("--z") + 1];
+  const giorno = dato && /^\d{8}$/.test(dato) ? dato : giornoSerata();
+  try {
+    const zete = await zDelGiorno(config.fiscale, giorno);
+    for (const r of raccontaZ(giorno, zete)) log(r);
+    process.exit(zete.length ? 0 : 2);
+  } catch (e) {
+    log(`!! fiscale (${config.fiscale.ip}): ${e.name === "AbortError" ? "nessuna risposta (8 s)" : e.message}`);
+    process.exit(1);
+  }
 }
 
 // la chiave serve solo per la coda del server: --stato e --prova parlano soltanto con le stampanti

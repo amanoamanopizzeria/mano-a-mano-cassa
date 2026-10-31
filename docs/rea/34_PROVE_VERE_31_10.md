@@ -27,11 +27,25 @@ Fatto sul PC di cassa con l'ok di Edoardo (00:27–00:30Z), 2Bit solo in lettura
 - **V** Gli scontrini veri li fa la cassa VB6 (EpsonFP2.ocx, socket TCP), non la via Totem .NET letta prima: quella
   via non è una specifica provata. 44 scontrini su 44 del 30/10 hanno i campi RT salvati in TabTestateScontrini.
 - **V** EpsonParametri.ini: IVA 10 → reparto 2. Il 30/10 tutte le 162 righe al 10 %.
-- **V** RT_numChiusura +1 al giorno fino al 25/10 (2514–2516), **+2 dal 26/10** (2518…2526): non spiegato (cambio
-  d'ora del 25/10?). Edoardo guarda le Z di carta del 26–30/10.
-- **D** Z verso le 23:30 (OrarioLocale_Chiusura 23:30, KILLPDASVR 23:32), da operatore o programmata: non si sa.
-- Regole per noi: la Z non si ripete mai se la risposta si perde, prima si rilegge lo stato; mai scontrini, X o Z
-  veri senza prova in negozio e l'ok di Edoardo; due programmi sulla stessa RT staccano i totali del 2Bit.
+- **V** RT_numChiusura +2 al giorno **spiegato** (01:25Z, letto nella cartella della stampante): il 2Bit lancia
+  **due Z** a 64 s di distanza, la seconda vuota (0 documenti, 0,00 €), il 15, 16, 17, 21 e dal 25 al 30/10; una
+  sola il 18, 19, 20, 22, 23, 24. Non è il cambio d'ora: orologio della stampante = orologio del PC. Ipotesi: la
+  cassa VB6 riprova PrintZReport dopo un timeout di ~60 s (da verificare con Ghidra). Gli **8 file rifiutati**
+  sono di febbraio–marzo 2022 (FAIL-406/403): niente di recente, tutti gli invii OK.
+- **V** La Z del 30/10 (n. 2526, 23:30): 1.075,73 € in 44 documenti, contanti 81,20, elettronico 994,53, IVA 10 %
+  su 977,94 = 97,79, esito Agenzia OK. Torna con gli scontrini del database.
+- **V** La stampante pubblica da sola in HTTP (GET): `www/dati-rt/<AAAAMMGG>/`, elenco «Index of» con tre file
+  per Z, `<matricola>-<AAAAMMGG>T<hhmmss>-<numero Z>-{CORRISP.xml, ESITO-<id>.xml, ZREPORT.txt}`; `ZREPORT.txt`
+  è la Z com'è stampata (46 colonne, importi all'italiana); `www/logs/rt_log.txt` registra solo le trasmissioni
+  («Trasmissione Dati (…-2522-CORRISP.xml)… Esito OK»), è corto e ruota: non è uno storico. L'agente di stampa
+  la legge con `--z` (`agente-stampa/zreport.mjs`). ⚠️ Risponde **anche senza utente e password**: chiunque in
+  LAN legge i corrispettivi. Da dire a Edoardo come rischio minore della rete del negozio.
+- **V** Z lanciata dallo staff fra le 22:54 e le 23:30, nessuna attività pianificata.
+- Regole per noi: la Z non si ripete mai se la risposta si perde, prima si rilegge lo stato (`src/lib/fiscale/
+  stato-rt.ts`); mai scontrini, X o Z veri senza prova in negozio e l'ok di Edoardo; due programmi sulla stessa
+  RT staccano i totali del 2Bit.
+- Preconto o scontrino lo **sceglie chi sta in cassa** (Edoardo, 01:29Z): due tasti normali, nessuna logica
+  automatica in nessuna direzione.
 
 ## Conti del 30/10 (V)
 Carta online 423,42 ritiri + 333,81 domicili; POS tavoli 79,50, ritiri 87,60, banco 70,20; contanti ritiri 33,20,

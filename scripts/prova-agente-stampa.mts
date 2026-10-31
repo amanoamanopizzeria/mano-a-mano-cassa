@@ -5,8 +5,10 @@
 // npx --yes tsx scripts/prova-agente-stampa.mts
 import net from "node:net";
 import http from "node:http";
-import { spawn } from "node:child_process";
+import { spawn, execFile } from "node:child_process";
 import { writeFileSync, mkdtempSync } from "node:fs";
+// @ts-ignore — il modulo dell'agente è JavaScript puro (zero pacchetti sul PC di cassa)
+import { fileZ, leggiZReport, esitoDa, raccontaZ, giornoSerata } from "../agente-stampa/zreport.mjs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { comandaEscPos, anteprimaTesto } from "../src/lib/stampa/escpos";
@@ -105,6 +107,69 @@ ok(uscita.includes("CARTA FINITA"), "4) il registro dice CARTA FINITA");
 senzaCarta.cucina = false;
 ok(await finché(() => segnate.includes(ID3)), "4) carta rimessa: esce in cucina e si segna");
 ok(ricevute.cucina.length === 4 && ricevute.cassa.length === 4, "4) la cassa non ha ristampato");
+
+// 5) la Z letta dalla fiscale (solo GET): una stampante finta che pubblica www/dati-rt/<giorno>/ come la vera
+//    (REA 34, 31/10/2026): due Z a un minuto, la seconda vuota, come fa il 2Bit ogni sera.
+const col = (etichetta: string, valore: string) => etichetta.padEnd(46 - valore.length) + valore;
+const zreport = (ora: string, n: number, piena: boolean) => [
+  "PIZZERIA A MANO A MANO".padStart(34), "VI.RU S.R.L.S".padStart(29), "Via Novara, 5".padStart(29), "00198 ROMA (RM)".padStart(30),
+  "P.IVA 00000000000".padStart(31), "TEL.0600000000".padStart(30), "DOCUMENTO GESTIONALE", "Chiusura Giornaliera",
+  col(`30-10-2026 ${ora}`, "99XXX000000"),
+  col("TOTALE GIORNO VENDITE", piena ? "1.075,73" : "0,00"), col("TOTALE GIORNO OMAGGI", "0,00"), col("GRAN TOTALE VENDITE", "1.666.215,15"),
+  col("TOTALE GIORNO RESO MERCE", "0,00"), col("GRAN TOTALE RESO MERCE", "0,00"), col("TOTALE GIORNO ANNULLAMENTI", "0,00"),
+  col("GRAN TOTALE ANNULLAMENTI", "3.559,54"), col("NUMERO DOCUMENTI COMMERCIALI", piena ? "44" : "0"),
+  ...(piena ? ["-".repeat(46), "I V A  --  N A T U R E", col("ALIQUOTA IVA", "10.00%"), col("AMMONTARE", "977,94"), col("IMPOSTA", "97,79"),
+    col("IMPORTO PARZIALE", "977,94"), col("CORRISPETTIVO", "1.075,73"), "-".repeat(46), "T O T A L I", col("NUMERO DOCUMENTI COMMERCIALI", "44"),
+    col("PAGATO CONTANTI", "81,20"), col("PAGATO ELETTRONICO", "994,53")] : []),
+  "-".repeat(46), col("NUMERO AZZERAMENTI", String(n)), col("Documenti da inviare", piena ? "1" : "2"), col("Documenti >  3 giorni", "0"),
+  col("NUMERO FATTURE", "0"), col("TOTALE GIORNO FATTURE", "0,00"), col("NUMERO RIPRISTINI", "0"), "MEMORIA PERMANENTE DI DETTAGLIO - DGFE",
+  col("N. 1 99XXX000000", "10-10-2019 14:23"), "SIGILLO FISCALE: 0183ED4E", col("30-10-2026 " + ora, ""), `DOCUMENTO N. ${n}-000${piena ? 4 : 2}`, "99XXX000000".padStart(46),
+].join("\r\n");
+const nomi = { 2526: "99XXX000000-20261030T233032-2526", 2527: "99XXX000000-20261030T233136-2527" };
+const cartella: Record<string, string> = {
+  [`${nomi[2526]}-ZREPORT.txt`]: zreport("23:30", 2526, true), [`${nomi[2527]}-ZREPORT.txt`]: zreport("23:31", 2527, false),
+  [`${nomi[2526]}-ESITO-3700734145.xml`]: '<?xml version="1.0"?><esito><codiceEsito>OK</codiceEsito></esito>',
+  [`${nomi[2527]}-ESITO-3700734200.xml`]: '<?xml version="1.0"?><esito><codiceEsito>OK</codiceEsito></esito>',
+  [`${nomi[2526]}-CORRISP.xml`]: "<DatiCorrispettivi/>", [`${nomi[2527]}-CORRISP.xml`]: "<DatiCorrispettivi/>",
+};
+const indice = `<html><body><h1>Index of /www/dati-rt/20261030/</h1><table><tr><th><a href="?nd">Name</a></th><th><a href="?dd">Date</a></th><th><a href="?sd">Size</a></th></tr>`
+  + Object.keys(cartella).map((n) => `<tr><td><a href="${n}">${n}</a></td><td>&nbsp;30-Oct-2026 23:30</td><td>&nbsp;&nbsp;2.0k</td></tr>`).join("") + "</table></body></html>";
+let comandiAllaFiscale = 0;
+const fiscaleFinta = http.createServer((req, res) => {
+  if (req.method !== "GET") { comandiAllaFiscale++; res.writeHead(405).end(); return; }
+  const u = new URL(req.url!, "http://x");
+  if (u.pathname === "/www/dati-rt/20261030/") res.writeHead(200, { "content-type": "text/html" }).end(indice);
+  else if (u.pathname.startsWith("/www/dati-rt/20261030/") && cartella[u.pathname.split("/").pop()!]) res.writeHead(200, { "content-type": "text/plain" }).end(cartella[u.pathname.split("/").pop()!]);
+  else res.writeHead(404).end();
+});
+const portaFiscale: number = await new Promise((ok) => fiscaleFinta.listen(0, "127.0.0.1", () => ok((fiscaleFinta.address() as net.AddressInfo).port)));
+
+const zete = fileZ(indice);
+ok(zete.length === 2 && zete[0].numero === 2526 && zete[0].ora === "23:30:32" && zete[1].numero === 2527 && zete[1].ora === "23:31:36", "5) dall'elenco escono due Z con numero e ora");
+ok(zete[0].zreport === `${nomi[2526]}-ZREPORT.txt` && zete[0].esito === `${nomi[2526]}-ESITO-3700734145.xml` && zete[0].corrisp === `${nomi[2526]}-CORRISP.xml`, "5) ogni Z ha i suoi tre file");
+const piena = leggiZReport(cartella[`${nomi[2526]}-ZREPORT.txt`]);
+ok(piena.vendite === 1075.73 && piena.documenti === 44 && piena.contanti === 81.2 && piena.elettronico === 994.53 && piena.azzeramento === 2526 && piena.daInviare === 1 && !piena.vuota, "5) la Z piena: 1.075,73 € in 44 documenti, contanti 81,20, elettronico 994,53");
+ok(piena.iva.length === 1 && piena.iva[0].aliquota === 10 && piena.iva[0].imponibile === 977.94 && piena.iva[0].imposta === 97.79 && piena.iva[0].corrispettivo === 1075.73, "5) il blocco IVA 10%");
+ok(piena.giorno === "20261030" && piena.ora === "23:30" && piena.documentoN === "2526-0004" && piena.granTotale === 1666215.15, "5) data, ora, numero documento e gran totale");
+const vuota = leggiZReport(cartella[`${nomi[2527]}-ZREPORT.txt`]);
+ok(vuota.vuota && vuota.vendite === 0 && vuota.documenti === 0 && vuota.azzeramento === 2527 && vuota.iva.length === 0 && vuota.daInviare === 2, "5) la Z vuota si riconosce");
+ok(esitoDa(cartella[`${nomi[2526]}-ESITO-3700734145.xml`]) === "OK" && esitoDa("<x>FAIL-406</x>") === "FAIL-406" && esitoDa("boh") === null, "5) l'esito dell'Agenzia, OK o il codice");
+const racconto = raccontaZ("20261030", [{ ...zete[0], report: piena, esito: "OK" }, { ...zete[1], report: vuota, esito: "OK" }]).join("\n");
+ok(racconto.includes("2 Z per il 30/10/2026") && racconto.includes("1.075,73 €") && racconto.includes("VUOTA") && racconto.includes("64 s dopo la n. 2526") && racconto.includes("totale fiscale del 30/10/2026: 1.075,73 €"), "5) il racconto: due Z, la seconda vuota 64 s dopo, totale 1.075,73");
+ok(raccontaZ("20261031", []).join("\n").includes("nessuna Z per il 31/10/2026"), "5) senza Z lo dice");
+ok(giornoSerata(new Date(2026, 9, 31, 1, 30)) === "20261030" && giornoSerata(new Date(2026, 9, 31, 12, 0)) === "20261031", "5) fino alle 6 del mattino la serata è quella di ieri");
+
+writeFileSync(join(dir, "config-z.json"), JSON.stringify({ server: `http://127.0.0.1:${portaApi}`, stampanti: [{ nome: "cucina", ruolo: "cucina", ip: "127.0.0.1", porta: pCucina }],
+  fiscale: { ip: "127.0.0.1", porta: portaFiscale, utente: "prova", password: "prova" } }));
+const lanciaZ = (giorno: string) => new Promise<{ codice: number; testo: string }>((fine) =>
+  execFile(process.execPath, ["agente-stampa/agente.mjs", "--z", giorno], { env: { ...process.env, STAMPA_CONFIG: join(dir, "config-z.json") } },
+    (e, out, err) => fine({ codice: (e as { code?: number } | null)?.code ?? 0, testo: String(out) + String(err) })));
+const z1 = await lanciaZ("20261030");
+ok(z1.codice === 0 && z1.testo.includes("2 Z per il 30/10/2026") && z1.testo.includes("esito Agenzia OK") && z1.testo.includes("una chiusura lanciata due volte"), "5) «--z 20261030» legge le due Z dalla stampante finta e lo racconta");
+const z2 = await lanciaZ("20261031");
+ok(z2.codice === 2 && z2.testo.includes("nessuna Z per il 31/10/2026"), "5) «--z» su un giorno senza cartella esce con 2 e lo dice");
+ok(comandiAllaFiscale === 0, "5) alla fiscale sono arrivate solo GET: nessun comando");
+fiscaleFinta.close();
 
 agente.kill(); api.close();
 console.log("\n--- registro dell'agente ---\n" + uscita.trim());

@@ -76,3 +76,19 @@ tratta come pronta.
 
 `--stato` dice anche lo stato del registratore telematico in italiano: giornata fiscale aperta o chiusa (cioè se la
 Z è già stata fatta), file di corrispettivi da inviare o rifiutati, scadenza del certificato.
+
+## La Z, letta dalla fiscale (31/10/2026)
+
+    node agente.mjs --z              # la Z della serata (fino alle 6 del mattino è quella di ieri)
+    node agente.mjs --z 20261030     # la Z di un giorno preciso
+
+La fiscale pubblica da sola, in HTTP, quello che ha mandato all'Agenzia: `www/dati-rt/<AAAAMMGG>/` con, per
+ogni chiusura, `CORRISP.xml`, `ESITO-<id>.xml` e `ZREPORT.txt` (la Z com'è uscita sulla carta). L'agente li
+**legge e basta** (GET, mai un comando) e racconta: quante Z, a che ora, vendite, documenti, contanti ed
+elettronico, IVA, esito dell'Agenzia, e il totale fiscale del giorno. Se nello stesso giorno c'è una seconda
+Z vuota a un minuto dalla prima lo dice: è la chiusura lanciata due volte dal 2Bit (vista ogni sera dal
+15/10/2026), non sono vendite in più. Esce con 2 se per quel giorno non c'è nessuna Z. Il codice che legge
+il testo è in `zreport.mjs`, provato in `scripts/prova-agente-stampa.mts` con le due Z vere del 30/10.
+
+⚠️ La stampante risponde a queste letture **anche senza utente e password**: chiunque in LAN legge i
+corrispettivi. Non è un problema dell'agente ma della rete del negozio: da tenere a mente.
