@@ -7,18 +7,30 @@
 // Perché: ogni sera il conto della cassa deve tornare con la fiscale da solo, e la doppia Z del 2Bit (due
 // chiusure a 64 secondi, la seconda vuota) si vede solo da qui.
 
-/** i file di un elenco «Index of» della stampante, raggruppati per chiusura (numero Z) */
+/**
+ * I file di un elenco «Index of» della stampante, raggruppati per chiusura (numero Z).
+ * L'esito dell'Agenzia sta NEL NOME del file, non dentro (V sulla stampante vera, 31/10/2026): dentro c'è solo
+ * un EsitoOperazione firmato con l'IdOperazione. `ESITO-<IdOperazione>.xml` = accettato; `ESITO-FAIL-406.xml`
+ * o `ESITO-FAIL-403.xml` = rifiutato (quelli stanno in rifiutati/).
+ */
 export function fileZ(html) {
   const perZ = new Map();
-  for (const m of String(html).matchAll(/href="([^"?]+?-(\d{8})T(\d{6})-(\d+)-([A-Z]+(?:-\d+)?)\.(?:txt|xml))"/g)) {
+  for (const m of String(html).matchAll(/href="([^"?]+?-(\d{8})T(\d{6})-(\d+)-([A-Z]+(?:-[A-Z0-9]+)*)\.(?:txt|xml))"/g)) {
     const [, nome, giorno, ora, numero, tipo] = m;
     const z = perZ.get(numero) || { numero: Number(numero), giorno, ora: `${ora.slice(0, 2)}:${ora.slice(2, 4)}:${ora.slice(4, 6)}` };
     if (tipo === "ZREPORT") z.zreport = nome;
     else if (tipo === "CORRISP") z.corrisp = nome;
-    else if (tipo.startsWith("ESITO")) z.esito = nome;
+    else if (tipo.startsWith("ESITO-")) { z.fileEsito = nome; z.esito = esitoDalNome(nome); }
     perZ.set(numero, z);
   }
   return [...perZ.values()].sort((a, b) => a.numero - b.numero);
+}
+
+/** «…-ESITO-3700734145.xml» → "OK"; «…-ESITO-FAIL-406.xml» → "FAIL-406" */
+export function esitoDalNome(nome) {
+  const m = String(nome).match(/-ESITO-([A-Z0-9-]+)\.xml$/i);
+  if (!m) return null;
+  return /^FAIL/i.test(m[1]) ? m[1].toUpperCase() : "OK";
 }
 
 /** «1.075,73» → 1075.73 */
@@ -67,16 +79,6 @@ export function leggiZReport(testo) {
   return z;
 }
 
-/** la risposta dell'Agenzia (ESITO-<id>.xml), letta alla larga: OK, oppure il codice dell'errore */
-export function esitoDa(xml) {
-  const t = String(xml);
-  const e = t.match(/<(?:\w+:)?(?:esito|Esito|codiceEsito|CodiceEsito)[^>]*>\s*([^<]{1,40}?)\s*</i);
-  if (e) return e[1];
-  if (/\bFAIL[- ]?\d*/.test(t)) return t.match(/\bFAIL[- ]?\d*/)[0];
-  if (/\bOK\b/.test(t)) return "OK";
-  return null;
-}
-
 // come sulla carta della Z: punto delle migliaia sempre (il locale it-IT di Node lo toglie sotto 10.000), virgola dei centesimi
 const euro = (n) => {
   if (n === undefined) return "?";
@@ -95,7 +97,7 @@ export function raccontaZ(giorno, zete) {
   const righe = [`${zete.length === 1 ? "una Z" : zete.length + " Z"} per il ${g}:`];
   for (const z of zete) {
     const r = z.report || {};
-    const esito = z.esito === undefined ? "" : ` · esito Agenzia ${z.esito ?? "non leggibile"}`;
+    const esito = z.esito === undefined ? " · esito Agenzia non ancora arrivato" : ` · esito Agenzia ${z.esito ?? "non leggibile"}`;
     if (r.vuota) righe.push(`  Z n. ${z.numero} alle ${z.ora}: VUOTA (0 documenti, 0,00 €)${r.daInviare ? ` · ${r.daInviare} da inviare` : ""}${esito}`);
     else {
       const iva = (r.iva || []).map((b) => `IVA ${b.aliquota}% su ${euro(b.imponibile)} = ${euro(b.imposta)}`).join(", ");

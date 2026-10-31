@@ -8,7 +8,7 @@ import http from "node:http";
 import { spawn, execFile } from "node:child_process";
 import { writeFileSync, mkdtempSync } from "node:fs";
 // @ts-ignore — il modulo dell'agente è JavaScript puro (zero pacchetti sul PC di cassa)
-import { fileZ, leggiZReport, esitoDa, raccontaZ, giornoSerata } from "../agente-stampa/zreport.mjs";
+import { fileZ, leggiZReport, esitoDalNome, raccontaZ, giornoSerata } from "../agente-stampa/zreport.mjs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { comandaEscPos, anteprimaTesto } from "../src/lib/stampa/escpos";
@@ -128,8 +128,9 @@ const zreport = (ora: string, n: number, piena: boolean) => [
 const nomi = { 2526: "99XXX000000-20261030T233032-2526", 2527: "99XXX000000-20261030T233136-2527" };
 const cartella: Record<string, string> = {
   [`${nomi[2526]}-ZREPORT.txt`]: zreport("23:30", 2526, true), [`${nomi[2527]}-ZREPORT.txt`]: zreport("23:31", 2527, false),
-  [`${nomi[2526]}-ESITO-3700734145.xml`]: '<?xml version="1.0"?><esito><codiceEsito>OK</codiceEsito></esito>',
-  [`${nomi[2527]}-ESITO-3700734200.xml`]: '<?xml version="1.0"?><esito><codiceEsito>OK</codiceEsito></esito>',
+  // dentro l'ESITO c'è solo un EsitoOperazione firmato con l'IdOperazione: l'esito vero sta nel nome del file
+  [`${nomi[2526]}-ESITO-3700734145.xml`]: '<?xml version="1.0"?><ns3:EsitoOperazione><IdOperazione>3700734145</IdOperazione><Signature/></ns3:EsitoOperazione>',
+  [`${nomi[2527]}-ESITO-3700734200.xml`]: '<?xml version="1.0"?><ns3:EsitoOperazione><IdOperazione>3700734200</IdOperazione><Signature/></ns3:EsitoOperazione>',
   [`${nomi[2526]}-CORRISP.xml`]: "<DatiCorrispettivi/>", [`${nomi[2527]}-CORRISP.xml`]: "<DatiCorrispettivi/>",
 };
 const indice = `<html><body><h1>Index of /www/dati-rt/20261030/</h1><table><tr><th><a href="?nd">Name</a></th><th><a href="?dd">Date</a></th><th><a href="?sd">Size</a></th></tr>`
@@ -146,15 +147,16 @@ const portaFiscale: number = await new Promise((ok) => fiscaleFinta.listen(0, "1
 
 const zete = fileZ(indice);
 ok(zete.length === 2 && zete[0].numero === 2526 && zete[0].ora === "23:30:32" && zete[1].numero === 2527 && zete[1].ora === "23:31:36", "5) dall'elenco escono due Z con numero e ora");
-ok(zete[0].zreport === `${nomi[2526]}-ZREPORT.txt` && zete[0].esito === `${nomi[2526]}-ESITO-3700734145.xml` && zete[0].corrisp === `${nomi[2526]}-CORRISP.xml`, "5) ogni Z ha i suoi tre file");
+ok(zete[0].zreport === `${nomi[2526]}-ZREPORT.txt` && zete[0].fileEsito === `${nomi[2526]}-ESITO-3700734145.xml` && zete[0].corrisp === `${nomi[2526]}-CORRISP.xml` && zete[0].esito === "OK", "5) ogni Z ha i suoi tre file e l'esito OK dal nome");
+ok(esitoDalNome("99X-20220215T233000-1234-ESITO-FAIL-406.xml") === "FAIL-406" && esitoDalNome("99X-20261030T233032-2526-ESITO-3700734145.xml") === "OK" && esitoDalNome("boh.txt") === null, "5) l'esito dell'Agenzia dal nome: OK o FAIL-nnn");
+ok(fileZ('<a href="99X-20220215T233000-1234-ESITO-FAIL-406.xml">x</a>')[0].esito === "FAIL-406", "5) un ESITO-FAIL nell'elenco si legge come rifiutato");
 const piena = leggiZReport(cartella[`${nomi[2526]}-ZREPORT.txt`]);
 ok(piena.vendite === 1075.73 && piena.documenti === 44 && piena.contanti === 81.2 && piena.elettronico === 994.53 && piena.azzeramento === 2526 && piena.daInviare === 1 && !piena.vuota, "5) la Z piena: 1.075,73 € in 44 documenti, contanti 81,20, elettronico 994,53");
 ok(piena.iva.length === 1 && piena.iva[0].aliquota === 10 && piena.iva[0].imponibile === 977.94 && piena.iva[0].imposta === 97.79 && piena.iva[0].corrispettivo === 1075.73, "5) il blocco IVA 10%");
 ok(piena.giorno === "20261030" && piena.ora === "23:30" && piena.documentoN === "2526-0004" && piena.granTotale === 1666215.15, "5) data, ora, numero documento e gran totale");
 const vuota = leggiZReport(cartella[`${nomi[2527]}-ZREPORT.txt`]);
 ok(vuota.vuota && vuota.vendite === 0 && vuota.documenti === 0 && vuota.azzeramento === 2527 && vuota.iva.length === 0 && vuota.daInviare === 2, "5) la Z vuota si riconosce");
-ok(esitoDa(cartella[`${nomi[2526]}-ESITO-3700734145.xml`]) === "OK" && esitoDa("<x>FAIL-406</x>") === "FAIL-406" && esitoDa("boh") === null, "5) l'esito dell'Agenzia, OK o il codice");
-const racconto = raccontaZ("20261030", [{ ...zete[0], report: piena, esito: "OK" }, { ...zete[1], report: vuota, esito: "OK" }]).join("\n");
+const racconto = raccontaZ("20261030", [{ ...zete[0], report: piena }, { ...zete[1], report: vuota }]).join("\n");
 ok(racconto.includes("2 Z per il 30/10/2026") && racconto.includes("1.075,73 €") && racconto.includes("VUOTA") && racconto.includes("64 s dopo la n. 2526") && racconto.includes("totale fiscale del 30/10/2026: 1.075,73 €"), "5) il racconto: due Z, la seconda vuota 64 s dopo, totale 1.075,73");
 ok(raccontaZ("20261031", []).join("\n").includes("nessuna Z per il 31/10/2026"), "5) senza Z lo dice");
 ok(giornoSerata(new Date(2026, 9, 31, 1, 30)) === "20261030" && giornoSerata(new Date(2026, 9, 31, 12, 0)) === "20261031", "5) fino alle 6 del mattino la serata è quella di ieri");

@@ -15,7 +15,7 @@ import { createHash } from "node:crypto";
 import net from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { fileZ, leggiZReport, esitoDa, raccontaZ, giornoSerata } from "./zreport.mjs";
+import { fileZ, leggiZReport, raccontaZ, giornoSerata } from "./zreport.mjs";
 
 const qui = dirname(fileURLToPath(import.meta.url));
 const percorsoConfig = process.env.STAMPA_CONFIG || join(qui, "config.json");
@@ -244,11 +244,10 @@ async function prendiFiscale(f, percorso) {
 async function zDelGiorno(f, giorno) {
   const elenco = await prendiFiscale(f, `/www/dati-rt/${giorno}/`);
   if (elenco === null) return [];
+  // l'esito dell'Agenzia è già nel nome del file ESITO (fileZ): si scarica solo la Z stampata
   const zete = fileZ(elenco);
   for (const z of zete) {
     if (z.zreport) { const t = await prendiFiscale(f, `/www/dati-rt/${giorno}/${z.zreport}`); if (t) z.report = leggiZReport(t); }
-    if (z.esito) { const x = await prendiFiscale(f, `/www/dati-rt/${giorno}/${z.esito}`); z.esito = x ? esitoDa(x) : null; }
-    else delete z.esito;
   }
   return zete;
 }
