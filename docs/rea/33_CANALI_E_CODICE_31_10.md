@@ -103,3 +103,19 @@ Si resta in parallelo «finché non siamo abbastanza sicuri… quindi tra parecc
    - il rider in consegna è nello stato 2;
    - quando non ha più ordini aperti nelle ultime 3 ore passa a «rientro» (stato 3);
    - il pony «banco» non è un rider.
+
+## Il CSV di fine serata, allineato al file vero (31/10)
+
+Il nostro `export-ordini.ts` ora scrive «Coperti asporto», la colonna che il parser dell'OS legge davvero (prima i
+coperti si perdevano), e chiude le righe con LF come Velocissimo.
+
+La prova è `scripts/prova-csv-formato.mts <file vero>`: confronta intestazione, BOM e a capo, e passa il file al parser
+vero di mano-a-mano-os. Il file vero non sta nel repo perché ha dati dei clienti.
+
+Col file del 30/10 il parser dell'OS dà:
+- 54 ordini, 1.356,80 €;
+- sala 79,50, Glovo 268,02, Deliveroo 168,30, Just Eat 87,70;
+- POS 237,30, contanti 362,27;
+- 114 coperti.
+
+Sono i numeri che la nostra serata copiata dovrà ridare. `scripts/prova-csv-os.mts` dà ancora l'esito del 24/10.

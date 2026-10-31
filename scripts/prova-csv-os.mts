@@ -15,7 +15,7 @@ const righe = [
   { ...base, "#": "T-41", "# Comanda": 0, "Orario richiesto": "20:10:00", Stato: "Ritirato dal cliente", Cliente: "", Rider: "", Tipo: "Tavolo", Tavolo: "4", "Cliente ": "", "Data creazione": "23/10/2026 20:10:00", "Data ed ora ordine": "23/10/2026 20:10:00", "Data ordine": "23/10/2026", Totale: 31.5, Origine: "Da PC", Pagamento: "Bancomat alla cassa", Note: "", "Orario associazione rider": "", "Orario di partenza": "", "Orario di consegna effettivo": "", "Ritardo consegna (s.)": "", Città: "", Provincia: "", Indirizzo: "", Civico: "", Zona: "", "Gruppo di zone": "", Coperti: "3" },
 ];
 const csv = csvDaRighe(righe);
-const testa = csv.split("\r\n")[0];
+const testa = csv.split("\n")[0];
 console.log("colonne:", testa.split('","').length);
 const p = parseCsvVelocissimo(csv);
 const { ordini, righeGrezze, ...resto } = p as any;
