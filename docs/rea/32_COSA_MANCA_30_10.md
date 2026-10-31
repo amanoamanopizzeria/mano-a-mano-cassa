@@ -401,3 +401,16 @@ Il copiatore era spento: questo è il conto, fatto a serata finita, di quello ch
 **La query:** ha letto tutti e 53 gli ordini, con lo stato giusto.
 
 **Ancora da provare:** l'invio alla cassa nuova, lo stato «in consegna» seguito dal vivo e i tavoli.
+
+**Dettagli della lettura:**
+- **Stati e tipi:**
+  - 30 chiusi: 23 ritiri app per 544,22 € e 7 banco per 118,20 €;
+  - 22 consegnati: 19 domicili app per 547,58 € e 3 domicili telefono per 67,30 €;
+  - 1 eliminato.
+- **Orari:** il primo ordine alle 16:45, l'ultimo alle 22:36.
+- **Completezza:** il numero c'è in 52 ordini su 53, il telefono in 32, le righe in 52.
+- **Backup:** nessun ordine è passato al Backup. Le righe però sono già anche in `PIZ_tabComandeBackup`, 52 su 52.
+- **Chiamate:** su 6 chiamate, le 4 con `Processed=1` sono proprio quelle seguite entro 5 minuti da un ordine dal
+  telefono (D: Processed = chiamata aperta in cassa per fare l'ordine).
+- **Tavoli:** 2 comande, 13 righe, solo in `PIZ_tabComande` con `idTipoComanda=0`. La prossima query da scrivere
+  è quella per i tavoli.
