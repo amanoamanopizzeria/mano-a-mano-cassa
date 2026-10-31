@@ -22,7 +22,7 @@ import ColonnaCassa from "../ColonnaCassa";
 interface Tavolo { id: string; numero: string; stato: string; coperti: number; unito_a: string | null }
 type Tipo = "banco" | "tavolo" | "ritiro" | "domicilio";
 const TIPI: { v: Tipo; t: string }[] = [
-  { v: "banco", t: "Banco" }, { v: "tavolo", t: "Tavolo" }, { v: "ritiro", t: "Asporto" }, { v: "domicilio", t: "Domicilio" },
+  { v: "banco", t: "Banco" }, { v: "tavolo", t: "Tavolo" }, { v: "ritiro", t: "Ritiro" }, { v: "domicilio", t: "Domicilio" },
 ];
 
 export default function NuovoOrdinePagina() {

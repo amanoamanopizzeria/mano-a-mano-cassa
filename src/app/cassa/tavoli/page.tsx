@@ -350,7 +350,8 @@ function Tavoli() {
       {conto && (() => {
         const righe = conto.ordini.flatMap((o) => o.ordine_riga);
         const padri = righe.filter((r) => !r.id_riga_padre);
-        const giaCoperto = righe.some((r) => r.descrizione === "Coperto");
+        // Edoardo, 31/10/2026: la riga si chiama «Costo del servizio» (mig. 0088), 1,50 € a persona, e va sullo scontrino
+        const giaCoperto = righe.some((r) => r.descrizione === "Costo del servizio" || r.descrizione === "Coperto");
         const coperto = padri.length > 0 && !giaCoperto ? conto.tavolo.coperti * conto.prezzoCoperto : 0;
         const totale = conto.ordini.reduce((a, o) => a + Number(o.totale), 0) + coperto;
         return (
@@ -382,7 +383,7 @@ function Tavoli() {
                   {coperto > 0 && (
                     <li key="coperto" className="coperto">
                       <span className="q">{conto.tavolo.coperti}×</span>
-                      <span className="d">Coperto <small>{euro(conto.prezzoCoperto)} a persona</small></span>
+                      <span className="d">Costo del servizio <small>{euro(conto.prezzoCoperto)} a persona</small></span>
                       <span className="p">{euro(coperto)}</span>
                     </li>
                   )}
@@ -390,7 +391,7 @@ function Tavoli() {
               )}
               {conto.ordini.some((o) => Number(o.sconto) > 0) && <div className="muto sconti">sconti −{euro(conto.ordini.reduce((a, o) => a + Number(o.sconto ?? 0), 0))}</div>}
               {padri.length > 0 && conto.tavolo.coperti === 0 && !giaCoperto && (
-                <button className="mancano-coperti" onClick={() => setCoperti({ tavolo: conto.tavolo, scopo: "correggi" })}>Quanti coperti? Il coperto entra nel conto</button>
+                <button className="mancano-coperti" onClick={() => setCoperti({ tavolo: conto.tavolo, scopo: "correggi" })}>Quanti coperti? Il costo del servizio entra nel conto</button>
               )}
               <div className="totale"><span>Totale</span><strong>{euro(totale)}</strong></div>
               {divisi && (() => {

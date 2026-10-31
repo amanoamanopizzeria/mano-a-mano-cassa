@@ -54,7 +54,7 @@ begin
   if coalesce(v_tav.coperti, 0) > 0
      and not exists (select 1 from ordine_riga r join ordine o on o.id = r.id_ordine
                       where o.id_tavolo = p_id_tavolo and o.stato not in ('annullato', 'ritirato', 'consegnato')
-                        and r.descrizione = 'Coperto' and r.id_prodotto is null) then
+                        and r.descrizione in ('Costo del servizio', 'Coperto') and r.id_prodotto is null) then
     select n.prezzo_coperto into v_prezzo from negozio n join ordine o on o.id_negozio = n.id where o.id = v_primo;
     v_cop := coalesce(v_prezzo, 1.50) * v_tav.coperti;
   end if;
@@ -72,7 +72,7 @@ begin
 
   if v_cop > 0 then
     insert into ordine_riga (id_ordine, descrizione, quantita, prezzo_unit, destinazione)
-    values (v_primo, 'Coperto', v_tav.coperti, coalesce(v_prezzo, 1.50), 'nessuna');
+    values (v_primo, 'Costo del servizio', v_tav.coperti, coalesce(v_prezzo, 1.50), 'nessuna');
     update ordine set totale = totale + v_cop, coperti = v_tav.coperti, aggiornato_il = now() where id = v_primo;
   end if;
 
