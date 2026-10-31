@@ -570,9 +570,10 @@ function Cassa() {
           il colore della categoria resta un dato e viaggia nella variabile --riga) ===== */}
       <div className="cn-sinistra">
         <div className="barra">
-          {/* Indietro e Home anche qui (Edoardo, 30/10/2026); il ⌂ porta alla home come in ogni pagina */}
+          {/* Indietro e Home anche qui (Edoardo, 30/10/2026); il ⌂ porta a «Cassa — ordini», la home dello staff
+              (Edoardo, 31/10/2026 02:22Z: l'elenco delle pagine «non ci deve essere») */}
           <button className="ghost" aria-label="Indietro" onClick={() => (window.history.length > 1 ? window.history.back() : (window.location.href = "/cassa"))}>‹</button>
-          <Link href="/"><button className="ghost" aria-label="Home">⌂</button></Link>
+          <Link href="/cassa"><button className="ghost" aria-label="Home">⌂</button></Link>
           <Link href="/cassa/cliente"><button className="ghost">Dati cliente</button></Link>
           <button className="ghost ordine">Ordine</button>
           <Link href="/cassa/tavoli"><button className="ghost">Sala</button></Link>
