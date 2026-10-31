@@ -158,3 +158,26 @@ confrontate solo nella somma.
 CLASSICHE e PIZZE SPECIALI, e torna in 37 casi su 42. Ai tavoli invece i coperti sono persone. Nel nostro export
 «Coperti asporto» oggi è pieno solo per i tavoli: per gli altri ordini va riempito con le pizze. Va fatto in
 `ordini_giornata`, quindi con una migrazione.
+
+## Rider: la nostra cassa a confronto col 2Bit (31/10)
+
+Le nostre funzioni sono `assegna_consegna`, `prendi_consegna`, `aggiorna_consegna`, `segnala_posizione` e
+`rider_in_mappa`.
+
+| regola del 2Bit (V) | da noi |
+|---|---|
+| si assegna solo un domicilio | uguale: la `consegna` esiste solo per i domicili |
+| un rider alla volta; per cambiarlo si dissocia prima | la cassa può riassegnare finché la consegna non è partita; col «togli» l'ordine torna pronto o in preparazione |
+| zona coperta dal rider (`PIZ_tabPony_ZoneCoperte`) | **manca**: oggi nessun controllo di zona |
+| partenza = `oraInvio`, e si stampa la consegna | partenza = `ritirata_il`; **manca** la stampa alla partenza |
+| arrivo = `OraArrivo`; ritardo = arrivo − ora promessa | arrivo = `consegnata_il`; il ritardo va calcolato allo stesso modo nel CSV |
+| rider «in consegna» (2), poi «rientro» (3) dopo 3 ore senza ordini aperti | **manca** lo stato del rider; c'è solo la posizione |
+| la posizione non c'è | **c'è**: `segnala_posizione` dall'app rider e la mappa in cassa |
+
+**Da fare, nell'ordine:**
+1. stato del rider (libero, in consegna, rientro);
+2. zone coperte per rider, come aiuto e non come blocco;
+3. stampa della consegna alla partenza, con l'agente di stampa.
+
+L'app rider ce l'abbiamo già (`/rider`, e `app-rider/` per Android) e manda la posizione. Le schermate restano
+quelle finché non le rivediamo con Edoardo.
