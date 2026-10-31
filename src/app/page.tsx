@@ -1,5 +1,5 @@
 import Link from "next/link";
-import SoloAdmin from "./SoloAdmin";
+import SoloAdmin from "@/components/SoloAdmin";
 
 export default function Home() {
   return (

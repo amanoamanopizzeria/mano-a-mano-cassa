@@ -10,13 +10,16 @@
 // leggere, coi filtri e la scheda di ognuno. Il margine NON c'è: quello vero lo fa mano-a-mano-os.
 import { useEffect, useMemo, useState } from "react";
 import AuthGate from "@/components/AuthGate";
+import SoloAdmin from "@/components/SoloAdmin";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { CANALE_COMANDA } from "@/lib/comanda";
 
 export default function DashboardPagina() {
   return (
     <AuthGate>
-      <Dashboard />
+      <SoloAdmin>
+        <Dashboard />
+      </SoloAdmin>
     </AuthGate>
   );
 }

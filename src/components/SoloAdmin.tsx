@@ -1,7 +1,8 @@
 "use client";
 
-// L'elenco di tutte le pagine è dell'admin: chi non lo è va alla sua home
-// (Edoardo, 31/10/2026: «la home è sbagliata, dà troppe informazioni, non è quello che serve in cassa»).
+// Pagine solo dell'admin (l'elenco di tutte le pagine, il cruscotto): chi non lo è va alla sua home.
+// Edoardo, 31/10/2026: «la home è sbagliata, dà troppe informazioni»; «la dashboard è tutta roba mia, loro
+// non ci devono accedere».
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
