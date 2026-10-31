@@ -9,6 +9,8 @@ import SchedaProdotto, { prodottoVuoto, type ProdottoScheda } from "./SchedaProd
 import SchedaCategoria, { categoriaVuota, rinumeraCategorie, type CategoriaCompleta } from "./SchedaCategoria";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
+// Solo Edoardo (31/10/2026: «chi lavora in cassa deve avere solo la schermata cassa… la dashboard è solo mia»).
+import SoloAdmin from "@/components/SoloAdmin";
 
 interface Prodotto extends ProdottoScheda {
   id: string;
@@ -23,9 +25,9 @@ interface Componente { id_pacchetto: string; etichetta: string; id_categoria: st
 
 export default function MenuPagina() {
   return (
-    <AuthGate>
+    <SoloAdmin><AuthGate>
       <Menu />
-    </AuthGate>
+    </AuthGate></SoloAdmin>
   );
 }
 

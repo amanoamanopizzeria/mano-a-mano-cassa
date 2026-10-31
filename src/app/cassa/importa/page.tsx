@@ -7,9 +7,11 @@
 import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
+// Solo Edoardo (31/10/2026: «chi lavora in cassa deve avere solo la schermata cassa… la dashboard è solo mia»).
+import SoloAdmin from "@/components/SoloAdmin";
 
 export default function ImportaPagina() {
-  return <AuthGate><Importa /></AuthGate>;
+  return <SoloAdmin><AuthGate><Importa /></AuthGate></SoloAdmin>;
 }
 
 // CSV con le virgolette (le note hanno virgole e a capo)

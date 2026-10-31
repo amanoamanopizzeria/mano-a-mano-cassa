@@ -9,6 +9,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
+// Solo Edoardo (31/10/2026: «chi lavora in cassa deve avere solo la schermata cassa… la dashboard è solo mia»).
+import SoloAdmin from "@/components/SoloAdmin";
 import type { CapacitaFascia } from "@/lib/types";
 
 interface OrdineFascia {
@@ -33,9 +35,9 @@ const STATO: Record<string, string> = {
 
 export default function FascePagina() {
   return (
-    <AuthGate>
+    <SoloAdmin><AuthGate>
       <Fasce />
-    </AuthGate>
+    </AuthGate></SoloAdmin>
   );
 }
 

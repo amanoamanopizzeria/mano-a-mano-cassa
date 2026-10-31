@@ -8,6 +8,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
+// Solo Edoardo (31/10/2026: «chi lavora in cassa deve avere solo la schermata cassa… la dashboard è solo mia»).
+import SoloAdmin from "@/components/SoloAdmin";
 import type { RiderBorsello } from "@/lib/types";
 
 const euro = (n: number) => n.toFixed(2).replace(".", ",") + " €";
@@ -15,7 +17,7 @@ const euro = (n: number) => n.toFixed(2).replace(".", ",") + " €";
 interface Movimento { id: string; id_rider: string; tipo: "deposito" | "prelievo"; importo: number; fondo_cassa: boolean; note: string | null; creato_il: string }
 
 export default function RiderCassaPagina() {
-  return <AuthGate><RiderCassa /></AuthGate>;
+  return <SoloAdmin><AuthGate><RiderCassa /></AuthGate></SoloAdmin>;
 }
 
 function RiderCassa() {

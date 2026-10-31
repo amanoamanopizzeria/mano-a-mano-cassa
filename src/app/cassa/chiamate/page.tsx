@@ -6,14 +6,16 @@
 import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import AuthGate from "@/components/AuthGate";
+// Solo Edoardo (31/10/2026: «chi lavora in cassa deve avere solo la schermata cassa… la dashboard è solo mia»).
+import SoloAdmin from "@/components/SoloAdmin";
 
 interface Chiamata { id: string; numero: string; origine: string; ricevuta_il: string; gestita: boolean }
 
 export default function ChiamatePagina() {
   return (
-    <AuthGate>
+    <SoloAdmin><AuthGate>
       <Chiamate />
-    </AuthGate>
+    </AuthGate></SoloAdmin>
   );
 }
 
