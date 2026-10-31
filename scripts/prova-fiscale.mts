@@ -31,3 +31,29 @@ assert.deepEqual(leggiRisposta('<response success="true" code="" status="2" />')
 assert.equal(importo(0.1 + 0.2), "0,30");
 console.log(s.xml);
 console.log("Prova fiscale: tutto ok (niente è stato mandato alla stampante).");
+
+// ── Lo stato del registratore telematico e la decisione sulla Z (src/lib/fiscale/stato-rt.ts) ──────────
+// La risposta è quella vera della stampante del negozio, letta il 31/10/2026 (REA 34).
+const { leggiStatoRT, avvisiRT, decidiChiusura, esitoChiusura } = await import("../src/lib/fiscale/stato-rt.ts");
+const rispostaVera = '<response success="true" code="" status="2"><addInfo><elementList>lastCommand,rtType</elementList>'
+  + "<lastCommand>138</lastCommand><rtType>I</rtType><rtMainStatus>02</rtMainStatus><rtSubStatus>08</rtSubStatus>"
+  + "<rtDailyOpen>0</rtDailyOpen><rtNoWorkingPeriod>0</rtNoWorkingPeriod><rtFileToSend>0000</rtFileToSend>"
+  + "<rtOldFileToSend>0000</rtOldFileToSend><rtFileRejected>0008</rtFileRejected><rtExpiryCD>20281228</rtExpiryCD>"
+  + "<rtExpiryCA>20380111</rtExpiryCA><rtTrainingMode>0</rtTrainingMode><rtUpgradeResult>0</rtUpgradeResult></addInfo></response>";
+const st = leggiStatoRT(rispostaVera);
+assert.equal(st.rtDailyOpen, "0");
+assert.equal(st.rtFileRejected, "0008");
+const avvisi = avvisiRT(st);
+assert.equal(avvisi.length, 1);
+assert.match(avvisi[0].testo, /8 file di corrispettivi rifiutati/);
+assert.equal(avvisi[0].grave, true);
+assert.equal(decidiChiusura(st).azione, "gia_fatta");                       // a negozio chiuso la Z è già fatta
+assert.equal(decidiChiusura({ ...st, rtDailyOpen: "1" }).azione, "fai_z");
+assert.equal(decidiChiusura({ ...st, rtDailyOpen: "1", rtTrainingMode: "1" }).azione, "fermati");
+assert.equal(decidiChiusura({}).azione, "fermati");                          // nessuna risposta RT: non si tocca
+assert.equal(esitoChiusura({ ok: true, codice: null }, null).fatta, true);
+assert.equal(esitoChiusura(null, { rtType: "I", rtDailyOpen: "0" }).fatta, true);     // risposta persa ma giornata chiusa
+assert.equal(esitoChiusura(null, { rtType: "I", rtDailyOpen: "1" }).fatta, false);
+assert.equal(esitoChiusura(null, null).fatta, false);
+assert.match(esitoChiusura(null, null).motivo, /non rimandare/);
+console.log("Stato RT: tutto ok (giornata chiusa, 8 file rifiutati da far guardare).");

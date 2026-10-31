@@ -18,12 +18,17 @@ const ricevute: Record<string, Buffer[]> = { cucina: [], cassa: [] };
 // per il PC sarebbe una stampa andata a buon fine (era la prova che a volte non passava)
 const server: Record<string, net.Server> = {};
 const porte: Record<string, number> = {};
+// senza carta: risponde al DLE EOT 4 come una Epson con la carta finita (bit 5 e 6)
+const senzaCarta: Record<string, boolean> = { cucina: false, cassa: false };
 function stampanteFinta(nome: string, porta = 0): Promise<number> {
   const srv = net.createServer((s) => {
     const pezzi: Buffer[] = [];
     s.on("error", () => {});
-    s.on("data", (d) => pezzi.push(d));
-    s.on("end", () => { ricevute[nome].push(Buffer.concat(pezzi)); s.end(); });
+    s.on("data", (d) => {
+      if (d.length === 3 && d[0] === 0x10 && d[1] === 0x04) { s.write(Buffer.from([d[2] === 4 && senzaCarta[nome] ? 0x72 : 0x12])); return; }
+      pezzi.push(d);
+    });
+    s.on("end", () => { if (pezzi.length) ricevute[nome].push(Buffer.concat(pezzi)); s.end(); });
   });
   server[nome] = srv;
   return new Promise((ok) => srv.listen(porta, "127.0.0.1", () => ok((porte[nome] = (srv.address() as net.AddressInfo).port))));
@@ -87,7 +92,19 @@ coda = [mod];
 ok(await finché(() => segnate.filter((x) => x === ID1).length === 2), "3) la modifica torna in coda e si segna di nuovo");
 const t = anteprimaTesto(new Uint8Array(ricevute.cucina[2]));
 ok(t.includes("MODIFICATA - RISTAMPA") && t.includes("NUOVA") && t.includes("COCA COLA"), "3) esce con MODIFICATA e la riga nuova");
-ok(uscita.includes("non stampa") && uscita.includes("C-102 → cassa"), "il registro dice chi non stampa e quando riparte");
+ok(uscita.includes("non risponde") && uscita.includes("cassa di nuovo pronta") && uscita.includes("C-102 → cassa"), "il registro dice chi non risponde e quando riparte");
+
+// 4) la cucina finisce la carta: la comanda non le si manda (resterebbe nel suo buffer), la cassa la stampa, e si
+//    segna solo quando la carta torna (critico Edoardo 31/10: «E se la PIZZERIA finisce la carta?»)
+const ID3 = "00000000-0000-0000-0000-000000000003";
+senzaCarta.cucina = true;
+coda = [base(ID3, 103)];
+await aspetta(3500);
+ok(!segnate.includes(ID3) && ricevute.cucina.length === 3 && ricevute.cassa.length === 4, "4) cucina senza carta: non le si manda niente, la cassa sì, non si segna");
+ok(uscita.includes("CARTA FINITA"), "4) il registro dice CARTA FINITA");
+senzaCarta.cucina = false;
+ok(await finché(() => segnate.includes(ID3)), "4) carta rimessa: esce in cucina e si segna");
+ok(ricevute.cucina.length === 4 && ricevute.cassa.length === 4, "4) la cassa non ha ristampato");
 
 agente.kill(); api.close();
 console.log("\n--- registro dell'agente ---\n" + uscita.trim());

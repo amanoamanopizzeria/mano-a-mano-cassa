@@ -65,3 +65,14 @@ ultime 18 ore non risulta stampato.
 
     npx --yes tsx scripts/prova-stampa.mts          # la carta, in testo
     npx --yes tsx scripts/prova-agente-stampa.mts   # agente vero, due stampanti finte, server finto
+
+## Stampante spenta o senza carta
+
+Prima di ogni giro l'agente chiede lo stato a ogni stampante (DLE EOT in rete, lo stato di Windows per la USB).
+A una stampante spenta, senza carta, col coperchio aperto o in errore **non manda niente**: la comanda resta in
+coda, le altre stampanti la prendono subito, e appena quella torna a posto (il registro dice «di nuovo pronta»)
+esce anche lì, una volta sola. Una stampante collegata che non risponde allo stato (non tutte lo fanno) si
+tratta come pronta.
+
+`--stato` dice anche lo stato del registratore telematico in italiano: giornata fiscale aperta o chiusa (cioè se la
+Z è già stata fatta), file di corrispettivi da inviare o rifiutati, scadenza del certificato.

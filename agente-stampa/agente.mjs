@@ -62,6 +62,22 @@ const prese = new Map();
 const impronta = (c) => c.id + ":" + createHash("sha256").update(JSON.stringify(c.stampe)).digest("hex").slice(0, 16);
 const giuSegnalate = new Set();
 
+// Prima di ogni giro si guarda come sta ogni stampante (DLE EOT in rete, Get-Printer per la USB): a una spenta,
+// senza carta o col coperchio aperto non si manda niente, così la comanda non resta nel suo buffer e non
+// rallenta le altre (critico Edoardo, 31/10/2026: «E se la PIZZERIA finisce la carta? L'agente se ne accorge?»).
+// Si riprova da sola al giro dopo; la comanda resta in coda finché TUTTE le stampanti l'hanno presa.
+const fermeSegnalate = new Map();   // nome → motivo già scritto nel registro
+async function comeSta(s) {
+  try {
+    const esito = s.windows ? await statoWindows(s) : await statoRete(s);
+    if (s.windows) return /«(Normal|Idle|Printing)»/i.test(esito) ? null : esito;
+    return esito === "pronta" || esito === "carta quasi finita" ? null : esito;
+  } catch (e) {
+    if (/non dice il suo stato/.test(e.message)) return null;   // non tutte rispondono al DLE EOT: si prova a stampare
+    return `non risponde: ${e.message}`;
+  }
+}
+
 async function giro() {
   const r = await fetch(`${server}/api/stampa/coda?stampanti=${encodeURIComponent(elenco)}`, { headers: { "x-api-key": chiave } });
   if (r.status === 401) throw new Error("chiave sbagliata (401): controlla STAMPA_KEY");
@@ -69,12 +85,22 @@ async function giro() {
   const { comande } = await r.json();
   const inCoda = new Set(comande.map(impronta));
   for (const k of prese.keys()) if (!inCoda.has(k)) prese.delete(k);
+  if (comande.length === 0) return;
+  const ferme = new Map();
+  for (const s of stampanti) {
+    const motivo = await comeSta(s);
+    if (motivo) {
+      ferme.set(s.nome, motivo);
+      if (fermeSegnalate.get(s.nome) !== motivo) log(`!! ${s.nome} (${dove(s)}): ${motivo}. Le sue comande aspettano.`);
+      fermeSegnalate.set(s.nome, motivo);
+    } else if (fermeSegnalate.has(s.nome)) { log(`${s.nome} di nuovo pronta`); fermeSegnalate.delete(s.nome); }
+  }
   for (const c of comande) {
     const k = impronta(c);
     const fatte = prese.get(k) || new Set();
     prese.set(k, fatte);
     for (const s of stampanti) {
-      if (fatte.has(s.nome)) continue;
+      if (fatte.has(s.nome) || ferme.has(s.nome)) continue;
       try {
         await manda(s, Buffer.from(c.stampe[s.nome], "base64"));
         fatte.add(s.nome);
@@ -105,9 +131,10 @@ function paginaDiProva(s) {
 function chiediByte(s, n) {
   return new Promise((ok, ko) => {
     const sock = net.connect({ host: s.ip, port: Number(s.porta || 9100) });
-    const t = setTimeout(() => { sock.destroy(); ko(new Error("nessuna risposta (3 s)")); }, 3000);
+    let collegata = false;
+    const t = setTimeout(() => { sock.destroy(); ko(new Error(collegata ? "collegata ma non dice il suo stato (3 s)" : "non raggiungibile (3 s)")); }, 3000);
     sock.on("error", (e) => { clearTimeout(t); ko(e); });
-    sock.on("connect", () => sock.write(Buffer.from([0x10, 0x04, n])));
+    sock.on("connect", () => { collegata = true; sock.write(Buffer.from([0x10, 0x04, n])); });
     sock.on("data", (d) => { clearTimeout(t); sock.destroy(); ok(d[0]); });
   });
 }
@@ -132,6 +159,23 @@ function statoWindows(s) {
   });
 }
 
+// Lo stato del registratore telematico, detto in italiano (i nomi dei campi sono quelli che la stampante
+// risponde a queryPrinterStatus; «0008» ecc. sono contatori a 4 cifre).
+function leggiStatoRT(c) {
+  if (!c.rtType) return "";
+  const n = (v) => (v === undefined ? null : Number.parseInt(v, 10));
+  const data = (v) => (v && /^\d{8}$/.test(v) ? `${v.slice(6, 8)}/${v.slice(4, 6)}/${v.slice(0, 4)}` : v);
+  const righe = [];
+  righe.push(c.rtDailyOpen === "1" ? "giornata fiscale APERTA (la Z non è ancora stata fatta)" : "giornata fiscale chiusa (Z già fatta)");
+  if (c.rtNoWorkingPeriod === "1") righe.push("periodo di inattività: la stampante non emette documenti");
+  if (c.rtTrainingMode === "1") righe.push("MODALITÀ TRAINING: i documenti non sono fiscali");
+  if (n(c.rtFileToSend) > 0) righe.push(`${n(c.rtFileToSend)} file di corrispettivi ancora da inviare`);
+  if (n(c.rtOldFileToSend) > 0) righe.push(`${n(c.rtOldFileToSend)} file VECCHI non inviati: da far guardare`);
+  if (n(c.rtFileRejected) > 0) righe.push(`${n(c.rtFileRejected)} FILE RIFIUTATI dall'Agenzia: da far guardare al tecnico`);
+  if (c.rtExpiryCD) righe.push(`certificato dispositivo fino al ${data(c.rtExpiryCD)}`);
+  return righe.length ? "\n    → " + righe.join("\n    → ") : "";
+}
+
 async function statoFiscale(f) {
   const xml = '<?xml version="1.0" encoding="utf-8"?>\n<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body>'
     + '<printerCommand><queryPrinterStatus operator="1" statusType="1" /></printerCommand></s:Body></s:Envelope>';
@@ -145,8 +189,9 @@ async function statoFiscale(f) {
     if (r.status === 401) return "chiede l'accesso (401): utente e password della stampante in config.json, «fiscale»";
     const testo = await r.text();
     const esito = /success="true"/i.test(testo) ? "risponde: success" : `risponde ma non success (HTTP ${r.status})`;
-    const info = [...testo.matchAll(/<([A-Za-z]+)>([^<]{1,40})<\/\1>/g)].map((m) => `${m[1]}=${m[2]}`).join(" ");
-    return `${esito}${info ? " · " + info : ""}`;
+    const campi = Object.fromEntries([...testo.matchAll(/<([A-Za-z]+)>([^<]{1,40})<\/\1>/g)].map((m) => [m[1], m[2]]));
+    const info = Object.entries(campi).map(([k, v]) => `${k}=${v}`).join(" ");
+    return `${esito}${info ? " · " + info : ""}${leggiStatoRT(campi)}`;
   } finally { clearTimeout(t); }
 }
 
