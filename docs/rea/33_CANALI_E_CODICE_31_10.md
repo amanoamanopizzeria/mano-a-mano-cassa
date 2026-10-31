@@ -119,3 +119,42 @@ Col file del 30/10 il parser dell'OS dà:
 - 114 coperti.
 
 Sono i numeri che la nostra serata copiata dovrà ridare. `scripts/prova-csv-os.mts` dà ancora l'esito del 24/10.
+
+## Da dove viene ogni colonna del CSV di Velocissimo (sola SELECT, 30/10)
+
+Sono state abbinate 42 righe online, con `ExtIdOrdine` = # + 1. Le 12 righe di cassa, telefono e tavoli sono
+confrontate solo nella somma.
+
+**Uguali su 42/42 (V):**
+
+| colonna | dal 2Bit |
+|---|---|
+| Totale | `importoComanda` |
+| # Comanda | `numeroComanda` |
+| Orario richiesto | `oraConsegna` |
+| Rider | `PIZ_tabPony.nome` |
+| Zona | `tabZone.Descrizione` |
+| Pagamento online | `isPagata=1` |
+
+**Uguali entro 1 secondo (V):**
+
+| colonna | dal 2Bit |
+|---|---|
+| Orario di partenza | `oraInvio` |
+| Orario di consegna effettivo | `OraArrivo` |
+| Ritardo consegna (s.) | `OraArrivo − oraConsegna` |
+
+**Non uguali:**
+- **Data creazione** è l'ora di web-app.it: 34 su 42 entro 1 s da `DataCreaz`, le altre fino a 289 s prima.
+- **Sconto:** viene da `ExternalTipoSconto` / `ExternalSconto`. Con «V» è un importo, con «P» una percentuale, e torna
+  in 8 casi su 11.
+- **Contanti e bancomat** non si ricavano dalla testata: stanno nel documento emesso.
+
+**Vuote il 30/10:** Orario di ritiro, Costo Consegna, Orario associazione rider, Distanza percorsa.
+
+**Solo su web-app.it (D):** #, Gruppo di zone, l'origine dettagliata (app o sito) e il dettaglio del pagamento.
+
+**Coperti asporto (D):** è il numero di pizze, non di persone. È la somma delle quantità delle categorie PIZZE
+CLASSICHE e PIZZE SPECIALI, e torna in 37 casi su 42. Ai tavoli invece i coperti sono persone. Nel nostro export
+«Coperti asporto» oggi è pieno solo per i tavoli: per gli altri ordini va riempito con le pizze. Va fatto in
+`ordini_giornata`, quindi con una migrazione.
